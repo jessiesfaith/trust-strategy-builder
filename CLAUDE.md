@@ -17,11 +17,16 @@ Generic workflow rules live in `~/.claude/CLAUDE.md` (they apply to every repo).
   `buildMindmap()` / `buildFlow()`.
 - **Dev (localhost):** `python -m http.server 8000` -> http://localhost:8000 (run from repo root).
 - **Build / test / lint / typecheck:** none configured. Verification = manual + URL check.
-- **Git:** branch `main`. Push via SSH host alias `github-jessica` (key `~/.ssh/jessiesfaith_ed25519`)
-  to a `jessiesfaith/trust-strategy-builder` GitHub repo (Jessica's account). The machine's HTTPS
+- **Git:** branch `main`. Remote `origin` = **github.com/jessiesfaith/trust-strategy-builder**
+  (Jessica's account). Push via SSH host alias `github-jessica` (key `~/.ssh/jessiesfaith_ed25519`);
+  `origin` is set to `git@github-jessica:jessiesfaith/trust-strategy-builder.git`. The machine's HTTPS
   credential is Chris's (`dogsleddev`) and CANNOT push here — this is Jessica's repo.
-- **Deploy:** Vercel project `trust-strategy-builder` (account `jessicadougherty4321-6324`). Manual
-  deploy: `npx vercel deploy --prod --yes`. Once git-connected, `git push` -> auto-deploys to prod.
+  NOTE: `vercel git connect` can't parse the `github-jessica` alias — to re-connect, temporarily
+  `git remote set-url origin https://github.com/jessiesfaith/trust-strategy-builder.git`, connect,
+  then restore the alias.
+- **Deploy:** **`git push` -> auto-deploy** (Vercel project `trust-strategy-builder`, account
+  `jessicadougherty4321-6324`, git-connected to the repo above). Manual fallback:
+  `npx vercel deploy --prod --yes`.
 - **Production:** `https://trust-strategy-builder.vercel.app`. The pretty path
   `app.fastinsights.io/trust-strategy-builder` is served by a redirect+rewrite added to the
   `fast-insights-app` project's `vercel.json` (same pattern as cashflow/revrec/property-for-stock).

@@ -38,7 +38,8 @@ No build step, no dependencies to install. Mermaid.js loads from a CDN.
 
 ## Deploy
 
-Vercel project `trust-strategy-builder`, served at `https://app.fastinsights.io/trust-strategy-builder/`:
+GitHub repo `jessiesfaith/trust-strategy-builder`, Vercel project `trust-strategy-builder`, served at
+`https://app.fastinsights.io/trust-strategy-builder/`:
 
     git push        # main is git-connected to Vercel → auto-deploys to production
 
