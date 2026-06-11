@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Trust Strategy Builder — Estate Planning Organizer (Preview)</title>
+<meta name="description" content="Trust Strategy Builder — organize estate, trust, LLC, and entity planning before meeting your attorney. Planning and organization only; not legal, tax, or financial advice." />
+<style>
+  :root{
+    --bg:#f6f7fb; --panel:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e6e8ef;
+    --indigo:#4f46e5; --indigo-soft:#eef2ff; --indigo-ink:#3730a3;
+    --amber:#b45309; --amber-soft:#fef3c7; --amber-line:#fcd34d;
+    --green:#15803d; --green-soft:#dcfce7; --green-line:#86efac;
+    --red:#dc2626; --red-soft:#fee2e2; --red-line:#fecaca;
+    --blue:#1d4ed8; --blue-soft:#dbeafe;
+    --shadow:0 1px 2px rgba(15,23,42,.04),0 8px 24px rgba(15,23,42,.06);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--indigo)}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 18px 90px}
+  h1,h2,h3,h4{margin:0;font-weight:680;letter-spacing:-.01em}
+  h2{font-size:18px}
+  h3{font-size:15px}
+  p{margin:.35em 0}
+  small{color:var(--muted)}
+  .muted{color:var(--muted)}
+
+  /* Preview banner */
+  .preview-banner{
+    background:linear-gradient(90deg,#4f46e5,#6366f1); color:#fff; text-align:center;
+    font-size:13px; padding:8px 14px; position:sticky; top:0; z-index:40;
+  }
+  .preview-banner strong{font-weight:700}
+
+  /* Header */
+  header.app{
+    background:var(--panel); border-bottom:1px solid var(--line);
+    position:sticky; top:33px; z-index:30;
+  }
+  .header-inner{max-width:1180px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:10px}
+  .logo{width:34px;height:34px;border-radius:9px;background:var(--indigo);display:grid;place-items:center;color:#fff;font-weight:800;font-size:15px}
+  .brand .name{font-size:17px;font-weight:760;letter-spacing:-.02em}
+  .brand .sub{font-size:11px;color:var(--muted);margin-top:-2px}
+  .header-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+
+  /* Buttons */
+  button{font-family:inherit;cursor:pointer;border:0;border-radius:10px;font-size:13px;font-weight:600;padding:8px 12px;transition:.12s;display:inline-flex;align-items:center;gap:6px}
+  button:active{transform:translateY(1px)}
+  .btn-primary{background:var(--indigo);color:#fff}
+  .btn-primary:hover{background:#4338ca}
+  .btn-ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn-ghost:hover{border-color:#cbd5e1;background:#fbfbfd}
+  .btn-soft{background:var(--indigo-soft);color:var(--indigo-ink)}
+  .btn-soft:hover{background:#e0e7ff}
+  .btn-danger{background:#fff;color:var(--red);border:1px solid var(--red-line)}
+  .btn-danger:hover{background:var(--red-soft)}
+  .btn-xs{padding:5px 9px;font-size:12px;border-radius:8px}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* Cards / sections */
+  section.block{margin-top:22px}
+  .section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+  .section-head .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--indigo);font-weight:700}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card.pad{padding:16px}
+  .grid{display:grid;gap:14px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  @media(max-width:900px){.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+  @media(max-width:620px){.g3{grid-template-columns:1fr}.header-actions{width:100%}}
+
+  .essential{padding:15px;border:1px solid var(--line);border-radius:12px;background:#fff}
+  .essential h3{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:9px}
+  .essential h3 .num{width:22px;height:22px;border-radius:6px;background:var(--indigo-soft);color:var(--indigo-ink);display:grid;place-items:center;font-size:12px;font-weight:800}
+  .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0;border-bottom:1px dashed #eef0f5}
+  .kv:last-child{border-bottom:0}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-weight:600;text-align:right}
+  ul.lite{margin:6px 0 0;padding-left:18px;font-size:13px}
+  ul.lite li{margin:2px 0}
+
+  /* Badges */
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;line-height:1;border:1px solid transparent;white-space:nowrap}
+  .b-amber{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
+  .b-green{background:var(--green-soft);color:var(--green);border-color:var(--green-line)}
+  .b-blue{background:var(--blue-soft);color:var(--blue)}
+  .b-indigo{background:var(--indigo-soft);color:var(--indigo-ink)}
+  .b-red{background:var(--red-soft);color:var(--red);border-color:var(--red-line)}
+  .b-gray{background:#f1f5f9;color:#475569}
+  .badges{display:flex;gap:7px;flex-wrap:wrap}
+
+  /* Disclaimer */
+  .disclaimer{font-size:12px;color:var(--amber);background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:10px;padding:9px 12px;display:flex;gap:8px;align-items:flex-start}
+  .disclaimer.tight{margin-top:10px}
+  .legal-foot{font-size:11.5px;color:var(--muted);margin-top:8px}
+
+  /* Snapshot */
+  .snap{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;font-size:13px}
+  .snap .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .snap b{font-weight:660}
+
+  /* Asset summary cards */
+  .asset-card{padding:14px;border:1px solid var(--line);border-radius:12px;background:#fff;display:flex;flex-direction:column;gap:8px}
+  .asset-card .top{display:flex;align-items:center;justify-content:space-between}
+  .asset-card .big{font-size:22px;font-weight:780;letter-spacing:-.02em}
+  .asset-card .icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;background:var(--indigo-soft)}
+
+  /* Accordions */
+  .accordion{border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:10px;overflow:hidden}
+  .acc-head{display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer;user-select:none}
+  .acc-head:hover{background:#fbfbfd}
+  .acc-head .chev{margin-left:auto;transition:.18s;color:var(--muted);font-size:13px}
+  .accordion.open .chev{transform:rotate(90deg)}
+  .acc-title{font-weight:680;font-size:14px}
+  .acc-summary{font-size:12px;color:var(--muted)}
+  .acc-body{display:none;padding:0 15px 16px;border-top:1px solid var(--line)}
+  .accordion.open .acc-body{display:block}
+
+  /* Entity rows */
+  .ent{border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:10px;background:#fff}
+  .ent .ent-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+  .ent h4{font-size:14px}
+  .ent .ent-meta{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .ent .ent-flags{margin-top:8px}
+  .ent .ent-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .empty{padding:16px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:11px;background:#fcfcfe}
+
+  /* Forms inside body */
+  .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+  .field label{font-size:12px;font-weight:600;color:#334155}
+  .field input,.field select,.field textarea{
+    font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);width:100%
+  }
+  .field textarea{min-height:70px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--indigo-soft);border-color:var(--indigo)}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+  @media(max-width:620px){.form-grid{grid-template-columns:1fr}}
+  .field.full{grid-column:1/-1}
+  .chk{flex-direction:row;align-items:center;gap:8px}
+  .chk input{width:auto}
+
+  /* Mind map */
+  .mm-tabs{display:flex;gap:6px;margin-bottom:10px}
+  .mm-tab{padding:7px 12px;border-radius:9px;font-size:13px;font-weight:600;background:#fff;border:1px solid var(--line);cursor:pointer}
+  .mm-tab.active{background:var(--indigo);color:#fff;border-color:var(--indigo)}
+  .mm-canvas{border:1px solid var(--line);border-radius:12px;background:#fff;padding:14px;overflow:auto;min-height:200px}
+  .mm-canvas svg{max-width:100%;height:auto}
+
+  /* Report memo */
+  .memo{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px}
+  .memo h3{font-size:15px;margin:16px 0 6px;color:var(--indigo-ink)}
+  .memo h3:first-child{margin-top:0}
+  .memo p,.memo li{font-size:13px}
+  .memo ul{margin:4px 0 4px;padding-left:20px}
+  .memo .lead{font-size:13px;color:#334155;background:var(--indigo-soft);padding:11px 13px;border-radius:10px}
+
+  /* Export center */
+  .exp{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:11px;background:#fff}
+  .exp .ic{width:32px;height:32px;border-radius:8px;background:var(--indigo-soft);display:grid;place-items:center;font-size:15px;flex:none}
+  .exp .meta{flex:1;min-width:0}
+  .exp .meta .t{font-size:13px;font-weight:660}
+  .exp .meta .d{font-size:11.5px;color:var(--muted)}
+
+  /* Review panel */
+  .review{position:fixed;right:0;top:0;height:100vh;width:340px;background:#fff;border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(15,23,42,.08);transform:translateX(100%);transition:.25s;z-index:60;display:flex;flex-direction:column}
+  .review.open{transform:translateX(0)}
+  .review-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .review-body{padding:14px 16px;overflow:auto;flex:1}
+  .review-toggle{position:fixed;right:18px;bottom:18px;z-index:55;box-shadow:var(--shadow)}
+  .chkrow{display:flex;gap:9px;align-items:flex-start;font-size:13px;padding:7px 0;border-bottom:1px dashed #eef0f5}
+  .chkrow input{margin-top:2px}
+  .progress{height:7px;background:#eef0f5;border-radius:99px;overflow:hidden;margin:8px 0 14px}
+  .progress > div{height:100%;background:var(--green);width:0;transition:.3s}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:80;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+  .overlay.open{display:flex}
+  .modal{background:#fff;border-radius:16px;max-width:640px;width:100%;box-shadow:0 24px 60px rgba(15,23,42,.3);animation:pop .15s}
+  @keyframes pop{from{transform:translateY(8px);opacity:.6}to{transform:none;opacity:1}}
+  .modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  .modal-head h3{font-size:16px}
+  .modal-body{padding:18px 20px;max-height:62vh;overflow:auto}
+  .modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:#fcfcfe;border-radius:0 0 16px 16px}
+  .modal.confirm .modal-body{font-size:13.5px;color:#334155}
+  .modal-x{margin-left:auto;background:transparent;color:var(--muted);padding:4px 8px}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:13px;z-index:99;opacity:0;transition:.2s;pointer-events:none}
+  .toast.show{opacity:1}
+  .pill-count{font-size:11px;background:var(--indigo-soft);color:var(--indigo-ink);padding:2px 8px;border-radius:99px;font-weight:700}
+  hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
+  code.inline{background:#f1f5f9;padding:1px 6px;border-radius:5px;font-size:12px}
+  pre.code{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:11px;overflow:auto;font-size:12px;line-height:1.5;max-height:320px}
+</style>
+</head>
+<body>
+
+<div class="preview-banner">
+  <strong>Preview Mode:</strong> This is a planning prototype using sample data. No legal documents are created.
+</div>
+
+<header class="app">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="logo">TS</div>
+      <div>
+        <div class="name">Trust Strategy Builder</div>
+        <div class="sub">Estate &amp; entity planning organizer · attorney-prep tool</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="badge b-indigo" style="align-self:center">● Preview Mode</span>
+      <button class="btn-ghost" onclick="saveDraft()">💾 Save Draft</button>
+      <button class="btn-ghost" onclick="scrollToId('export')">⬇ Export</button>
+      <button class="btn-soft" onclick="resetToSample()">↺ Reset to Sample Data</button>
+      <button class="btn-danger" onclick="clearScenario()">🗑 Clear Scenario</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="disclaimer tight" style="margin-top:16px">
+    <span>⚠️</span>
+    <div><strong>Planning and organization only.</strong> This tool does not provide legal, tax, investment, banking, lending, or insurance advice.
+    Review all estate, trust, deed, LLC, beneficiary, EIN, and bank account decisions with qualified professionals before taking action.
+    This tool does not replace an estate attorney, CPA, financial advisor, insurance advisor, or any licensed professional, and it does not create final legal documents.</div>
+  </div>
+
+  <!-- ESTATE FORMATION ESSENTIALS (always expanded) -->
+  <section class="block" id="essentials">
+    <div class="section-head">
+      <span class="eyebrow">Always visible</span>
+      <h2>Estate Formation Essentials</h2>
+      <span class="muted" style="font-size:12.5px">The core items needed to understand this planning scenario.</span>
+    </div>
+    <div class="grid g3" id="essentialsGrid"><!-- rendered --></div>
+  </section>
+
+  <!-- STRATEGY SNAPSHOT -->
+  <section class="block" id="snapshot">
+    <div class="section-head">
+      <span class="eyebrow">Planning signals</span>
+      <h2>Strategy Snapshot</h2>
+      <span class="muted" style="font-size:12.5px">Possible items to discuss — not recommendations.</span>
+    </div>
+    <div class="grid g3" id="snapshotGrid"><!-- rendered --></div>
+    <div class="legal-foot">Badges flag <em>possible</em> review items based on your inputs. Nothing here is a final or recommended structure.</div>
+  </section>
+
+  <!-- ASSET SUMMARY -->
+  <section class="block" id="assets">
+    <div class="section-head">
+      <span class="eyebrow">Inventory</span>
+      <h2>Asset Summary</h2>
+      <div class="btn-row" style="margin-left:auto">
+        <button class="btn-soft btn-xs" onclick="openEntityForm('properties')">+ Add Property</button>
+        <button class="btn-soft btn-xs" onclick="openEntityForm('bankAccounts')">+ Add Cash/Bank</button>
+        <button class="btn-soft btn-xs" onclick="openEntityForm('brokerageAccounts')">+ Add Investment</button>
+      </div>
+    </div>
+    <div class="grid g3" id="assetGrid"><!-- rendered --></div>
+  </section>
+
+  <!-- MIND MAP -->
+  <section class="block" id="mindmap">
+    <div class="section-head">
+      <span class="eyebrow">Live diagram</span>
+      <h2>Dynamic Mind Map</h2>
+      <span class="muted" style="font-size:12.5px">Updates automatically as you add or remove people, assets, LLCs, and sub-trusts.</span>
+    </div>
+    <div class="card pad">
+      <div class="mm-tabs">
+        <div class="mm-tab active" data-mm="mindmap" onclick="switchMM('mindmap')">Mind Map</div>
+        <div class="mm-tab" data-mm="flow" onclick="switchMM('flow')">Ownership Flowchart</div>
+        <div style="margin-left:auto" class="btn-row">
+          <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
+        </div>
+      </div>
+      <div class="mm-canvas" id="mmCanvas"><div class="muted">Rendering diagram…</div></div>
+    </div>
+  </section>
+
+  <!-- DETAILED ACCORDIONS -->
+  <section class="block" id="details">
+    <div class="section-head">
+      <span class="eyebrow">Detailed intake</span>
+      <h2>Planning Detail Sections</h2>
+      <span class="muted" style="font-size:12.5px">Collapsed by default — open what you need.</span>
+    </div>
+    <div id="accordions"><!-- rendered --></div>
+  </section>
+
+  <!-- ATTORNEY-READY REPORT -->
+  <section class="block" id="report">
+    <div class="section-head">
+      <span class="eyebrow">Attorney-prep</span>
+      <h2>Attorney-Ready Planning Memo (Preview)</h2>
+    </div>
+    <div class="memo" id="memo"><!-- rendered --></div>
+  </section>
+
+  <!-- EXPORT CENTER -->
+  <section class="block" id="export">
+    <div class="section-head">
+      <span class="eyebrow">Output</span>
+      <h2>Export Center</h2>
+      <span class="muted" style="font-size:12.5px">PDF/CSV are placeholders in preview. Mermaid code and the Markdown memo download for real.</span>
+    </div>
+    <div class="grid g2" id="exportGrid"><!-- rendered --></div>
+    <div class="card pad" style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <strong style="font-size:14px">Mermaid Mind Map Code</strong>
+        <button class="btn-soft btn-xs" style="margin-left:auto" onclick="copyMermaid()">Copy code</button>
+      </div>
+      <pre class="code" id="mermaidCode"></pre>
+    </div>
+  </section>
+
+  <div class="legal-foot" style="margin-top:26px;text-align:center;max-width:760px;margin-left:auto;margin-right:auto">
+    Trust Strategy Builder is a planning and organization tool only. It does not provide legal, tax, investment, banking, lending, or insurance advice and does not create legal documents.
+    Before retitling property, forming an LLC, changing beneficiaries, opening entity accounts, or transferring assets, confirm with your attorney, CPA, lender, bank, and insurance provider.
+  </div>
+</div>
+
+<!-- REVIEW PANEL -->
+<button class="review-toggle btn-primary" onclick="toggleReview()">📝 Review Checklist</button>
+<aside class="review" id="reviewPanel">
+  <div class="review-head">
+    <strong>Preview Review Checklist</strong>
+    <button class="modal-x" style="margin-left:auto" onclick="toggleReview()">✕</button>
+  </div>
+  <div class="review-body">
+    <div class="muted" style="font-size:12px;margin-bottom:4px">Use this while reviewing the prototype.</div>
+    <div class="progress"><div id="reviewProgress"></div></div>
+    <div id="reviewChecklist"></div>
+    <hr class="soft"/>
+    <label style="font-size:12px;font-weight:600;color:#334155">Review Notes</label>
+    <textarea id="reviewNotes" placeholder="Type notes while reviewing… (saved locally on this device only)"
+      style="width:100%;min-height:140px;margin-top:6px;font-family:inherit;font-size:13px;padding:10px;border:1px solid var(--line);border-radius:10px;resize:vertical"></textarea>
+    <div class="muted" style="font-size:11px;margin-top:6px">Notes and checkboxes are stored only in this browser.</div>
+  </div>
+</aside>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal">
+    <div class="modal-head"><h3 id="modalTitle">Title</h3><button class="modal-x" onclick="closeModal()">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+/* ============================================================
+   Trust Strategy Builder — preview prototype
+   Planning/organization only. No legal documents are created.
+   Single-file vanilla JS. State persists to localStorage.
+   ============================================================ */
+
+const LS_KEY = 'tsb_scenario_v1';
+const LS_REVIEW = 'tsb_review_v1';
+
+/* ---------- Sample scenario ---------- */
+function sampleScenario(){
+  return {
+    profile:{
+      grantor:'Jessica Dougherty',
+      spouse:'Chris Dougherty',
+      state:'California',
+      county:'',
+      maritalStatus:'Married',
+      minorChildren:'Yes (1)',
+      specialNeeds:'Review needed',
+      blendedFamily:'No',
+      existingTrust:'No',
+      existingWill:'No',
+      existingPOA:'No',
+      existingDirective:'No',
+      existingLLCs:'No',
+      attorneySelected:'Not yet',
+      cpaSelected:'Not yet'
+    },
+    people:[
+      {id:uid(),name:'Jessica Dougherty',relationship:'Self',role:'Grantor / Settlor',backupRole:'Trustee',email:'',phone:'',conflictRisk:'Low',organized:'Yes',comfortable:'Yes',needsHelp:'No',notes:'Primary grantor.'},
+      {id:uid(),name:'Chris Dougherty',relationship:'Spouse',role:'Co-Grantor / Co-Trustee',backupRole:'',email:'',phone:'',conflictRisk:'Low',organized:'Yes',comfortable:'Yes',needsHelp:'No',notes:'Co-grantor.'},
+      {id:uid(),name:'[Trusted Family Member]',relationship:'Family',role:'Successor Trustee',backupRole:'Executor',email:'',phone:'',conflictRisk:'Unknown',organized:'Unknown',comfortable:'Needs to confirm',needsHelp:'Likely — professional help',notes:'Placeholder. Confirm willingness to serve.'},
+      {id:uid(),name:'[Trusted Family Member 2]',relationship:'Family',role:'Executor / Personal Representative',backupRole:'',email:'',phone:'',conflictRisk:'Unknown',organized:'Unknown',comfortable:'Needs to confirm',needsHelp:'Likely',notes:'Placeholder executor.'},
+      {id:uid(),name:'[Beneficiary A]',relationship:'Child (minor)',role:'Primary Beneficiary',backupRole:'',email:'',phone:'',conflictRisk:'n/a',organized:'n/a',comfortable:'n/a',needsHelp:'Minor — sub-trust review',notes:'Minor child.'},
+      {id:uid(),name:'[Beneficiary B]',relationship:'Child',role:'Primary Beneficiary',backupRole:'',email:'',phone:'',conflictRisk:'n/a',organized:'n/a',comfortable:'n/a',needsHelp:'Spendthrift review placeholder',notes:'Placeholder beneficiary.'}
+    ],
+    properties:[
+      {id:uid(),name:'California Personal Residence',type:'Personal residence',owner:'Jessica & Chris (joint)',value:950000,mortgage:'Yes',mortgageBalance:520000,state:'California',incomeProducing:'No',liabilityRisk:'Low',shortTerm:'No',units:1,propertyManager:'No',separateAccount:'No',homestead:'Yes',beneficiary:'Trust (to discuss)',notes:'Primary home.'},
+      {id:uid(),name:'Nevada Rental Property',type:'Rental property',owner:'Jessica',value:410000,mortgage:'Yes',mortgageBalance:240000,state:'Nevada',incomeProducing:'Yes',liabilityRisk:'High',shortTerm:'No',units:1,propertyManager:'Yes',separateAccount:'No',homestead:'No',beneficiary:'Trust (to discuss)',notes:'Out-of-state long-term rental.'},
+      {id:uid(),name:'California Rental Property',type:'Rental property',owner:'Jessica & Chris (joint)',value:680000,mortgage:'Yes',mortgageBalance:300000,state:'California',incomeProducing:'Yes',liabilityRisk:'High',shortTerm:'Yes',units:2,propertyManager:'No',separateAccount:'No',homestead:'No',beneficiary:'Trust (to discuss)',notes:'Short-term rental, in-state.'}
+    ],
+    bankAccounts:[
+      {id:uid(),bank:'Personal Bank',type:'Checking',owner:'Jessica & Chris (joint)',balance:18000,pod:'No',usedForBills:'Yes',usedForRent:'No',usedByLLC:'No',target:'Keep personal (to discuss)',notes:'Daily operating account.'},
+      {id:uid(),bank:'Personal Bank',type:'Savings',owner:'Jessica & Chris (joint)',balance:64000,pod:'No',usedForBills:'No',usedForRent:'No',usedByLLC:'No',target:'Possible trust account',notes:'Reserve savings.'},
+      {id:uid(),bank:'To be opened',type:'Trust account (possible)',owner:'Revocable Trust (proposed)',balance:0,pod:'n/a',usedForBills:'No',usedForRent:'No',usedByLLC:'No',target:'Trust-owned (review)',notes:'Possible trust bank account to discuss.'}
+    ],
+    brokerageAccounts:[
+      {id:uid(),institution:'Brokerage Firm',kind:'Taxable brokerage',owner:'Jessica',balance:215000,beneficiary:'None set',tod:'Available',concentrated:'No',margin:'No',target:'Trust or TOD (review)',notes:'Taxable account.'},
+      {id:uid(),institution:'Retirement Custodian',kind:'Retirement (IRA/401k)',owner:'Jessica',balance:330000,beneficiary:'Needs review',tod:'Beneficiary designation',concentrated:'No',margin:'No',target:'Beneficiary designation only — do NOT retitle',notes:'IRA/401k beneficiary review.'}
+    ],
+    llcs:[
+      {id:uid(),name:'Rental Property LLC (proposed)',state:'',property:'Nevada Rental Property',memberOwner:'Revocable Trust (proposed)',management:'Member-managed',registeredAgent:'TBD',einNeeded:'Yes',bankNeeded:'Yes',operatingAgreement:'Yes',insuranceUpdate:'Yes',taxClass:'TBD (CPA)',foreignQual:'Possible (multi-state)',notes:'Possible LLC for rental liability/transfer planning.'}
+    ],
+    subTrusts:[
+      {id:uid(),type:'Minor child sub-trust',beneficiary:'[Beneficiary A]',reason:'Beneficiary is a minor',standard:'HEMS + staggered ages (to discuss)',trustee:'Successor trustee',notes:'Hold/manage until milestone ages.'},
+      {id:uid(),type:'Spendthrift sub-trust (review)',beneficiary:'[Beneficiary B]',reason:'Asset protection / distribution control review',standard:'Trustee discretion (to discuss)',trustee:'Successor trustee',notes:'Spendthrift review placeholder.'}
+    ],
+    entityIntake:{
+      desiredName:'Rental Property LLC',
+      altNames:'',
+      formationState:'',
+      purpose:'Hold and operate rental real estate',
+      memberOwner:'Revocable Trust',
+      management:'Member-managed',
+      bookkeeping:'TBD',
+      taxClass:'TBD (CPA)',
+      annualFee:'Review state franchise tax / annual fee'
+    }
+  };
+}
+
+/* ---------- Field definitions (data-driven forms) ---------- */
+const ENTITY = {
+  people:{
+    label:'Person', plural:'People & Roles', key:'people',
+    fields:[
+      {k:'name',l:'Full name',t:'text'},
+      {k:'relationship',l:'Relationship',t:'text'},
+      {k:'role',l:'Role',t:'select',o:['Grantor / Settlor','Co-Grantor','Trustee','Co-Trustee','Successor Trustee','Executor / Personal Representative','Backup Executor','Primary Beneficiary','Contingent Beneficiary','Trust Protector','Guardian (minor children)','Financial POA Agent','Health Care Agent','CPA','Attorney','Property Manager','Registered Agent (LLC)','Other']},
+      {k:'backupRole',l:'Backup role',t:'text'},
+      {k:'email',l:'Email',t:'text'},
+      {k:'phone',l:'Phone',t:'text'},
+      {k:'conflictRisk',l:'Conflict risk',t:'select',o:['Low','Medium','High','Unknown','n/a']},
+      {k:'organized',l:'Financially organized?',t:'select',o:['Yes','No','Unknown','n/a']},
+      {k:'comfortable',l:'Comfortable serving?',t:'select',o:['Yes','No','Needs to confirm','n/a']},
+      {k:'needsHelp',l:'Needs indemnification / pro help?',t:'text'},
+      {k:'notes',l:'Notes',t:'textarea',full:true}
+    ],
+    title:e=>e.name||'Unnamed person',
+    meta:e=>[e.role,e.relationship].filter(Boolean).join(' · '),
+    flags:e=>{
+      const f=[];
+      if(/successor|trustee|executor/i.test(e.role||'')) f.push(['b-amber','Trustee/executor protection']);
+      if(/minor/i.test(e.relationship||'')||/minor/i.test(e.needsHelp||'')) f.push(['b-amber','Minor — sub-trust review']);
+      if(/comfort|confirm/i.test(e.comfortable||'')&&e.comfortable!=='Yes'&&e.comfortable!=='n/a') f.push(['b-blue','Confirm willingness']);
+      return f;
+    }
+  },
+  properties:{
+    label:'Property', plural:'Real Estate', key:'properties',
+    fields:[
+      {k:'name',l:'Property name / label',t:'text'},
+      {k:'type',l:'Property type',t:'select',o:['Personal residence','Rental property','Vacation home','Land','Commercial property','Other']},
+      {k:'owner',l:'Current owner / title',t:'text'},
+      {k:'value',l:'Estimated value ($)',t:'number'},
+      {k:'state',l:'State where located',t:'text'},
+      {k:'mortgage',l:'Mortgage / debt?',t:'select',o:['No','Yes']},
+      {k:'mortgageBalance',l:'Mortgage balance ($)',t:'number'},
+      {k:'incomeProducing',l:'Income-producing?',t:'select',o:['No','Yes']},
+      {k:'liabilityRisk',l:'Liability risk',t:'select',o:['Low','Medium','High']},
+      {k:'shortTerm',l:'Short-term rental?',t:'select',o:['No','Yes']},
+      {k:'units',l:'Number of units',t:'number'},
+      {k:'propertyManager',l:'Property manager?',t:'select',o:['No','Yes']},
+      {k:'separateAccount',l:'Separate bank account?',t:'select',o:['No','Yes']},
+      {k:'homestead',l:'Homestead exemption?',t:'select',o:['No','Yes','Unknown']},
+      {k:'beneficiary',l:'Intended beneficiary / target',t:'text'},
+      {k:'notes',l:'Notes',t:'textarea',full:true}
+    ],
+    title:e=>e.name||'Unnamed property',
+    meta:e=>[e.type,e.state,e.value?('$'+num(e.value)):''].filter(Boolean).join(' · '),
+    flags:e=>propertyFlags(e)
+  },
+  bankAccounts:{
+    label:'Cash / Bank Account', plural:'Cash & Bank Accounts', key:'bankAccounts',
+    fields:[
+      {k:'bank',l:'Bank name',t:'text'},
+      {k:'type',l:'Account type',t:'text'},
+      {k:'owner',l:'Owner / title',t:'text'},
+      {k:'balance',l:'Balance ($)',t:'number'},
+      {k:'pod',l:'POD beneficiary?',t:'select',o:['No','Yes','n/a']},
+      {k:'usedForBills',l:'Used for bills?',t:'select',o:['No','Yes']},
+      {k:'usedForRent',l:'Used for rent collection?',t:'select',o:['No','Yes']},
+      {k:'usedByLLC',l:'Used by an LLC?',t:'select',o:['No','Yes']},
+      {k:'target',l:'Possible target ownership',t:'text'},
+      {k:'notes',l:'Notes',t:'textarea',full:true}
+    ],
+    title:e=>[e.bank,e.type].filter(Boolean).join(' — ')||'Account',
+    meta:e=>[e.owner,e.balance?('$'+num(e.balance)):''].filter(Boolean).join(' · '),
+    flags:e=>{
+      const f=[];
+      if(e.usedByLLC==='Yes') f.push(['b-amber','LLC bank account — no commingling']);
+      if(e.usedForRent==='Yes') f.push(['b-amber','Rent collection — banking/EIN review']);
+      if(/trust/i.test(e.owner||'')||/trust/i.test(e.type||'')||/trust/i.test(e.target||'')) f.push(['b-blue','Trust account review']);
+      return f;
+    }
+  },
+  brokerageAccounts:{
+    label:'Investment Account', plural:'Brokerage & Retirement', key:'brokerageAccounts',
+    fields:[
+      {k:'institution',l:'Institution',t:'text'},
+      {k:'kind',l:'Account kind',t:'select',o:['Taxable brokerage','Retirement (IRA/401k)','Other']},
+      {k:'owner',l:'Current owner',t:'text'},
+      {k:'balance',l:'Balance ($)',t:'number'},
+      {k:'beneficiary',l:'Beneficiary designation',t:'text'},
+      {k:'tod',l:'TOD/POD available?',t:'text'},
+      {k:'concentrated',l:'Concentrated stock?',t:'select',o:['No','Yes']},
+      {k:'margin',l:'Margin account?',t:'select',o:['No','Yes']},
+      {k:'target',l:'Possible target / strategy',t:'text'},
+      {k:'notes',l:'Notes',t:'textarea',full:true}
+    ],
+    title:e=>[e.institution,e.kind].filter(Boolean).join(' — ')||'Investment account',
+    meta:e=>[e.owner,e.balance?('$'+num(e.balance)):''].filter(Boolean).join(' · '),
+    flags:e=>{
+      const f=[];
+      if(/retire|ira|401/i.test(e.kind||'')) f.push(['b-amber','Beneficiary designation — do NOT retitle']);
+      else f.push(['b-blue','Trust or TOD/POD review']);
+      if(e.concentrated==='Yes') f.push(['b-amber','Concentrated stock / liquidity']);
+      return f;
+    }
+  },
+  llcs:{
+    label:'LLC', plural:'LLC Formation', key:'llcs',
+    fields:[
+      {k:'name',l:'Desired LLC name',t:'text'},
+      {k:'state',l:'State of formation',t:'text'},
+      {k:'property',l:'Property owned by LLC',t:'text'},
+      {k:'memberOwner',l:'Member owner (individual or trust)',t:'text'},
+      {k:'management',l:'Management',t:'select',o:['Member-managed','Manager-managed']},
+      {k:'registeredAgent',l:'Registered agent',t:'text'},
+      {k:'einNeeded',l:'EIN needed?',t:'select',o:['Yes','No','TBD']},
+      {k:'bankNeeded',l:'LLC bank account needed?',t:'select',o:['Yes','No','TBD']},
+      {k:'operatingAgreement',l:'Operating agreement needed?',t:'select',o:['Yes','No','TBD']},
+      {k:'insuranceUpdate',l:'Insurance update needed?',t:'select',o:['Yes','No','TBD']},
+      {k:'taxClass',l:'Tax classification',t:'text'},
+      {k:'foreignQual',l:'Foreign qualification needed?',t:'text'},
+      {k:'notes',l:'Notes',t:'textarea',full:true}
+    ],
+    title:e=>e.name||'LLC',
+    meta:e=>[e.property,e.memberOwner].filter(Boolean).join(' · '),
+    flags:e=>{
+      const f=[['b-amber','EIN / LLC bank account'],['b-amber','Operating agreement']];
+      if(/possible|multi|yes/i.test(e.foreignQual||'')) f.push(['b-amber','Multi-state / foreign LLC review']);
+      return f;
+    }
+  },
+  subTrusts:{
+    label:'Sub-Trust', plural:'Sub-Trust Planning', key:'subTrusts',
+    fields:[
+      {k:'type',l:'Sub-trust type',t:'select',o:['Minor child sub-trust','Education trust','Spendthrift sub-trust (review)','Special needs trust (attorney required)','Marital trust (attorney required)','Bypass / credit shelter (attorney required)','Property-specific share','Separate share per child','Other']},
+      {k:'beneficiary',l:'Beneficiary',t:'text'},
+      {k:'reason',l:'Reason / trigger',t:'text'},
+      {k:'standard',l:'Distribution standard',t:'text'},
+      {k:'trustee',l:'Proposed trustee',t:'text'},
+      {k:'notes',l:'Notes',t:'textarea',full:true}
+    ],
+    title:e=>e.type||'Sub-trust',
+    meta:e=>[e.beneficiary,e.reason].filter(Boolean).join(' · '),
+    flags:e=>{
+      const f=[];
+      if(/special needs/i.test(e.type||'')) f.push(['b-red','Special needs — attorney required']);
+      else if(/marital|bypass|credit/i.test(e.type||'')) f.push(['b-red','Attorney required']);
+      else f.push(['b-amber','Attorney-review item']);
+      return f;
+    }
+  }
+};
+
+/* ---------- State ---------- */
+let S = load() || sampleScenario();
+let review = loadReview();
+let currentMM = 'mindmap';
+
+/* ---------- Utils ---------- */
+function uid(){ return 'id'+Math.random().toString(36).slice(2,9); }
+function num(n){ return Number(n||0).toLocaleString('en-US'); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
+function load(){ try{ const r=localStorage.getItem(LS_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function saveReview(){ try{ localStorage.setItem(LS_REVIEW, JSON.stringify(review)); }catch(e){} }
+function loadReview(){ try{ const r=localStorage.getItem(LS_REVIEW); return r?JSON.parse(r):{checks:{},notes:''}; }catch(e){ return {checks:{},notes:''}; } }
+function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1900); }
+function scrollToId(id){ document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'}); }
+
+/* ---------- Recommendation / flag logic (Module 16) ---------- */
+function propertyFlags(e){
+  const f=[];
+  const rental = /rental|commercial|vacation/i.test(e.type||'');
+  if(rental && (e.liabilityRisk==='High'||e.liabilityRisk==='Medium')) f.push(['b-amber','LLC review (liability)']);
+  if(e.mortgage==='Yes') f.push(['b-amber','Lender / due-on-sale review']);
+  if(e.state && S.profile.state && e.state.trim().toLowerCase()!==S.profile.state.trim().toLowerCase()) f.push(['b-amber','Multi-state attorney review']);
+  if(e.shortTerm==='Yes') f.push(['b-amber','Short-term rental insurance review']);
+  if(/personal residence/i.test(e.type||'')) f.push(['b-blue','Residence trust / TOD deed review']);
+  return f;
+}
+
+function deriveFlags(){
+  const props = S.properties||[];
+  const rentals = props.filter(p=>/rental|commercial|vacation/i.test(p.type||''));
+  const highRisk = rentals.some(p=>p.liabilityRisk==='High'||p.liabilityRisk==='Medium');
+  const mortgaged = props.some(p=>p.mortgage==='Yes');
+  const outOfState = props.some(p=>p.state && S.profile.state && p.state.trim().toLowerCase()!==S.profile.state.trim().toLowerCase());
+  const shortTerm = rentals.some(p=>p.shortTerm==='Yes');
+  const minorBene = (S.people||[]).some(p=>/minor/i.test(p.relationship||'')||/minor/i.test(p.needsHelp||'')) || /yes/i.test(S.profile.minorChildren||'');
+  const specialNeeds = (S.subTrusts||[]).some(s=>/special needs/i.test(s.type||'')) || /review|yes/i.test(S.profile.specialNeeds||'');
+  const hasLLC = (S.llcs||[]).length>0;
+  const hasRetirement = (S.brokerageAccounts||[]).some(b=>/retire|ira|401/i.test(b.kind||''));
+  const familyFiduciary = (S.people||[]).some(p=>/successor|executor/i.test(p.role||'')&&/family|child|sibling|parent|spouse/i.test(p.relationship||'Family'));
+  const multiBene = (S.people||[]).filter(p=>/beneficiary/i.test(p.role||'')).length>1;
+  const bigCash = (S.bankAccounts||[]).reduce((a,b)=>a+Number(b.balance||0),0) + (S.brokerageAccounts||[]).reduce((a,b)=>a+Number(b.balance||0),0) > 250000;
+  return {
+    revocableTrust:true,
+    rentalLLC:rentals.length>0,
+    subTrust:minorBene||specialNeeds||(S.subTrusts||[]).length>0,
+    trustBank:true,
+    llcBank:hasLLC || highRisk,
+    trusteeProtection:familyFiduciary,
+    attorney:true, cpa:true,
+    lender:mortgaged, insurance:rentals.length>0||shortTerm,
+    banking:hasLLC||(S.bankAccounts||[]).some(b=>/trust/i.test(b.owner||'')),
+    minorBene, specialNeeds, outOfState, shortTerm, multiBene, bigCash, hasRetirement, rentals
+  };
+}
+
+/* ---------- Renderers ---------- */
+function render(){
+  renderEssentials();
+  renderSnapshot();
+  renderAssets();
+  renderAccordions();
+  renderMemo();
+  renderExport();
+  renderMermaid();
+  renderReview();
+  save();
+}
+
+function renderEssentials(){
+  const p=S.profile, F=deriveFlags();
+  const benes = (S.people||[]).filter(x=>/beneficiary/i.test(x.role||''));
+  const incharge = (S.people||[]).filter(x=>/trustee|executor|guardian|protector|poa|agent/i.test(x.role||''));
+  const props=S.properties||[];
+  const cards = [
+    {n:1,t:'Who is creating the plan?',rows:[
+      ['Grantor / settlor',p.grantor||'—'],['Spouse / co-grantor',p.spouse||'—'],
+      ['State of residence',p.state||'—'],['Marital status',p.maritalStatus||'—']
+    ]},
+    {n:2,t:'Who is in charge?',list:incharge.length?incharge.map(x=>`${esc(x.name)} — <b>${esc(x.role)}</b>`):['No fiduciaries entered yet']},
+    {n:3,t:'Who receives assets?',list:benes.length?benes.map(x=>`${esc(x.name)} — ${esc(x.relationship||'beneficiary')}`):['No beneficiaries entered yet']},
+    {n:4,t:'What assets are planned?',rows:[
+      ['Real estate',props.length+' propert'+(props.length===1?'y':'ies')],
+      ['Cash / bank',(S.bankAccounts||[]).length+' account(s)'],
+      ['Brokerage / retirement',(S.brokerageAccounts||[]).length+' account(s)'],
+      ['LLC interests',(S.llcs||[]).length+' LLC(s)']
+    ]},
+    {n:5,t:'What structure may be needed?',badges:[
+      ['b-indigo','Revocable living trust'],
+      ...(F.subTrust?[['b-amber','Sub-trusts']]:[]),
+      ...(F.rentalLLC?[['b-amber','Rental LLC(s)']]:[]),
+      ['b-blue','Trust bank account'],
+      ...(F.llcBank?[['b-amber','LLC bank account']]:[]),
+      ['b-blue','Estate/trust admin account']
+    ]},
+    {n:6,t:'Professional reviews required',badges:[
+      ['b-amber','Attorney review'],['b-amber','CPA / tax review'],
+      ...(F.lender?[['b-amber','Lender review']]:[]),
+      ...(F.insurance?[['b-amber','Insurance review']]:[]),
+      ['b-amber','Banking / EIN review']
+    ]}
+  ];
+  document.getElementById('essentialsGrid').innerHTML = cards.map(c=>`
+    <div class="essential">
+      <h3><span class="num">${c.n}</span>${c.t}</h3>
+      ${c.rows?c.rows.map(r=>`<div class="kv"><span class="k">${esc(r[0])}</span><span class="v">${r[1]}</span></div>`).join(''):''}
+      ${c.list?`<ul class="lite">${c.list.map(i=>`<li>${i}</li>`).join('')}</ul>`:''}
+      ${c.badges?`<div class="badges">${c.badges.map(b=>`<span class="badge ${b[0]}">${esc(b[1])}</span>`).join('')}</div>`:''}
+    </div>`).join('');
+}
+
+function renderSnapshot(){
+  const F=deriveFlags();
+  const items=[
+    ['#4f46e5','Revocable trust discussion likely',true],
+    ['#b45309','Rental LLC review likely',F.rentalLLC],
+    ['#b45309','Sub-trust review needed',F.subTrust],
+    ['#1d4ed8','Trust bank account review',F.trustBank],
+    ['#b45309','LLC bank account review',F.llcBank],
+    ['#b45309','Executor/trustee protection packet',F.trusteeProtection],
+    ['#b45309','Attorney review required',F.attorney],
+    ['#b45309','CPA review required',F.cpa],
+    ['#b45309','Lender review required',F.lender],
+    ['#b45309','Insurance review required',F.insurance]
+  ].filter(i=>i[2]);
+  document.getElementById('snapshotGrid').innerHTML = items.map(i=>`
+    <div class="snap"><span class="dot" style="background:${i[0]}"></span><b>${esc(i[1])}</b></div>`).join('');
+}
+
+function renderAssets(){
+  const props=S.properties||[];
+  const residence=props.filter(p=>/personal residence/i.test(p.type||''));
+  const rentals=props.filter(p=>/rental|commercial|vacation/i.test(p.type||''));
+  const cash=S.bankAccounts||[];
+  const taxable=(S.brokerageAccounts||[]).filter(b=>!/retire|ira|401/i.test(b.kind||''));
+  const retire=(S.brokerageAccounts||[]).filter(b=>/retire|ira|401/i.test(b.kind||''));
+  const llcs=S.llcs||[];
+  const cards=[
+    {ic:'🏠',t:'Personal Residence',n:residence.length,sub:residence.map(r=>r.name).join(', ')||'None added',type:'properties'},
+    {ic:'🏘️',t:'Rental Properties',n:rentals.length,sub:rentals.map(r=>r.name).join(', ')||'None added',type:'properties'},
+    {ic:'🏦',t:'Cash / Bank',n:cash.length,sub:'$'+num(cash.reduce((a,b)=>a+Number(b.balance||0),0)),type:'bankAccounts'},
+    {ic:'📈',t:'Taxable Brokerage',n:taxable.length,sub:'$'+num(taxable.reduce((a,b)=>a+Number(b.balance||0),0)),type:'brokerageAccounts'},
+    {ic:'�retirement',t:'Retirement',n:retire.length,sub:'Beneficiary designation review',type:'brokerageAccounts'},
+    {ic:'🏛️',t:'LLCs',n:llcs.length,sub:llcs.map(l=>l.name).join(', ')||'None added',type:'llcs'}
+  ];
+  document.getElementById('assetGrid').innerHTML = cards.map(c=>`
+    <div class="asset-card">
+      <div class="top">
+        <div class="icon">${c.ic==='�retirement'?'💼':c.ic}</div>
+        <div class="big">${c.n}</div>
+      </div>
+      <div><div style="font-weight:680;font-size:14px">${esc(c.t)}</div>
+      <div class="muted" style="font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.sub)}</div></div>
+      <div class="btn-row">
+        <button class="btn-soft btn-xs" onclick="openEntityForm('${c.type}')">+ Add</button>
+        <button class="btn-ghost btn-xs" onclick="openAccordionFor('${c.type}')">View details</button>
+      </div>
+    </div>`).join('');
+}
+
+/* ---------- Accordions ---------- */
+const ACCORDION_ORDER = [
+  {id:'people', kind:'entity', type:'people', title:'Detailed People & Roles'},
+  {id:'profile', kind:'profile', title:'User Profile Intake'},
+  {id:'properties', kind:'entity', type:'properties', title:'Real Estate — Personal Residence & Rentals'},
+  {id:'brokerage', kind:'entity', type:'brokerageAccounts', title:'Brokerage / Investment Details'},
+  {id:'cash', kind:'entity', type:'bankAccounts', title:'Cash / Bank Account Details'},
+  {id:'llcs', kind:'entity', type:'llcs', title:'LLC Formation Details'},
+  {id:'subTrusts', kind:'entity', type:'subTrusts', title:'Sub-Trust Planning Details'},
+  {id:'trustee', kind:'trustee', title:'Executor / Trustee Protection Plan'},
+  {id:'questions', kind:'questions', title:'Professional Questions (Attorney · CPA · Insurance · Lender)'},
+  {id:'intake', kind:'intake', title:'Attorney & Entity Formation Intake (Preview)'}
+];
+let openAcc = {};
+
+function summaryFor(a){
+  const F=deriveFlags();
+  if(a.kind==='entity'){
+    const arr=S[a.type]||[]; const def=ENTITY[a.type];
+    let extra='';
+    if(a.type==='properties'){const r=arr.filter(p=>/rental/i.test(p.type||'')).length; extra = r?` · ${r} rental${r>1?'s':''}`:'';}
+    if(a.type==='subTrusts' && F.minorBene) extra=' · minor child review needed';
+    if(a.type==='llcs' && F.llcBank) extra=' · LLC bank account likely needed';
+    return `${arr.length} ${arr.length===1?def.label.toLowerCase():'items'} added${extra}`;
+  }
+  if(a.kind==='profile') return `${S.profile.grantor||'—'} · ${S.profile.state||'—'}`;
+  if(a.kind==='trustee') return F.trusteeProtection?'Family fiduciary — protection packet recommended':'Protection checklist & timeline';
+  if(a.kind==='questions'){const c=2+(F.lender?1:0)+(F.insurance?1:0); return `${c} professional review tracks`;}
+  if(a.kind==='intake') return 'Attorney trust intake + LLC formation intake';
+  return '';
+}
+
+function renderAccordions(){
+  const html = ACCORDION_ORDER.map(a=>{
+    const open = openAcc[a.id]?'open':'';
+    return `<div class="accordion ${open}" id="acc-${a.id}">
+      <div class="acc-head" onclick="toggleAcc('${a.id}')">
+        <div>
+          <div class="acc-title">${esc(a.title)}</div>
+          <div class="acc-summary">${esc(summaryFor(a))}</div>
+        </div>
+        <span class="chev">▶</span>
+      </div>
+      <div class="acc-body">${accBody(a)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('accordions').innerHTML = html;
+}
+
+function accBody(a){
+  if(a.kind==='entity') return entityBody(a.type);
+  if(a.kind==='profile') return profileBody();
+  if(a.kind==='trustee') return trusteeBody();
+  if(a.kind==='questions') return questionsBody();
+  if(a.kind==='intake') return intakeBody();
+  return '';
+}
+
+function entityBody(type){
+  const def=ENTITY[type]; const arr=S[type]||[];
+  const rows = arr.length ? arr.map(e=>{
+    const flags=(def.flags(e)||[]).map(f=>`<span class="badge ${f[0]}">${esc(f[1])}</span>`).join('');
+    return `<div class="ent">
+      <div class="ent-top">
+        <div style="min-width:0">
+          <h4>${esc(def.title(e))}</h4>
+          <div class="ent-meta">${esc(def.meta(e))}</div>
+          ${flags?`<div class="ent-flags badges">${flags}</div>`:''}
+        </div>
+        <div class="ent-actions">
+          <button class="btn-ghost btn-xs" onclick="openEntityForm('${type}','${e.id}')">Edit</button>
+          <button class="btn-ghost btn-xs" onclick="dupEntity('${type}','${e.id}')">Duplicate</button>
+          <button class="btn-danger btn-xs" onclick="removeEntity('${type}','${e.id}')">Remove</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty">No ${esc(def.plural.toLowerCase())} added yet.</div>`;
+  return `
+    <div class="disclaimer" style="margin:12px 0">
+      <span>⚠️</span><div>Planning/organization only — confirm every ${esc(def.label.toLowerCase())} decision with your attorney, CPA, lender, bank, and insurance provider.</div>
+    </div>
+    <div class="btn-row" style="margin-bottom:4px">
+      <button class="btn-primary btn-xs" onclick="openEntityForm('${type}')">+ Add ${esc(def.label)}</button>
+      ${arr.length?`<button class="btn-danger btn-xs" onclick="clearAll('${type}')">Clear all ${esc(def.plural.toLowerCase())}</button>`:''}
+    </div>
+    ${rows}`;
+}
+
+function profileBody(){
+  const p=S.profile;
+  const f=[
+    ['grantor','User full legal name'],['spouse','Spouse / partner name'],['state','State of residence'],['county','County'],
+    ['maritalStatus','Marital status'],['minorChildren','Minor children'],['specialNeeds','Special-needs beneficiaries'],['blendedFamily','Blended family / prior marriage'],
+    ['existingTrust','Existing trust?'],['existingWill','Existing will?'],['existingPOA','Existing powers of attorney?'],['existingDirective','Existing health care directive?'],
+    ['existingLLCs','Existing LLCs?'],['attorneySelected','Estate attorney selected?'],['cpaSelected','CPA / tax advisor selected?']
+  ];
+  return `
+    <div class="form-grid" style="margin-top:12px">
+      ${f.map(([k,l])=>`<div class="field"><label>${esc(l)}</label><input value="${esc(p[k]||'')}" oninput="updProfile('${k}',this.value)"></div>`).join('')}
+    </div>
+    <div class="btn-row"><button class="btn-danger btn-xs" onclick="clearProfile()">Clear profile fields</button></div>`;
+}
+
+function trusteeBody(){
+  const F=deriveFlags();
+  const collect=[
+    'Account inventory (bank, brokerage, retirement)','Asset title / deed list','Debt & mortgage list','Insurance policy list',
+    'Tax return list','Rental leases & tenant contacts','Property maintenance contacts','Digital vault / document index'
+  ];
+  const safeguards=[
+    'Clear successor trustee acceptance checklist',
+    'Authority to hire attorney, CPA, bookkeeper, property manager, appraiser, broker',
+    'Reimbursement of reasonable expenses (compensation language — attorney review)',
+    'Indemnification language — flagged for attorney review',
+    'No self-dealing / conflict-of-interest disclosures',
+    'Reserve for claims, debts & taxes before final distribution',
+    'Annual accounting checklist + trustee decision log',
+    'Beneficiary communication log + distribution approval log'
+  ];
+  const timeline=[
+    ['At death / incapacity','Secure property, locate documents, notify co-trustee, do nothing irreversible without attorney'],
+    ['First 30 days','Engage attorney/CPA, order death certificates, inventory accounts, secure assets & insurance'],
+    ['90 days','Asset valuations, creditor/claims review, EIN for trust/estate if needed (banking review)'],
+    ['6 months','Tax planning with CPA, interim accounting, reserve analysis before any distribution'],
+    ['12 months','Final accounting, confirm debts/taxes paid, attorney-reviewed distributions, close accounts']
+  ];
+  return `
+    <div class="disclaimer" style="margin:12px 0"><span>🛡️</span><div>${F.trusteeProtection?'A family member is named as successor trustee/executor — a <b>Trustee Protection Packet</b> is recommended for discussion.':'Protection planning helps whoever administers the estate.'} Attorney review required for all authority, compensation, and indemnification language.</div></div>
+    <div class="grid g2">
+      <div class="card pad"><h3 style="font-size:14px;margin-bottom:6px">Documents to collect</h3><ul class="lite">${collect.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+      <div class="card pad"><h3 style="font-size:14px;margin-bottom:6px">Safeguards</h3><ul class="lite">${safeguards.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+    </div>
+    <h3 style="font-size:14px;margin:16px 0 6px">Timeline checklist</h3>
+    ${timeline.map(t=>`<div class="kv"><span class="k" style="font-weight:700;color:var(--indigo-ink);min-width:120px">${esc(t[0])}</span><span class="v" style="font-weight:500;text-align:left">${esc(t[1])}</span></div>`).join('')}
+    <div class="legal-foot">⚠️ Do not make distributions, sign deeds, or move entity funds without attorney/CPA confirmation. Pay valid claims, debts, and taxes before final distribution.</div>`;
+}
+
+function questionsBody(){
+  const Q=buildQuestions();
+  const block=(title,arr,badge)=>`
+    <div class="card pad" style="margin-top:10px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><h3 style="font-size:14px">${esc(title)}</h3><span class="badge ${badge[0]}">${esc(badge[1])}</span></div>
+      <ul class="lite">${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+    </div>`;
+  return `
+    ${block('Questions for your estate attorney',Q.attorney,['b-amber','Attorney review'])}
+    ${block('Questions for your CPA / tax advisor',Q.cpa,['b-amber','CPA/tax review'])}
+    ${block('Questions for your insurance agent',Q.insurance,['b-amber','Insurance review'])}
+    ${block('Questions for your mortgage lender',Q.lender,['b-amber','Lender review'])}`;
+}
+
+function intakeBody(){
+  const e=S.entityIntake||{};
+  const trustList=(S.people||[]);
+  return `
+    <div class="grid g2">
+      <div class="card pad">
+        <h3 style="font-size:14px;margin-bottom:8px">Trust Planning Intake (attorney-ready)</h3>
+        <div class="kv"><span class="k">Grantor(s)</span><span class="v">${esc([S.profile.grantor,S.profile.spouse].filter(Boolean).join(' & ')||'—')}</span></div>
+        <div class="kv"><span class="k">Trustee(s)</span><span class="v">${esc(trustList.filter(p=>/trustee/i.test(p.role||'')&&!/successor/i.test(p.role||'')).map(p=>p.name).join(', ')||'—')}</span></div>
+        <div class="kv"><span class="k">Successor trustee(s)</span><span class="v">${esc(trustList.filter(p=>/successor/i.test(p.role||'')).map(p=>p.name).join(', ')||'—')}</span></div>
+        <div class="kv"><span class="k">Executor(s)</span><span class="v">${esc(trustList.filter(p=>/executor/i.test(p.role||'')).map(p=>p.name).join(', ')||'—')}</span></div>
+        <div class="kv"><span class="k">Beneficiaries</span><span class="v">${esc(trustList.filter(p=>/beneficiary/i.test(p.role||'')).map(p=>p.name).join(', ')||'—')}</span></div>
+        <div class="kv"><span class="k">Minor children</span><span class="v">${esc(S.profile.minorChildren||'—')}</span></div>
+        <div class="kv"><span class="k">Special needs</span><span class="v">${esc(S.profile.specialNeeds||'—')}</span></div>
+        <div class="kv"><span class="k">Real estate</span><span class="v">${(S.properties||[]).length} item(s)</span></div>
+        <div class="kv"><span class="k">LLCs</span><span class="v">${(S.llcs||[]).length} item(s)</span></div>
+        <div class="kv"><span class="k">Sub-trusts to discuss</span><span class="v">${(S.subTrusts||[]).length} item(s)</span></div>
+        <div class="legal-foot">Bring this to your estate attorney. It is an organizer, not a legal document.</div>
+      </div>
+      <div class="card pad">
+        <h3 style="font-size:14px;margin-bottom:8px">Entity Formation Intake (LLC)</h3>
+        ${[['desiredName','Desired LLC name'],['altNames','Alternate names'],['formationState','State of formation'],['purpose','Purpose'],['memberOwner','Member owner (individual/trust)'],['management','Management'],['bookkeeping','Bookkeeping method'],['taxClass','Tax classification'],['annualFee','Annual fee / franchise tax']]
+          .map(([k,l])=>`<div class="field" style="margin-bottom:7px"><label>${esc(l)}</label><input value="${esc(e[k]||'')}" oninput="updEntityIntake('${k}',this.value)"></div>`).join('')}
+        <div class="legal-foot">EIN, operating agreement, registered agent, deed transfer, county recording, and lender consent are attorney/CPA-review items.</div>
+      </div>
+    </div>`;
+}
+
+/* ---------- Questions builder ---------- */
+function buildQuestions(){
+  const F=deriveFlags();
+  const attorney=['Is a revocable living trust the right foundation for our situation, and joint vs. separate trusts?'];
+  if(F.rentalLLC) attorney.push('Should rentals be held in one LLC or separate LLCs, and should the trust own the LLC membership interest?');
+  if(F.outOfState) attorney.push('How do we handle the out-of-state rental — foreign LLC qualification and multi-state issues?');
+  if(F.minorBene) attorney.push('How should minor-beneficiary sub-trusts be structured (ages, HEMS standard, trustee)?');
+  if(F.specialNeeds) attorney.push('Do any beneficiaries need a special-needs trust to protect benefits?');
+  attorney.push('How should the personal residence be titled — trust ownership vs. transfer-on-death deed?');
+  attorney.push('What executor/trustee authority, compensation, and indemnification language should the documents include?');
+
+  const cpa=['What are the income-tax consequences of the proposed ownership and any LLC tax classification?'];
+  if(F.hasRetirement) cpa.push('What is the beneficiary strategy for IRA/401k accounts (do not retitle into the trust)?');
+  cpa.push('How does step-up in basis apply to the residence, rentals, and brokerage at death?');
+  if(F.bigCash) cpa.push('Are there liquidity, estimated-tax, or concentrated-position planning issues?');
+  cpa.push('Which entities/accounts need an EIN, and how should books be kept to avoid commingling?');
+
+  const insurance=['Do current policies cover the rentals correctly, and is landlord/umbrella coverage adequate?'];
+  if(F.shortTerm) insurance.push('Is there proper short-term-rental coverage for the short-term rental property?');
+  insurance.push('How does moving title to a trust or LLC affect homeowner/landlord policies?');
+  insurance.push('Should named insured be updated to the trust or LLC after any transfer?');
+
+  const lender=['Will retitling a mortgaged property to a trust or LLC trigger a due-on-sale clause?'];
+  lender.push('Is written lender consent required before transferring any mortgaged property?');
+  lender.push('Do any loans have transfer restrictions we should review before forming an LLC?');
+
+  return {attorney,cpa,insurance,lender};
+}
+
+/* ---------- Memo (Module 13/17) ---------- */
+function renderMemo(){
+  const F=deriveFlags(); const p=S.profile;
+  const fundChecklist=[
+    'Confirm and record current title/ownership for every asset',
+    'Discuss retitling personal residence into the revocable trust (or TOD deed)',
+    'Discuss whether rentals move to LLC(s) owned by the trust',
+    'Update or confirm beneficiary designations (retirement = designation, not retitle)',
+    'Open/confirm trust bank account; plan estate/trust administration account',
+    'Update insurance named-insured after any transfer (attorney/insurance review)'
+  ];
+  const bankChecklist=[
+    'Personal operating account — may remain personal during lifetime (to discuss)',
+    'Trust bank account — for trust-held/distributed cash (review)',
+    F.llcBank?'LLC bank account — required if an LLC collects rent or pays expenses':'LLC bank account — only if an LLC is formed',
+    'Estate / trust administration account — opened by successor trustee after death'
+  ];
+  const einChecklist=[
+    'Revocable trust during life — typically uses grantor SSN (confirm with CPA)',
+    'Each rental LLC — likely needs its own EIN (CPA/banking review)',
+    'Irrevocable / administration trust after death — likely needs EIN (attorney/CPA)'
+  ];
+  const subList=(S.subTrusts||[]).map(s=>`${esc(s.type)} — ${esc(s.beneficiary||'beneficiary')} (${esc(s.reason||'review')})`);
+  document.getElementById('memo').innerHTML = `
+    <p class="lead">Based on your inputs, the structure below may be worth discussing with your estate attorney and CPA. This is <b>not a legal recommendation</b> and not a final structure. Before retitling property, forming an LLC, changing beneficiaries, or opening entity accounts, confirm with your attorney, CPA, lender, bank, and insurance provider.</p>
+
+    <h3>A. Current structure (as entered)</h3>
+    <ul>
+      ${(S.properties||[]).map(p=>`<li>${esc(p.name)} — owned by ${esc(p.owner||'—')} (${esc(p.type)}, ${esc(p.state||'—')})</li>`).join('')||'<li>No properties entered.</li>'}
+      ${(S.brokerageAccounts||[]).map(b=>`<li>${esc(b.institution)} — ${esc(b.kind)} (owner: ${esc(b.owner||'—')})</li>`).join('')}
+    </ul>
+
+    <h3>B. Possible planning structure to discuss</h3>
+    <ul>
+      <li>Revocable living trust as the foundation (${esc(p.maritalStatus||'')} — joint vs. separate to discuss).</li>
+      ${F.rentalLLC?'<li>Possible LLC(s) for rental real estate, with the trust owning the LLC membership interest rather than the property directly.</li>':''}
+      <li>Personal residence: discuss trust ownership vs. transfer-on-death deed (state/lender/tax review).</li>
+      ${F.subTrust?'<li>Sub-trust shares for protected beneficiaries (see G).</li>':''}
+      <li>Brokerage: trust ownership or TOD/POD (attorney/CPA review). Retirement accounts: beneficiary designation strategy only.</li>
+    </ul>
+
+    <h3>C. Trust funding checklist</h3><ul>${fundChecklist.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+    <h3>D. LLC formation checklist</h3>
+    <ul>${(S.llcs||[]).length?(S.llcs||[]).map(l=>`<li>${esc(l.name)} — EIN, operating agreement, registered agent, LLC bank account, insurance update, state filing & annual fee, no commingling.</li>`).join(''):'<li>No LLCs entered. If rentals carry liability exposure, an LLC may be worth discussing.</li>'}</ul>
+    <h3>E. Bank account checklist</h3><ul>${bankChecklist.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+    <h3>F. EIN checklist</h3><ul>${einChecklist.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
+    <h3>G. Sub-trust checklist</h3><ul>${subList.length?subList.map(x=>`<li>${x}</li>`).join(''):'<li>No sub-trusts flagged yet.</li>'}</ul>
+    <h3>H. Executor / trustee protection</h3>
+    <ul><li>${F.trusteeProtection?'Family fiduciary named — assemble a Trustee Protection Packet (authority, records, accounting, reserves, no self-dealing).':'Assemble records, authority, and accounting safeguards for whoever administers the estate.'}</li><li>See the Executor / Trustee Protection Plan section for the full timeline checklist.</li></ul>
+
+    <div class="badges" style="margin-top:14px">
+      <span class="badge b-amber">Attorney review required</span>
+      <span class="badge b-amber">CPA/tax review required</span>
+      ${F.lender?'<span class="badge b-amber">Lender review required</span>':''}
+      ${F.insurance?'<span class="badge b-amber">Insurance review required</span>':''}
+      <span class="badge b-amber">Banking/EIN review required</span>
+    </div>
+    <div class="legal-foot">This memo is a planning organizer to bring to your professionals. It does not create legal documents or provide legal, tax, or financial advice.</div>`;
+}
+
+/* ---------- Export center ---------- */
+function renderExport(){
+  const items=[
+    ['📄','Attorney Intake Packet','PDF — export coming in full version','pdf'],
+    ['🏛️','Entity Formation Packet','PDF — export coming in full version','pdf'],
+    ['🛡️','Trustee Protection Packet','PDF — export coming in full version','pdf'],
+    ['🗂️','Asset Checklist','CSV — export coming in full version','csv'],
+    ['🏦','Bank Account Checklist','CSV — export coming in full version','csv'],
+    ['📝','Markdown Strategy Memo','Download now (.md)','md']
+  ];
+  document.getElementById('exportGrid').innerHTML = items.map(i=>`
+    <div class="exp">
+      <div class="ic">${i[0]}</div>
+      <div class="meta"><div class="t">${esc(i[1])}</div><div class="d">${esc(i[2])}</div></div>
+      ${i[3]==='md'?`<button class="btn-primary btn-xs" onclick="downloadMemo()">Download</button>`:`<button class="btn-ghost btn-xs" onclick="toast('Export coming in full version')">Placeholder</button>`}
+    </div>`).join('');
+  document.getElementById('mermaidCode').textContent = buildMindmap();
+}
+
+/* ---------- Mermaid diagrams ---------- */
+function mmSafe(s){ return String(s||'').replace(/[()[\]{}|#"]/g,'').replace(/\s+/g,' ').trim().slice(0,42) || 'Item'; }
+
+function buildMindmap(){
+  const p=S.profile;
+  let m='mindmap\n  root((Estate Plan))\n';
+  // People
+  m+='    People\n';
+  (S.people||[]).slice(0,8).forEach(x=>{ m+='      '+mmSafe(x.name+' - '+(x.role||''))+'\n'; });
+  if(!(S.people||[]).length){ ['Grantor','Spouse','Successor Trustee','Executor','Beneficiaries'].forEach(x=>m+='      '+x+'\n'); }
+  // Trust
+  m+='    Revocable Living Trust\n';
+  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>m+='      '+mmSafe(x.name)+'\n');
+  m+='      Trust Bank Account\n';
+  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>m+='      '+mmSafe(x.institution+' Brokerage')+'\n');
+  if((S.subTrusts||[]).length){ m+='      Sub-Trusts\n'; (S.subTrusts||[]).forEach(x=>m+='        '+mmSafe(x.type)+'\n'); }
+  // Rentals
+  const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
+  if(rentals.length){ m+='    Rental Real Estate\n'; rentals.forEach(x=>{ m+='      '+mmSafe(x.name)+'\n'; m+='        LLC Option\n          LLC Bank Account\n          EIN\n'; }); }
+  // Cash
+  m+='    Cash\n';
+  (S.bankAccounts||[]).slice(0,5).forEach(x=>m+='      '+mmSafe((x.bank||'')+' '+(x.type||''))+'\n');
+  if(!(S.bankAccounts||[]).length){ ['Personal Checking','Personal Savings','Trust Account'].forEach(x=>m+='      '+x+'\n'); }
+  m+='      Estate Administration Account\n';
+  // Investments
+  m+='    Investments\n';
+  if((S.brokerageAccounts||[]).length){ (S.brokerageAccounts||[]).forEach(x=>m+='      '+mmSafe(x.kind)+'\n'); }
+  else { m+='      Taxable Brokerage\n      Retirement Accounts\n'; }
+  // Trustee protection
+  m+='    Trustee Protection\n      Document Vault\n      Accounting Log\n      Professional Authority\n';
+  return m;
+}
+
+function buildFlow(){
+  let f='flowchart TD\n';
+  f+='  User['+mmSafe(S.profile.grantor||'Grantor')+'] --> Trust[Revocable Living Trust]\n';
+  let i=0;
+  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>{ i++; f+='  Trust --> R'+i+'['+mmSafe(x.name)+']\n'; });
+  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>{ i++; f+='  Trust --> B'+i+'['+mmSafe(x.institution+' Brokerage')+']\n'; });
+  f+='  Trust --> Cash[Trust Cash Account]\n';
+  let li=0;
+  (S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||'')).forEach(x=>{
+    li++; f+='  Trust --> LLC'+li+'[LLC Option]\n'; f+='  LLC'+li+' --> P'+li+'['+mmSafe(x.name)+']\n'; f+='  LLC'+li+' --> LB'+li+'[LLC Bank Account]\n';
+  });
+  let si=0;
+  (S.subTrusts||[]).forEach(x=>{ si++; f+='  Trust --> ST'+si+'['+mmSafe(x.type)+']\n'; });
+  const succ=(S.people||[]).find(x=>/successor/i.test(x.role||''));
+  f+='  Trustee['+mmSafe(succ?succ.name:'Successor Trustee')+'] --> Trust\n';
+  f+='  Trustee --> Pros[Attorney / CPA / Property Manager]\n';
+  const exec=(S.people||[]).find(x=>/executor/i.test(x.role||''));
+  f+='  Exec['+mmSafe(exec?exec.name:'Executor')+'] --> Estate[Probate Estate if any]\n  Estate --> Trust\n';
+  return f;
+}
+
+async function renderMermaid(){
+  const code = currentMM==='mindmap'?buildMindmap():buildFlow();
+  const canvas=document.getElementById('mmCanvas');
+  try{
+    const {svg}=await mermaid.render('mmGraph_'+Math.random().toString(36).slice(2,7), code);
+    canvas.innerHTML=svg;
+  }catch(e){
+    canvas.innerHTML='<div class="muted">Diagram could not render. Mermaid code is available in the Export Center.</div>';
+  }
+}
+function switchMM(which){
+  currentMM=which;
+  document.querySelectorAll('.mm-tab').forEach(t=>t.classList.toggle('active',t.dataset.mm===which));
+  renderMermaid();
+}
+
+/* ---------- Review panel ---------- */
+const REVIEW_ITEMS=[
+  'Estate Formation Essentials are easy to understand',
+  'Add/remove property flow works',
+  'Clear/reset buttons make sense',
+  'Mind map updates correctly',
+  'LLC strategy is understandable',
+  'Trust bank account vs LLC bank account is understandable',
+  'Sub-trust flags are understandable',
+  'Executor/trustee protection section is clear',
+  'Attorney intake packet preview is useful',
+  'Entity formation intake preview is useful'
+];
+function renderReview(){
+  const c=review.checks||{};
+  document.getElementById('reviewChecklist').innerHTML = REVIEW_ITEMS.map((t,i)=>`
+    <label class="chkrow"><input type="checkbox" ${c[i]?'checked':''} onchange="toggleCheck(${i},this.checked)"><span>${esc(t)}</span></label>`).join('');
+  const done=REVIEW_ITEMS.filter((_,i)=>c[i]).length;
+  document.getElementById('reviewProgress').style.width=(done/REVIEW_ITEMS.length*100)+'%';
+  const ta=document.getElementById('reviewNotes'); if(ta.value!==review.notes) ta.value=review.notes||'';
+}
+function toggleCheck(i,v){ review.checks=review.checks||{}; review.checks[i]=v; saveReview(); renderReview(); }
+function toggleReview(){ document.getElementById('reviewPanel').classList.toggle('open'); }
+
+/* ---------- Entity CRUD ---------- */
+function openEntityForm(type,id){
+  const def=ENTITY[type];
+  const editing = id ? (S[type]||[]).find(x=>x.id===id) : null;
+  const data = editing ? {...editing} : {};
+  const body = `<div class="form-grid">${def.fields.map(f=>{
+    const val=data[f.k]!=null?data[f.k]:'';
+    const id2='fld_'+f.k;
+    let input;
+    if(f.t==='select') input=`<select id="${id2}">${(f.o||[]).map(o=>`<option ${String(val)===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+    else if(f.t==='textarea') input=`<textarea id="${id2}">${esc(val)}</textarea>`;
+    else input=`<input id="${id2}" type="${f.t==='number'?'number':'text'}" value="${esc(val)}">`;
+    return `<div class="field ${f.full?'full':''}"><label>${esc(f.l)}</label>${input}</div>`;
+  }).join('')}</div>
+  <div class="disclaimer" style="margin-top:6px"><span>⚠️</span><div>Planning only — confirm with qualified professionals. Nothing here is legal or tax advice.</div></div>`;
+  openModal(`${editing?'Edit':'Add'} ${def.label}`, body, [
+    {label:'Clear form',cls:'btn-ghost',fn:()=>{def.fields.forEach(f=>{const el=document.getElementById('fld_'+f.k); if(el) el.value='';});}},
+    {label:'Cancel',cls:'btn-ghost',fn:closeModal},
+    {label:editing?'Save changes':'Add '+def.label,cls:'btn-primary',fn:()=>{
+      const obj=editing?editing:{id:uid()};
+      def.fields.forEach(f=>{const el=document.getElementById('fld_'+f.k); obj[f.k]=el?el.value:'';});
+      if(!editing){ S[type]=S[type]||[]; S[type].push(obj); }
+      closeModal(); render(); toast((editing?'Updated ':'Added ')+def.label.toLowerCase());
+    }}
+  ]);
+}
+function dupEntity(type,id){
+  const src=(S[type]||[]).find(x=>x.id===id); if(!src) return;
+  const copy={...src,id:uid()};
+  const nameKey = ENTITY[type].fields[0].k;
+  copy[nameKey]=(copy[nameKey]||'Item')+' (copy)';
+  S[type].push(copy); render(); toast('Duplicated');
+}
+function removeEntity(type,id){
+  const def=ENTITY[type];
+  confirmModal('Remove '+def.label.toLowerCase()+'?','Are you sure you want to remove this '+def.label.toLowerCase()+' from the planning scenario? This cannot be undone unless saved elsewhere.','Remove',()=>{
+    S[type]=(S[type]||[]).filter(x=>x.id!==id); render(); toast('Removed');
+  });
+}
+function clearAll(type){
+  const def=ENTITY[type];
+  confirmModal('Clear all '+def.plural.toLowerCase()+'?','This will remove all '+def.plural.toLowerCase()+' data from this scenario. This cannot be undone unless saved elsewhere. Continue?','Clear all',()=>{
+    S[type]=[]; render(); toast('Cleared all '+def.plural.toLowerCase());
+  });
+}
+
+/* ---------- Profile / intake updates ---------- */
+function updProfile(k,v){ S.profile[k]=v; save(); clearTimeout(window._pr); window._pr=setTimeout(()=>{renderEssentials();renderSnapshot();renderMemo();renderMermaid();},250); }
+function clearProfile(){
+  confirmModal('Clear profile fields?','This empties the user profile intake fields. Saved people, assets, and other sections are not affected. Continue?','Clear',()=>{
+    Object.keys(S.profile).forEach(k=>S.profile[k]=''); render(); toast('Profile cleared');
+  });
+}
+function updEntityIntake(k,v){ S.entityIntake=S.entityIntake||{}; S.entityIntake[k]=v; save(); }
+
+/* ---------- Accordion control ---------- */
+function toggleAcc(id){ openAcc[id]=!openAcc[id]; const el=document.getElementById('acc-'+id); if(el) el.classList.toggle('open',!!openAcc[id]); }
+function openAccordionFor(type){
+  const map={properties:'properties',bankAccounts:'cash',brokerageAccounts:'brokerage',llcs:'llcs',subTrusts:'subTrusts',people:'people'};
+  const id=map[type]||type; openAcc[id]=true; renderAccordions();
+  setTimeout(()=>scrollToId('acc-'+id),60);
+}
+
+/* ---------- Header actions ---------- */
+function saveDraft(){ save(); toast('Draft saved locally (preview)'); }
+function resetToSample(){
+  confirmModal('Reset to sample data?','This replaces the current scenario with the built-in sample data (Jessica & Chris Dougherty). Consider exporting first. Continue?','Reset to sample',()=>{
+    S=sampleScenario(); openAcc={}; render(); toast('Sample data loaded');
+  });
+}
+function clearScenario(){
+  confirmModal('Clear entire scenario?','This will remove ALL people, assets, properties, accounts, LLCs, and sub-trusts from this scenario. This cannot be undone unless saved elsewhere. Tip: export your memo first. Continue?','Clear scenario',()=>{
+    S={profile:{grantor:'',spouse:'',state:'',county:'',maritalStatus:'',minorChildren:'',specialNeeds:'',blendedFamily:'',existingTrust:'',existingWill:'',existingPOA:'',existingDirective:'',existingLLCs:'',attorneySelected:'',cpaSelected:''},
+       people:[],properties:[],bankAccounts:[],brokerageAccounts:[],llcs:[],subTrusts:[],entityIntake:{}};
+    openAcc={}; render(); toast('Scenario cleared');
+  });
+}
+
+/* ---------- Export actions ---------- */
+function copyMermaid(){
+  const code=buildMindmap();
+  navigator.clipboard?.writeText(code).then(()=>toast('Mermaid code copied')).catch(()=>toast('Copy failed — select manually'));
+}
+function buildMemoMarkdown(){
+  const tmp=document.createElement('div'); tmp.innerHTML=document.getElementById('memo').innerHTML;
+  let out='# Trust Strategy Builder — Planning Memo (Preview)\n\n_Planning and organization only. Not legal, tax, or financial advice. No legal documents are created._\n\n';
+  tmp.querySelectorAll('h3,p,li').forEach(n=>{
+    const t=n.textContent.trim(); if(!t) return;
+    if(n.tagName==='H3') out+='\n## '+t+'\n';
+    else if(n.tagName==='LI') out+='- '+t+'\n';
+    else out+='\n'+t+'\n';
+  });
+  out+='\n---\n\n## Mermaid Mind Map\n\n```mermaid\n'+buildMindmap()+'\n```\n';
+  return out;
+}
+function downloadMemo(){
+  const blob=new Blob([buildMemoMarkdown()],{type:'text/markdown'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='trust-strategy-memo.md'; a.click();
+  URL.revokeObjectURL(a.href); toast('Memo downloaded');
+}
+
+/* ---------- Modal primitives ---------- */
+let _modalFns={};
+function openModal(title,bodyHtml,buttons){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=bodyHtml;
+  document.getElementById('modal').classList.remove('confirm');
+  const foot=document.getElementById('modalFoot'); foot.innerHTML=''; _modalFns={};
+  (buttons||[]).forEach((b,i)=>{ _modalFns['b'+i]=b.fn; const btn=document.createElement('button'); btn.className=b.cls; btn.textContent=b.label; btn.onclick=()=>_modalFns['b'+i](); foot.appendChild(btn); });
+  document.getElementById('overlay').classList.add('open');
+}
+function confirmModal(title,msg,confirmLabel,fn){
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML='<p>'+esc(msg)+'</p>';
+  document.getElementById('modal').classList.add('confirm');
+  const foot=document.getElementById('modalFoot'); foot.innerHTML='';
+  const cancel=document.createElement('button'); cancel.className='btn-ghost'; cancel.textContent='Cancel'; cancel.onclick=closeModal;
+  const ok=document.createElement('button'); ok.className='btn-danger'; ok.textContent=confirmLabel; ok.onclick=()=>{closeModal();fn();};
+  foot.appendChild(cancel); foot.appendChild(ok);
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
+document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeModal(); });
+
+/* ---------- Init ---------- */
+document.getElementById('reviewNotes').addEventListener('input',e=>{ review.notes=e.target.value; saveReview(); });
+mermaid.initialize({startOnLoad:false,theme:'neutral',securityLevel:'loose',mindmap:{padding:8}});
+render();
+</script>
+</body>
+</html>

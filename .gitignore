@@ -1,0 +1,24 @@
+# Vercel
+.vercel/
+.vercel
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Obsidian vault (per-user note-taking state, not application code)
+.obsidian/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local env
+.env
+.env.local

@@ -1,0 +1,9 @@
+# Keep non-app files out of the deploy (only index.html + vercel.json should ship)
+agent-state
+CLAUDE.md
+README.md
+.claude
+.obsidian
+.gitignore
+.vercelignore
+*.log

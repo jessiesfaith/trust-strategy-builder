@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "static",
+      "runtimeExecutable": "npx.cmd",
+      "runtimeArgs": ["--yes", "http-server", "-p", "8731", "-c-1", "--silent"],
+      "port": 8731
+    }
+  ]
+}
