@@ -284,13 +284,13 @@
         <div class="mm-tab" data-mm="flow" onclick="switchMM('flow')">Ownership Flowchart</div>
         <label class="mm-tab" style="margin-left:auto;display:flex;align-items:center;gap:7px;cursor:pointer">
           <input type="checkbox" id="advToggle" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
-          <span>Advanced strategies <span class="badge b-amber" style="padding:2px 6px">attorney review</span></span>
+          <span>Potential options <span class="badge b-amber" style="padding:2px 6px">to discuss</span></span>
         </label>
         <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
       </div>
       <div class="mm-canvas" id="mmCanvas"><div class="muted">Rendering diagram…</div></div>
       <div id="advLegend" style="margin-top:12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:11px">
-        <div style="font-weight:700;color:var(--ink);margin-bottom:6px;font-size:12.5px">Advanced strategy legend <span class="muted" style="font-weight:400">— possible concepts to discuss with your attorney &amp; CPA; not part of the base plan and not advice.</span></div>
+        <div style="font-weight:700;color:var(--ink);margin-bottom:6px;font-size:12.5px">Structure glossary <span class="muted" style="font-weight:400">— green = active in this plan · amber-dashed “Potential Options” box = alternatives to discuss with your attorney &amp; CPA. Not advice.</span></div>
         <div class="grid g3" style="gap:6px 16px">
           <div><b style="color:var(--ink)">Pour-Over Will</b> — catches any asset left out of the trust at death and routes it into the Revocable Living Trust.</div>
           <div><b style="color:var(--ink)">ILIT</b> — Irrevocable Life Insurance Trust; holds a life-insurance policy so proceeds may sit outside the taxable estate.</div>
@@ -1141,6 +1141,7 @@ function buildMindmap(){
   if(!(S.people||[]).length){ ['Grantor','Spouse','Successor Trustee','Executor','Beneficiaries'].forEach(x=>m+='      '+x+'\n'); }
   // Revocable trust (kept in estate)
   m+='    Revocable Living Trust\n';
+  m+='      Pour-Over Will - funnels stray assets in\n';
   (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>m+='      '+mmSafe(x.name)+'\n');
   m+='      Trust Bank Account\n';
   (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>m+='      '+mmSafe(x.institution+' Brokerage')+'\n');
@@ -1172,8 +1173,7 @@ function buildMindmap(){
   m+='    Trustee Protection\n      Document Vault\n      Accounting Log\n      Professional Authority\n';
   // Advanced strategies (educational; skip FLP/IDGT when already in the data above)
   if(showAdvanced){
-    m+='    Other Strategies - attorney review\n';
-    m+='      Pour-Over Will\n        Routes stray assets to the trust\n        Tax lever - probate / neutral\n';
+    m+='    Potential Options - to discuss\n';
     m+='      ILIT - Life Insurance Trust\n        Life Insurance Policy\n        Proceeds outside taxable estate\n        Tax lever - estate tax\n';
     m+='      Living Irrevocable Trust\n        Asset protection - gifted assets\n        Tax lever - estate tax\n';
     if(!idgt) m+='      IDGT - Grantor Trust\n        Gift or sale of appreciating assets\n        Grantor pays income tax\n        Tax lever - estate + income tax\n';
@@ -1188,22 +1188,24 @@ function buildFlow(){
   const flp=(S.llcs||[]).find(l=>/flp|family limited/i.test((l.name||'')+' '+(l.notes||'')));
   const idgt=(S.subTrusts||[]).find(s=>/idgt|intentionally defective/i.test(s.type||''));
   const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
-  const adv=[]; // advanced node ids to style amber-dashed
+  const active=[]; // active estate-freeze nodes -> green
   let f='flowchart TD\n';
   f+='  User['+mmSafe(S.profile.grantor||'Grantor')+'] --> Trust[Revocable Living Trust]\n';
+  // Pour-over will is part of the ACTIVE plan (pairs with the revocable trust)
+  f+='  User --> Will[Pour-Over Will]\n  Will -. pours stray assets .-> Trust\n';
   let i=0;
   (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>{ i++; f+='  Trust --> R'+i+'['+mmSafe(x.name)+']\n'; });
   (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>{ i++; f+='  Trust --> B'+i+'['+mmSafe(x.institution+' Brokerage')+']\n'; });
   f+='  Trust --> Cash[Trust Cash Account]\n';
-  // Rentals — via FLP (data) or generic LLC option
+  // Rentals — via FLP (data, active freeze) or generic LLC option
   if(flp && rentals.length){
-    f+='  User -. general partner control .-> FLP[Family Limited Partnership FLP]\n'; adv.push('FLP');
+    f+='  User -. general partner control .-> FLP[Family Limited Partnership FLP]\n'; active.push('FLP');
     let pi=0; rentals.forEach(x=>{ pi++; f+='  FLP --> FP'+pi+'['+mmSafe(x.name)+']\n'; });
     if(idgt){
-      f+='  User -. gift + installment-sale of LP interests .-> IDGT[IDGT estate freeze - grantor pays its tax]\n'; adv.push('IDGT');
+      f+='  User -. gift + installment-sale of LP interests .-> IDGT[IDGT estate freeze - grantor pays its tax]\n'; active.push('IDGT');
       f+='  FLP -. limited-partner interests .-> IDGT\n';
-      f+='  IDGT --> OutEst[Future growth OUT of taxable estate]\n'; adv.push('OutEst');
-      f+='  IDGT --> IBene[Children / descendants]\n'; adv.push('IBene');
+      f+='  IDGT --> OutEst[Future growth OUT of taxable estate]\n'; active.push('OutEst');
+      f+='  IDGT --> IBene[Children / descendants]\n'; active.push('IBene');
     }
   } else {
     let li=0; rentals.forEach(x=>{ li++; f+='  Trust --> LLC'+li+'[LLC Option]\n  LLC'+li+' --> P'+li+'['+mmSafe(x.name)+']\n  LLC'+li+' --> LB'+li+'[LLC Bank Account]\n'; });
@@ -1217,19 +1219,25 @@ function buildFlow(){
   f+='  Trustee --> Pros[Attorney / CPA / Property Manager]\n';
   const exec=(S.people||[]).find(x=>/executor/i.test(x.role||''));
   f+='  Exec['+mmSafe(exec?exec.name:'Executor')+'] --> Estate[Probate Estate if any]\n  Estate --> Trust\n';
-  // Other strategies (educational toggle; skip FLP/IDGT already drawn from data)
+  // Potential options — alternatives NOT in the active plan, boxed as "to discuss"
   if(showAdvanced){
-    f+='  User --> Will[Pour-Over Will - probate]\n  Will -. pours stray assets .-> Trust\n'; adv.push('Will');
-    f+='  User --> ILIT[ILIT Life Insurance Trust - estate tax]\n  ILIT --> Policy[Life Insurance Policy]\n  Policy --> Bene[Beneficiaries / Heirs]\n'; adv.push('ILIT','Policy','Bene');
-    f+='  User --> LivIrr[Living Irrevocable Trust - estate tax]\n'; adv.push('LivIrr');
-    if(!idgt && !flp){ f+='  User --> IDGT[IDGT Grantor Trust - estate + income tax]\n  IDGT --> FLP[FLP Family Limited Partnership - estate tax]\n  FLP --> FamAssets[Family Real Estate / Business]\n'; adv.push('IDGT','FLP','FamAssets'); }
-    else if(!idgt){ f+='  User --> IDGTc[IDGT Grantor Trust - estate + income tax]\n  FLP -. LP interests .-> IDGTc\n'; adv.push('IDGTc'); }
-    else if(!flp){ f+='  User --> FLPc[FLP Family Limited Partnership - estate tax]\n  FLPc -. LP interests .-> IDGT\n'; adv.push('FLPc'); }
-    f+='  User --> CLAT[CLAT Charitable Lead Annuity Trust - charitable + estate]\n  CLAT --> NFP[NFP / Private Foundation]\n  CLAT --> Bene\n'; adv.push('CLAT','NFP');
+    f+='  subgraph OPT [Potential Options - to discuss]\n';
+    f+='    ILIT[ILIT Life Insurance Trust - estate tax]\n    Policy[Life Insurance Policy]\n    Bene[Beneficiaries / Heirs]\n';
+    f+='    LivIrr[Living Irrevocable Trust - estate tax]\n';
+    f+='    CLAT[CLAT Charitable Lead Annuity Trust - charitable + estate]\n    NFP[NFP / Private Foundation]\n';
+    if(!idgt && !flp){ f+='    IDGTo[IDGT Grantor Trust - estate + income tax]\n    FLPo[FLP Family Limited Partnership - estate tax]\n    FamAssets[Family Real Estate / Business]\n'; }
+    else if(!idgt){ f+='    IDGTo[IDGT Grantor Trust - estate + income tax]\n'; }
+    else if(!flp){ f+='    FLPo[FLP Family Limited Partnership - estate tax]\n'; }
+    f+='  end\n';
+    f+='  User --> ILIT\n  ILIT --> Policy\n  Policy --> Bene\n  User --> LivIrr\n  User --> CLAT\n  CLAT --> NFP\n  CLAT --> Bene\n';
+    if(!idgt && !flp){ f+='  User --> IDGTo\n  IDGTo --> FLPo\n  FLPo --> FamAssets\n'; }
+    else if(!idgt){ f+='  User --> IDGTo\n  FLP -. LP interests .-> IDGTo\n'; }
+    else if(!flp){ f+='  User --> FLPo\n  FLPo -. LP interests .-> IDGT\n'; }
+    f+='  style OPT fill:#15120a,stroke:#c89a2d,stroke-width:1px,stroke-dasharray:5 4,color:#d2a23a\n';
   }
-  if(adv.length){
-    f+='  classDef adv fill:#1c1c1c,stroke:#c89a2d,stroke-width:1px,color:#fafaf7,stroke-dasharray:4 3;\n';
-    f+='  class '+[...new Set(adv)].join(',')+' adv;\n';
+  if(active.length){
+    f+='  classDef active fill:#0e1a0c,stroke:#00c805,stroke-width:1.5px,color:#fafaf7;\n';
+    f+='  class '+[...new Set(active)].join(',')+' active;\n';
   }
   return f;
 }
