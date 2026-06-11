@@ -395,68 +395,70 @@
    Single-file vanilla JS. State persists to localStorage.
    ============================================================ */
 
-const LS_KEY = 'tsb_scenario_v1';
+const LS_KEY = 'tsb_scenario_v2';
 const LS_REVIEW = 'tsb_review_v1';
 
 /* ---------- Sample scenario ---------- */
 function sampleScenario(){
   return {
     profile:{
-      grantor:'Jessica Dougherty',
-      spouse:'Chris Dougherty',
+      grantor:'[Grantor]',
+      spouse:'[Spouse / Co-Grantor]',
       state:'California',
       county:'',
       maritalStatus:'Married',
-      minorChildren:'Yes (1)',
-      specialNeeds:'Review needed',
+      minorChildren:'No (adult children)',
+      specialNeeds:'No',
       blendedFamily:'No',
-      existingTrust:'No',
-      existingWill:'No',
-      existingPOA:'No',
-      existingDirective:'No',
-      existingLLCs:'No',
-      attorneySelected:'Not yet',
-      cpaSelected:'Not yet'
+      existingTrust:'Yes (revocable living trust in place)',
+      existingWill:'Yes (pour-over will)',
+      existingPOA:'Yes',
+      existingDirective:'Yes',
+      existingLLCs:'FLP under formation',
+      attorneySelected:'Yes (estate attorney engaged)',
+      cpaSelected:'Yes (CPA engaged)'
     },
     people:[
-      {id:uid(),name:'Jessica Dougherty',relationship:'Self',role:'Grantor / Settlor',backupRole:'Trustee',email:'',phone:'',conflictRisk:'Low',organized:'Yes',comfortable:'Yes',needsHelp:'No',notes:'Primary grantor.'},
-      {id:uid(),name:'Chris Dougherty',relationship:'Spouse',role:'Co-Grantor / Co-Trustee',backupRole:'',email:'',phone:'',conflictRisk:'Low',organized:'Yes',comfortable:'Yes',needsHelp:'No',notes:'Co-grantor.'},
-      {id:uid(),name:'[Trusted Family Member]',relationship:'Family',role:'Successor Trustee',backupRole:'Executor',email:'',phone:'',conflictRisk:'Unknown',organized:'Unknown',comfortable:'Needs to confirm',needsHelp:'Likely — professional help',notes:'Placeholder. Confirm willingness to serve.'},
-      {id:uid(),name:'[Trusted Family Member 2]',relationship:'Family',role:'Executor / Personal Representative',backupRole:'',email:'',phone:'',conflictRisk:'Unknown',organized:'Unknown',comfortable:'Needs to confirm',needsHelp:'Likely',notes:'Placeholder executor.'},
-      {id:uid(),name:'[Beneficiary A]',relationship:'Child (minor)',role:'Primary Beneficiary',backupRole:'',email:'',phone:'',conflictRisk:'n/a',organized:'n/a',comfortable:'n/a',needsHelp:'Minor — sub-trust review',notes:'Minor child.'},
-      {id:uid(),name:'[Beneficiary B]',relationship:'Child',role:'Primary Beneficiary',backupRole:'',email:'',phone:'',conflictRisk:'n/a',organized:'n/a',comfortable:'n/a',needsHelp:'Spendthrift review placeholder',notes:'Placeholder beneficiary.'}
+      {id:uid(),name:'[Grantor]',relationship:'Self',role:'Grantor / Settlor',backupRole:'Trustee (serving now)',email:'',phone:'',conflictRisk:'Low',organized:'Yes',comfortable:'Yes',needsHelp:'No',notes:'Living and competent — serves as their OWN trustee of the revocable trust while alive. Also the grantor of the IDGT (pays its income tax).'},
+      {id:uid(),name:'[Spouse / Co-Grantor]',relationship:'Spouse',role:'Co-Grantor / Co-Trustee',backupRole:'',email:'',phone:'',conflictRisk:'Low',organized:'Yes',comfortable:'Yes',needsHelp:'No',notes:'Co-grantor; co-trustee while living.'},
+      {id:uid(),name:'[Trusted family member]',relationship:'Adult child',role:'Successor Trustee',backupRole:'Executor / Personal Representative',email:'',phone:'',conflictRisk:'Low',organized:'Yes',comfortable:'Needs to confirm',needsHelp:'Professional help available',notes:'Steps in ONLY when the grantor dies or is incapacitated. Set up to serve as BOTH successor trustee (manages the trust) and executor (handles any probate estate) — these are usually the same person.'},
+      {id:uid(),name:'[Backup fiduciary]',relationship:'Adult child',role:'Backup Executor',backupRole:'Backup Successor Trustee',email:'',phone:'',conflictRisk:'Low',organized:'Unknown',comfortable:'Needs to confirm',needsHelp:'Likely',notes:'Serves if the first declines or cannot.'},
+      {id:uid(),name:'[Independent Trustee]',relationship:'Independent / professional',role:'Trustee',backupRole:'Trust Protector',email:'',phone:'',conflictRisk:'Low',organized:'Yes',comfortable:'Yes',needsHelp:'No',notes:'Independent trustee of the IDGT — the grantor cannot serve as trustee of their own IDGT.'},
+      {id:uid(),name:'[Adult Child / Beneficiary 1]',relationship:'Adult child',role:'Primary Beneficiary',backupRole:'',email:'',phone:'',conflictRisk:'n/a',organized:'n/a',comfortable:'n/a',needsHelp:'Descendant — IDGT / separate share',notes:'Beneficiary of the revocable trust and the lifetime IDGT.'},
+      {id:uid(),name:'[Adult Child / Beneficiary 2]',relationship:'Adult child',role:'Primary Beneficiary',backupRole:'',email:'',phone:'',conflictRisk:'n/a',organized:'n/a',comfortable:'n/a',needsHelp:'Descendant — IDGT / separate share',notes:'Beneficiary of the revocable trust and the lifetime IDGT.'}
     ],
     properties:[
-      {id:uid(),name:'California Personal Residence',type:'Personal residence',owner:'Jessica & Chris (joint)',value:950000,mortgage:'Yes',mortgageBalance:520000,state:'California',incomeProducing:'No',liabilityRisk:'Low',shortTerm:'No',units:1,propertyManager:'No',separateAccount:'No',homestead:'Yes',beneficiary:'Trust (to discuss)',notes:'Primary home.'},
-      {id:uid(),name:'Nevada Rental Property',type:'Rental property',owner:'Jessica',value:410000,mortgage:'Yes',mortgageBalance:240000,state:'Nevada',incomeProducing:'Yes',liabilityRisk:'High',shortTerm:'No',units:1,propertyManager:'Yes',separateAccount:'No',homestead:'No',beneficiary:'Trust (to discuss)',notes:'Out-of-state long-term rental.'},
-      {id:uid(),name:'California Rental Property',type:'Rental property',owner:'Jessica & Chris (joint)',value:680000,mortgage:'Yes',mortgageBalance:300000,state:'California',incomeProducing:'Yes',liabilityRisk:'High',shortTerm:'Yes',units:2,propertyManager:'No',separateAccount:'No',homestead:'No',beneficiary:'Trust (to discuss)',notes:'Short-term rental, in-state.'}
+      {id:uid(),name:'California Personal Residence',type:'Personal residence',owner:'[Grantor] & [Spouse] (joint) → revocable trust',value:3200000,mortgage:'Yes',mortgageBalance:700000,state:'California',incomeProducing:'No',liabilityRisk:'Low',shortTerm:'No',units:1,propertyManager:'No',separateAccount:'No',homestead:'Yes',beneficiary:'Revocable trust (kept in estate for step-up)',notes:'Primary home — usually KEPT in the estate via the revocable trust to preserve the capital-gains step-up.'},
+      {id:uid(),name:'Nevada Rental Property',type:'Rental property',owner:'Family Limited Partnership (FLP)',value:4800000,mortgage:'Yes',mortgageBalance:1600000,state:'Nevada',incomeProducing:'Yes',liabilityRisk:'High',shortTerm:'No',units:6,propertyManager:'Yes',separateAccount:'Yes',homestead:'No',beneficiary:'Via FLP → IDGT (out of estate)',notes:'Held inside the FLP; out-of-state (foreign-qualification review).'},
+      {id:uid(),name:'California Rental Property',type:'Rental property',owner:'Family Limited Partnership (FLP)',value:6500000,mortgage:'Yes',mortgageBalance:2200000,state:'California',incomeProducing:'Yes',liabilityRisk:'High',shortTerm:'Yes',units:4,propertyManager:'No',separateAccount:'Yes',homestead:'No',beneficiary:'Via FLP → IDGT (out of estate)',notes:'Held inside the FLP; short-term rental (insurance review).'},
+      {id:uid(),name:'Commercial Property',type:'Commercial property',owner:'Family Limited Partnership (FLP)',value:9000000,mortgage:'Yes',mortgageBalance:3000000,state:'California',incomeProducing:'Yes',liabilityRisk:'High',shortTerm:'No',units:1,propertyManager:'Yes',separateAccount:'Yes',homestead:'No',beneficiary:'Via FLP → IDGT (out of estate)',notes:'Held inside the FLP; appreciating asset targeted for the estate freeze.'}
     ],
     bankAccounts:[
-      {id:uid(),bank:'Personal Bank',type:'Checking',owner:'Jessica & Chris (joint)',balance:18000,pod:'No',usedForBills:'Yes',usedForRent:'No',usedByLLC:'No',target:'Keep personal (to discuss)',notes:'Daily operating account.'},
-      {id:uid(),bank:'Personal Bank',type:'Savings',owner:'Jessica & Chris (joint)',balance:64000,pod:'No',usedForBills:'No',usedForRent:'No',usedByLLC:'No',target:'Possible trust account',notes:'Reserve savings.'},
-      {id:uid(),bank:'To be opened',type:'Trust account (possible)',owner:'Revocable Trust (proposed)',balance:0,pod:'n/a',usedForBills:'No',usedForRent:'No',usedByLLC:'No',target:'Trust-owned (review)',notes:'Possible trust bank account to discuss.'}
+      {id:uid(),bank:'Personal Bank',type:'Checking',owner:'[Grantor] & [Spouse] (joint)',balance:280000,pod:'No',usedForBills:'Yes',usedForRent:'No',usedByLLC:'No',target:'Keep personal (to discuss)',notes:'Daily operating account.'},
+      {id:uid(),bank:'Personal Bank',type:'Savings',owner:'Revocable Trust',balance:1400000,pod:'No',usedForBills:'No',usedForRent:'No',usedByLLC:'No',target:'Trust-owned',notes:'Reserve savings held in the revocable trust.'},
+      {id:uid(),bank:'FLP Operating Bank',type:'FLP operating account',owner:'Family Limited Partnership (FLP)',balance:120000,pod:'n/a',usedForBills:'Yes',usedForRent:'Yes',usedByLLC:'Yes',target:'FLP-owned — separate books, no commingling',notes:'Collects rent and pays expenses for the FLP properties. Separate EIN; do not commingle with personal or trust funds.'}
     ],
     brokerageAccounts:[
-      {id:uid(),institution:'Brokerage Firm',kind:'Taxable brokerage',owner:'Jessica',balance:215000,beneficiary:'None set',tod:'Available',concentrated:'No',margin:'No',target:'Trust or TOD (review)',notes:'Taxable account.'},
-      {id:uid(),institution:'Retirement Custodian',kind:'Retirement (IRA/401k)',owner:'Jessica',balance:330000,beneficiary:'Needs review',tod:'Beneficiary designation',concentrated:'No',margin:'No',target:'Beneficiary designation only — do NOT retitle',notes:'IRA/401k beneficiary review.'}
+      {id:uid(),institution:'Brokerage Firm',kind:'Taxable brokerage',owner:'[Grantor]',balance:9500000,beneficiary:'To revocable trust / IDGT seed',tod:'Available',concentrated:'Yes',margin:'No',target:'Some may seed/installment-sale to the IDGT (review)',notes:'Large taxable account with concentrated stock — liquidity and basis planning with CPA.'},
+      {id:uid(),institution:'Retirement Custodian',kind:'Retirement (IRA/401k)',owner:'[Grantor]',balance:2600000,beneficiary:'Needs review (SECURE Act 10-yr)',tod:'Beneficiary designation',concentrated:'No',margin:'No',target:'Beneficiary designation only — do NOT retitle',notes:'Retirement account — beneficiary designation strategy, not retitling.'}
     ],
     llcs:[
-      {id:uid(),name:'Rental Property LLC (proposed)',state:'',property:'Nevada Rental Property',memberOwner:'Revocable Trust (proposed)',management:'Member-managed',registeredAgent:'TBD',einNeeded:'Yes',bankNeeded:'Yes',operatingAgreement:'Yes',insuranceUpdate:'Yes',taxClass:'TBD (CPA)',foreignQual:'Possible (multi-state)',notes:'Possible LLC for rental liability/transfer planning.'}
+      {id:uid(),name:'Family Limited Partnership (FLP)',state:'California',property:'Holds the Nevada + California rentals and the commercial property',memberOwner:'[Grantor] = General Partner (control); limited-partnership interests gifted & installment-sold to the IDGT',management:'Manager-managed',registeredAgent:'TBD',einNeeded:'Yes',bankNeeded:'Yes',operatingAgreement:'Yes (partnership agreement)',insuranceUpdate:'Yes',taxClass:'Partnership / pass-through (CPA)',foreignQual:'Yes — Nevada property (multi-state)',notes:'Consolidates family real estate under grantor GP control and enables valuation-discounted gifts/sales of LP interests to the IDGT. Requires qualified appraisal (discount), estate-tax and CPA review.'}
     ],
     subTrusts:[
-      {id:uid(),type:'Minor child sub-trust',beneficiary:'[Beneficiary A]',reason:'Beneficiary is a minor',standard:'HEMS + staggered ages (to discuss)',trustee:'Successor trustee',notes:'Hold/manage until milestone ages.'},
-      {id:uid(),type:'Spendthrift sub-trust (review)',beneficiary:'[Beneficiary B]',reason:'Asset protection / distribution control review',standard:'Trustee discretion (to discuss)',trustee:'Successor trustee',notes:'Spendthrift review placeholder.'}
+      {id:uid(),type:'IDGT — Intentionally Defective Grantor Trust',beneficiary:'Adult children / descendants',reason:'Estate freeze — receives gifted & installment-sold FLP limited-partnership interests so future appreciation grows OUTSIDE the taxable estate',standard:'Independent-trustee discretion (HEMS-style) — to discuss',trustee:'[Independent Trustee] (grantor cannot serve)',notes:'"Defective" for income tax on purpose: the grantor pays the trust\'s income tax, further reducing the estate tax-free. Typically funded by a seed gift + installment note. Irrevocable — attorney + CPA required.'},
+      {id:uid(),type:'Descendants\' separate-share / spendthrift trust',beneficiary:'Each adult child',reason:'Hold each child\'s inheritance with creditor / spendthrift protection',standard:'Trustee discretion (to discuss)',trustee:'Successor trustee',notes:'Created under the revocable trust at death — separate from the lifetime IDGT.'}
     ],
     entityIntake:{
-      desiredName:'Rental Property LLC',
+      desiredName:'Family Limited Partnership (FLP)',
       altNames:'',
-      formationState:'',
-      purpose:'Hold and operate rental real estate',
-      memberOwner:'Revocable Trust',
-      management:'Member-managed',
-      bookkeeping:'TBD',
-      taxClass:'TBD (CPA)',
-      annualFee:'Review state franchise tax / annual fee'
+      formationState:'California',
+      purpose:'Consolidate and manage family real estate; enable discounted gifting / installment-sale of LP interests to the IDGT',
+      memberOwner:'Grantor as General Partner; IDGT as limited partner',
+      management:'Manager-managed (GP controls)',
+      bookkeeping:'Separate FLP books — no commingling',
+      taxClass:'Partnership / pass-through (CPA)',
+      annualFee:'Review CA franchise tax / annual fees'
     }
   };
 }
@@ -751,13 +753,13 @@ function renderAssets(){
     {ic:'🏘️',t:'Rental Properties',n:rentals.length,sub:rentals.map(r=>r.name).join(', ')||'None added',type:'properties'},
     {ic:'🏦',t:'Cash / Bank',n:cash.length,sub:'$'+num(cash.reduce((a,b)=>a+Number(b.balance||0),0)),type:'bankAccounts'},
     {ic:'📈',t:'Taxable Brokerage',n:taxable.length,sub:'$'+num(taxable.reduce((a,b)=>a+Number(b.balance||0),0)),type:'brokerageAccounts'},
-    {ic:'�retirement',t:'Retirement',n:retire.length,sub:'Beneficiary designation review',type:'brokerageAccounts'},
+    {ic:'💼',t:'Retirement',n:retire.length,sub:'Beneficiary designation review',type:'brokerageAccounts'},
     {ic:'🏛️',t:'LLCs',n:llcs.length,sub:llcs.map(l=>l.name).join(', ')||'None added',type:'llcs'}
   ];
   document.getElementById('assetGrid').innerHTML = cards.map(c=>`
     <div class="asset-card">
       <div class="top">
-        <div class="icon">${c.ic==='�retirement'?'💼':c.ic}</div>
+        <div class="icon">${c.ic}</div>
         <div class="big">${c.n}</div>
       </div>
       <div><div style="font-weight:680;font-size:14px">${esc(c.t)}</div>
@@ -1129,21 +1131,34 @@ function renderExport(){
 function mmSafe(s){ return String(s||'').replace(/[()[\]{}|#"]/g,'').replace(/\s+/g,' ').trim().slice(0,42) || 'Item'; }
 
 function buildMindmap(){
-  const p=S.profile;
+  const flp=(S.llcs||[]).find(l=>/flp|family limited/i.test((l.name||'')+' '+(l.notes||'')));
+  const idgt=(S.subTrusts||[]).find(s=>/idgt|intentionally defective/i.test(s.type||''));
+  const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
   let m='mindmap\n  root((Estate Plan))\n';
   // People
   m+='    People\n';
   (S.people||[]).slice(0,8).forEach(x=>{ m+='      '+mmSafe(x.name+' - '+(x.role||''))+'\n'; });
   if(!(S.people||[]).length){ ['Grantor','Spouse','Successor Trustee','Executor','Beneficiaries'].forEach(x=>m+='      '+x+'\n'); }
-  // Trust
+  // Revocable trust (kept in estate)
   m+='    Revocable Living Trust\n';
   (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>m+='      '+mmSafe(x.name)+'\n');
   m+='      Trust Bank Account\n';
   (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>m+='      '+mmSafe(x.institution+' Brokerage')+'\n');
-  if((S.subTrusts||[]).length){ m+='      Sub-Trusts\n'; (S.subTrusts||[]).forEach(x=>m+='        '+mmSafe(x.type)+'\n'); }
-  // Rentals
-  const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
-  if(rentals.length){ m+='    Rental Real Estate\n'; rentals.forEach(x=>{ m+='      '+mmSafe(x.name)+'\n'; m+='        LLC Option\n          LLC Bank Account\n          EIN\n'; }); }
+  const revSub=(S.subTrusts||[]).filter(s=>!/idgt|intentionally defective/i.test(s.type||''));
+  if(revSub.length){ m+='      Sub-Trusts at death\n'; revSub.forEach(x=>m+='        '+mmSafe(x.type)+'\n'); }
+  // Rental real estate — via FLP if present
+  if(rentals.length){
+    if(flp){
+      m+='    Family Limited Partnership FLP\n      Grantor is General Partner - control\n';
+      rentals.forEach(x=>m+='      '+mmSafe(x.name)+'\n');
+      m+='      FLP Operating Account + EIN\n';
+      if(idgt){
+        m+='      LP interests gifted and sold\n        IDGT - lifetime estate freeze\n          Grantor pays the income tax\n          Future growth OUTSIDE estate\n          Children / descendants\n';
+      }
+    } else {
+      m+='    Rental Real Estate\n'; rentals.forEach(x=>{ m+='      '+mmSafe(x.name)+'\n        LLC Option\n          LLC Bank Account\n          EIN\n'; });
+    }
+  }
   // Cash
   m+='    Cash\n';
   (S.bankAccounts||[]).slice(0,5).forEach(x=>m+='      '+mmSafe((x.bank||'')+' '+(x.type||''))+'\n');
@@ -1155,14 +1170,14 @@ function buildMindmap(){
   else { m+='      Taxable Brokerage\n      Retirement Accounts\n'; }
   // Trustee protection
   m+='    Trustee Protection\n      Document Vault\n      Accounting Log\n      Professional Authority\n';
-  // Advanced strategies (attorney review)
+  // Advanced strategies (educational; skip FLP/IDGT when already in the data above)
   if(showAdvanced){
-    m+='    Advanced Strategies - attorney review\n';
+    m+='    Other Strategies - attorney review\n';
     m+='      Pour-Over Will\n        Routes stray assets to the trust\n        Tax lever - probate / neutral\n';
     m+='      ILIT - Life Insurance Trust\n        Life Insurance Policy\n        Proceeds outside taxable estate\n        Tax lever - estate tax\n';
     m+='      Living Irrevocable Trust\n        Asset protection - gifted assets\n        Tax lever - estate tax\n';
-    m+='      IDGT - Grantor Trust\n        Gift or sale of appreciating assets\n        Grantor pays income tax\n        Tax lever - estate + income tax\n';
-    m+='      FLP - Family Limited Partnership\n        Holds family real estate or business\n        Valuation discounts - gifting\n        Tax lever - estate tax\n';
+    if(!idgt) m+='      IDGT - Grantor Trust\n        Gift or sale of appreciating assets\n        Grantor pays income tax\n        Tax lever - estate + income tax\n';
+    if(!flp) m+='      FLP - Family Limited Partnership\n        Holds family real estate or business\n        Valuation discounts - gifting\n        Tax lever - estate tax\n';
     m+='      CLAT - Charitable Lead Annuity Trust\n        Annuity to charity for a term\n        Remainder to heirs\n        Tax lever - charitable + estate\n';
     m+='      NFP - Private Foundation\n        Charitable giving vehicle\n        Tax lever - charitable\n';
   }
@@ -1170,39 +1185,51 @@ function buildMindmap(){
 }
 
 function buildFlow(){
+  const flp=(S.llcs||[]).find(l=>/flp|family limited/i.test((l.name||'')+' '+(l.notes||'')));
+  const idgt=(S.subTrusts||[]).find(s=>/idgt|intentionally defective/i.test(s.type||''));
+  const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
+  const adv=[]; // advanced node ids to style amber-dashed
   let f='flowchart TD\n';
   f+='  User['+mmSafe(S.profile.grantor||'Grantor')+'] --> Trust[Revocable Living Trust]\n';
   let i=0;
   (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>{ i++; f+='  Trust --> R'+i+'['+mmSafe(x.name)+']\n'; });
   (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>{ i++; f+='  Trust --> B'+i+'['+mmSafe(x.institution+' Brokerage')+']\n'; });
   f+='  Trust --> Cash[Trust Cash Account]\n';
-  let li=0;
-  (S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||'')).forEach(x=>{
-    li++; f+='  Trust --> LLC'+li+'[LLC Option]\n'; f+='  LLC'+li+' --> P'+li+'['+mmSafe(x.name)+']\n'; f+='  LLC'+li+' --> LB'+li+'[LLC Bank Account]\n';
-  });
+  // Rentals — via FLP (data) or generic LLC option
+  if(flp && rentals.length){
+    f+='  User -. general partner control .-> FLP[Family Limited Partnership FLP]\n'; adv.push('FLP');
+    let pi=0; rentals.forEach(x=>{ pi++; f+='  FLP --> FP'+pi+'['+mmSafe(x.name)+']\n'; });
+    if(idgt){
+      f+='  User -. gift + installment-sale of LP interests .-> IDGT[IDGT estate freeze - grantor pays its tax]\n'; adv.push('IDGT');
+      f+='  FLP -. limited-partner interests .-> IDGT\n';
+      f+='  IDGT --> OutEst[Future growth OUT of taxable estate]\n'; adv.push('OutEst');
+      f+='  IDGT --> IBene[Children / descendants]\n'; adv.push('IBene');
+    }
+  } else {
+    let li=0; rentals.forEach(x=>{ li++; f+='  Trust --> LLC'+li+'[LLC Option]\n  LLC'+li+' --> P'+li+'['+mmSafe(x.name)+']\n  LLC'+li+' --> LB'+li+'[LLC Bank Account]\n'; });
+  }
+  // Sub-trusts under the revocable trust (exclude the IDGT — it is NOT owned by the revocable trust)
   let si=0;
-  (S.subTrusts||[]).forEach(x=>{ si++; f+='  Trust --> ST'+si+'['+mmSafe(x.type)+']\n'; });
+  (S.subTrusts||[]).filter(s=>!/idgt|intentionally defective/i.test(s.type||'')).forEach(x=>{ si++; f+='  Trust --> ST'+si+'['+mmSafe(x.type)+']\n'; });
+  // Fiduciaries
   const succ=(S.people||[]).find(x=>/successor/i.test(x.role||''));
   f+='  Trustee['+mmSafe(succ?succ.name:'Successor Trustee')+'] --> Trust\n';
   f+='  Trustee --> Pros[Attorney / CPA / Property Manager]\n';
   const exec=(S.people||[]).find(x=>/executor/i.test(x.role||''));
   f+='  Exec['+mmSafe(exec?exec.name:'Executor')+'] --> Estate[Probate Estate if any]\n  Estate --> Trust\n';
-  // Advanced strategies (attorney review)
+  // Other strategies (educational toggle; skip FLP/IDGT already drawn from data)
   if(showAdvanced){
-    f+='  User --> Will[Pour-Over Will - probate]\n';
-    f+='  Will -. pours stray assets .-> Trust\n';
-    f+='  User --> ILIT[ILIT Life Insurance Trust - estate tax]\n';
-    f+='  ILIT --> Policy[Life Insurance Policy]\n';
-    f+='  Policy --> Bene[Beneficiaries / Heirs]\n';
-    f+='  User --> LivIrr[Living Irrevocable Trust - estate tax]\n';
-    f+='  User --> IDGT[IDGT Grantor Trust - estate + income tax]\n';
-    f+='  IDGT --> FLP[FLP Family Limited Partnership - estate tax]\n';
-    f+='  FLP --> FamAssets[Family Real Estate / Business]\n';
-    f+='  User --> CLAT[CLAT Charitable Lead Annuity Trust - charitable + estate]\n';
-    f+='  CLAT --> NFP[NFP / Private Foundation]\n';
-    f+='  CLAT --> Bene\n';
+    f+='  User --> Will[Pour-Over Will - probate]\n  Will -. pours stray assets .-> Trust\n'; adv.push('Will');
+    f+='  User --> ILIT[ILIT Life Insurance Trust - estate tax]\n  ILIT --> Policy[Life Insurance Policy]\n  Policy --> Bene[Beneficiaries / Heirs]\n'; adv.push('ILIT','Policy','Bene');
+    f+='  User --> LivIrr[Living Irrevocable Trust - estate tax]\n'; adv.push('LivIrr');
+    if(!idgt && !flp){ f+='  User --> IDGT[IDGT Grantor Trust - estate + income tax]\n  IDGT --> FLP[FLP Family Limited Partnership - estate tax]\n  FLP --> FamAssets[Family Real Estate / Business]\n'; adv.push('IDGT','FLP','FamAssets'); }
+    else if(!idgt){ f+='  User --> IDGTc[IDGT Grantor Trust - estate + income tax]\n  FLP -. LP interests .-> IDGTc\n'; adv.push('IDGTc'); }
+    else if(!flp){ f+='  User --> FLPc[FLP Family Limited Partnership - estate tax]\n  FLPc -. LP interests .-> IDGT\n'; adv.push('FLPc'); }
+    f+='  User --> CLAT[CLAT Charitable Lead Annuity Trust - charitable + estate]\n  CLAT --> NFP[NFP / Private Foundation]\n  CLAT --> Bene\n'; adv.push('CLAT','NFP');
+  }
+  if(adv.length){
     f+='  classDef adv fill:#1c1c1c,stroke:#c89a2d,stroke-width:1px,color:#fafaf7,stroke-dasharray:4 3;\n';
-    f+='  class Will,ILIT,Policy,LivIrr,IDGT,FLP,FamAssets,CLAT,NFP,Bene adv;\n';
+    f+='  class '+[...new Set(adv)].join(',')+' adv;\n';
   }
   return f;
 }
@@ -1319,7 +1346,7 @@ function openAccordionFor(type){
 /* ---------- Header actions ---------- */
 function saveDraft(){ save(); toast('Draft saved locally (preview)'); }
 function resetToSample(){
-  confirmModal('Reset to sample data?','This replaces the current scenario with the built-in sample data (Jessica & Chris Dougherty). Consider exporting first. Continue?','Reset to sample',()=>{
+  confirmModal('Reset to sample data?','This replaces the current scenario with the built-in sample data (a living-grantor FLP → IDGT estate-tax-planning example). Consider exporting first. Continue?','Reset to sample',()=>{
     S=sampleScenario(); openAcc={}; render(); toast('Sample data loaded');
   });
 }
