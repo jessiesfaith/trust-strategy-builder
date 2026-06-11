@@ -282,11 +282,26 @@
       <div class="mm-tabs">
         <div class="mm-tab active" data-mm="mindmap" onclick="switchMM('mindmap')">Mind Map</div>
         <div class="mm-tab" data-mm="flow" onclick="switchMM('flow')">Ownership Flowchart</div>
-        <div style="margin-left:auto" class="btn-row">
-          <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
-        </div>
+        <label class="mm-tab" style="margin-left:auto;display:flex;align-items:center;gap:7px;cursor:pointer">
+          <input type="checkbox" id="advToggle" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
+          <span>Advanced strategies <span class="badge b-amber" style="padding:2px 6px">attorney review</span></span>
+        </label>
+        <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
       </div>
       <div class="mm-canvas" id="mmCanvas"><div class="muted">Rendering diagram…</div></div>
+      <div id="advLegend" style="margin-top:12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:11px">
+        <div style="font-weight:700;color:var(--ink);margin-bottom:6px;font-size:12.5px">Advanced strategy legend <span class="muted" style="font-weight:400">— possible concepts to discuss with your attorney &amp; CPA; not part of the base plan and not advice.</span></div>
+        <div class="grid g3" style="gap:6px 16px">
+          <div><b style="color:var(--ink)">Pour-Over Will</b> — catches any asset left out of the trust at death and routes it into the Revocable Living Trust.</div>
+          <div><b style="color:var(--ink)">ILIT</b> — Irrevocable Life Insurance Trust; holds a life-insurance policy so proceeds may sit outside the taxable estate.</div>
+          <div><b style="color:var(--ink)">Living Irrevocable Trust</b> — irrevocable trust funded during life, often for asset protection (gifted assets leave your estate).</div>
+          <div><b style="color:var(--ink)">IDGT</b> — Intentionally Defective Grantor Trust; gift/sale of appreciating assets out of the estate while the grantor pays the income tax.</div>
+          <div><b style="color:var(--ink)">FLP</b> — Family Limited Partnership; holds family real estate/business; used for consolidated management and gifting with valuation discounts.</div>
+          <div><b style="color:var(--ink)">CLAT</b> — Charitable Lead Annuity Trust; pays an annuity to charity for a term, with the remainder passing to heirs.</div>
+          <div><b style="color:var(--ink)">NFP / Private Foundation</b> — nonprofit charitable vehicle; can be the charitable recipient for a CLAT or other giving.</div>
+        </div>
+        <div class="legal-foot" style="margin-top:8px">⚠️ These are advanced, irrevocable, and tax-sensitive structures. Each requires attorney and CPA review before any action — flagged here only to show where they could fit.</div>
+      </div>
     </div>
   </section>
 
@@ -586,6 +601,7 @@ const ENTITY = {
 let S = load() || sampleScenario();
 let review = loadReview();
 let currentMM = 'mindmap';
+let showAdvanced = true;
 
 /* ---------- Utils ---------- */
 function uid(){ return 'id'+Math.random().toString(36).slice(2,9); }
@@ -1059,6 +1075,17 @@ function buildMindmap(){
   else { m+='      Taxable Brokerage\n      Retirement Accounts\n'; }
   // Trustee protection
   m+='    Trustee Protection\n      Document Vault\n      Accounting Log\n      Professional Authority\n';
+  // Advanced strategies (attorney review)
+  if(showAdvanced){
+    m+='    Advanced Strategies - attorney review\n';
+    m+='      Pour-Over Will\n        Routes stray assets to the trust\n';
+    m+='      ILIT - Life Insurance Trust\n        Life Insurance Policy\n        Proceeds outside taxable estate\n';
+    m+='      Living Irrevocable Trust\n        Asset protection - gifted assets\n';
+    m+='      IDGT - Grantor Trust\n        Gift or sale of appreciating assets\n        Grantor pays income tax\n';
+    m+='      FLP - Family Limited Partnership\n        Holds family real estate or business\n        Valuation discounts - gifting\n';
+    m+='      CLAT - Charitable Lead Annuity Trust\n        Annuity to charity for a term\n        Remainder to heirs\n';
+    m+='      NFP - Private Foundation\n        Charitable giving vehicle\n';
+  }
   return m;
 }
 
@@ -1080,6 +1107,23 @@ function buildFlow(){
   f+='  Trustee --> Pros[Attorney / CPA / Property Manager]\n';
   const exec=(S.people||[]).find(x=>/executor/i.test(x.role||''));
   f+='  Exec['+mmSafe(exec?exec.name:'Executor')+'] --> Estate[Probate Estate if any]\n  Estate --> Trust\n';
+  // Advanced strategies (attorney review)
+  if(showAdvanced){
+    f+='  User --> Will[Pour-Over Will]\n';
+    f+='  Will -. pours stray assets .-> Trust\n';
+    f+='  User --> ILIT[ILIT - Life Insurance Trust]\n';
+    f+='  ILIT --> Policy[Life Insurance Policy]\n';
+    f+='  Policy --> Bene[Beneficiaries / Heirs]\n';
+    f+='  User --> LivIrr[Living Irrevocable Trust]\n';
+    f+='  User --> IDGT[IDGT - Grantor Trust]\n';
+    f+='  IDGT --> FLP[FLP - Family Limited Partnership]\n';
+    f+='  FLP --> FamAssets[Family Real Estate / Business]\n';
+    f+='  User --> CLAT[CLAT - Charitable Lead Annuity Trust]\n';
+    f+='  CLAT --> NFP[NFP / Private Foundation]\n';
+    f+='  CLAT --> Bene\n';
+    f+='  classDef adv fill:#1c1c1c,stroke:#c89a2d,stroke-width:1px,color:#fafaf7,stroke-dasharray:4 3;\n';
+    f+='  class Will,ILIT,Policy,LivIrr,IDGT,FLP,FamAssets,CLAT,NFP,Bene adv;\n';
+  }
   return f;
 }
 
@@ -1095,8 +1139,14 @@ async function renderMermaid(){
 }
 function switchMM(which){
   currentMM=which;
-  document.querySelectorAll('.mm-tab').forEach(t=>t.classList.toggle('active',t.dataset.mm===which));
+  document.querySelectorAll('.mm-tab[data-mm]').forEach(t=>t.classList.toggle('active',t.dataset.mm===which));
   renderMermaid();
+}
+function toggleAdvanced(on){
+  showAdvanced=on;
+  const leg=document.getElementById('advLegend'); if(leg) leg.style.display=on?'block':'none';
+  renderMermaid();
+  const code=document.getElementById('mermaidCode'); if(code) code.textContent=buildMindmap();
 }
 
 /* ---------- Review panel ---------- */
