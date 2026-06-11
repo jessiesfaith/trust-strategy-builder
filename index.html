@@ -7,13 +7,13 @@
 <meta name="description" content="Trust Strategy Builder — organize estate, trust, LLC, and entity planning before meeting your attorney. Planning and organization only; not legal, tax, or financial advice." />
 <style>
   :root{
-    --bg:#0f1720; --panel:#172230; --panel2:#1f2d3d; --ink:#e8eef4; --muted:#9fb0c0; --line:#2c3e50;
-    --indigo:#3da9fc; --indigo-soft:rgba(61,169,252,.14); --indigo-ink:#8ec9fd; --accent-ink:#04223a;
-    --amber:#fbbf24; --amber-soft:rgba(251,191,36,.15); --amber-line:rgba(251,191,36,.42);
-    --green:#34d399; --green-soft:rgba(52,211,153,.15); --green-line:rgba(52,211,153,.42);
-    --red:#f87171; --red-soft:rgba(248,113,113,.15); --red-line:rgba(248,113,113,.42);
-    --blue:#3da9fc; --blue-soft:rgba(61,169,252,.15);
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 26px rgba(0,0,0,.4);
+    --bg:#0a0a0a; --panel:#141414; --panel2:#1c1c1c; --ink:#fafaf7; --muted:#a8a59e; --line:rgba(255,255,255,.12);
+    --indigo:#00c805; --indigo-soft:rgba(0,200,5,.12); --indigo-ink:#34d840; --accent-ink:#001a00;
+    --amber:#d2a23a; --amber-soft:rgba(200,154,45,.16); --amber-line:rgba(200,154,45,.42);
+    --green:#00c805; --green-soft:rgba(0,200,5,.14); --green-line:rgba(0,200,5,.42);
+    --red:#ef5d5d; --red-soft:rgba(239,93,93,.14); --red-line:rgba(239,93,93,.42);
+    --blue:#9db4e8; --blue-soft:rgba(26,37,64,.55);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 26px rgba(0,0,0,.5);
     --radius:14px;
   }
   *{box-sizing:border-box}
@@ -33,7 +33,7 @@
 
   /* Preview banner */
   .preview-banner{
-    background:linear-gradient(90deg,#3da9fc,#5bb8fd); color:#04223a; text-align:center;
+    background:linear-gradient(90deg,#00c805 0%,#006d04 55%,#c89a2d 100%); color:#001a00; text-align:center;
     font-size:13px; padding:8px 14px; position:sticky; top:0; z-index:40;
   }
   .preview-banner strong{font-weight:700}
@@ -54,11 +54,11 @@
   button{font-family:inherit;cursor:pointer;border:0;border-radius:10px;font-size:13px;font-weight:600;padding:8px 12px;transition:.12s;display:inline-flex;align-items:center;gap:6px}
   button:active{transform:translateY(1px)}
   .btn-primary{background:var(--indigo);color:var(--accent-ink)}
-  .btn-primary:hover{background:#5bb8fd}
+  .btn-primary:hover{background:#00e006}
   .btn-ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
-  .btn-ghost:hover{border-color:#3a5470;background:#21344a}
+  .btn-ghost:hover{border-color:rgba(255,255,255,.2);background:#242424}
   .btn-soft{background:var(--indigo-soft);color:var(--indigo-ink)}
-  .btn-soft:hover{background:rgba(61,169,252,.24)}
+  .btn-soft:hover{background:rgba(0,200,5,.2)}
   .btn-danger{background:var(--panel2);color:var(--red);border:1px solid var(--red-line)}
   .btn-danger:hover{background:var(--red-soft)}
   .btn-xs{padding:5px 9px;font-size:12px;border-radius:8px}
@@ -191,12 +191,12 @@
   .modal.confirm .modal-body{font-size:13.5px;color:var(--ink)}
   .modal-x{margin-left:auto;background:transparent;color:var(--muted);padding:4px 8px}
 
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#0b1119;color:var(--ink);border:1px solid var(--indigo);padding:10px 16px;border-radius:10px;font-size:13px;z-index:99;opacity:0;transition:.2s;pointer-events:none}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c1c1c;color:var(--ink);border:1px solid var(--indigo);padding:10px 16px;border-radius:10px;font-size:13px;z-index:99;opacity:0;transition:.2s;pointer-events:none}
   .toast.show{opacity:1}
   .pill-count{font-size:11px;background:var(--indigo-soft);color:var(--indigo-ink);padding:2px 8px;border-radius:99px;font-weight:700}
   hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
   code.inline{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px}
-  pre.code{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:11px;overflow:auto;font-size:12px;line-height:1.5;max-height:320px}
+  pre.code{background:#000;color:#e8e6df;padding:14px;border-radius:11px;overflow:auto;font-size:12px;line-height:1.5;max-height:320px;border:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -693,16 +693,16 @@ function renderEssentials(){
 function renderSnapshot(){
   const F=deriveFlags();
   const items=[
-    ['#3da9fc','Revocable trust discussion likely',true],
-    ['#fbbf24','Rental LLC review likely',F.rentalLLC],
-    ['#fbbf24','Sub-trust review needed',F.subTrust],
-    ['#3da9fc','Trust bank account review',F.trustBank],
-    ['#fbbf24','LLC bank account review',F.llcBank],
-    ['#fbbf24','Executor/trustee protection packet',F.trusteeProtection],
-    ['#fbbf24','Attorney review required',F.attorney],
-    ['#fbbf24','CPA review required',F.cpa],
-    ['#fbbf24','Lender review required',F.lender],
-    ['#fbbf24','Insurance review required',F.insurance]
+    ['#00c805','Revocable trust discussion likely',true],
+    ['#c89a2d','Rental LLC review likely',F.rentalLLC],
+    ['#c89a2d','Sub-trust review needed',F.subTrust],
+    ['#00c805','Trust bank account review',F.trustBank],
+    ['#c89a2d','LLC bank account review',F.llcBank],
+    ['#c89a2d','Executor/trustee protection packet',F.trusteeProtection],
+    ['#c89a2d','Attorney review required',F.attorney],
+    ['#c89a2d','CPA review required',F.cpa],
+    ['#c89a2d','Lender review required',F.lender],
+    ['#c89a2d','Insurance review required',F.insurance]
   ].filter(i=>i[2]);
   document.getElementById('snapshotGrid').innerHTML = items.map(i=>`
     <div class="snap"><span class="dot" style="background:${i[0]}"></span><b>${esc(i[1])}</b></div>`).join('');
