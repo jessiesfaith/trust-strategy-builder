@@ -328,7 +328,7 @@
     <div class="card pad">
       <div class="mm-tabs">
         <div class="mm-tab active" data-mm="mindmap" onclick="switchMM('mindmap')">Mind Map</div>
-        <div class="mm-tab" data-mm="flow" onclick="switchMM('flow')">Ownership Flowchart</div>
+        <div class="mm-tab" data-mm="flow" onclick="switchMM('flow')">Ownership Map</div>
         <label class="mm-tab" style="margin-left:auto;display:flex;align-items:center;gap:7px;cursor:pointer">
           <input type="checkbox" id="advToggle" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
           <span>Potential options <span class="badge b-amber" style="padding:2px 6px">to discuss</span></span>
@@ -443,7 +443,7 @@
     <span class="ttl">Diagram — full screen</span>
     <div class="mm-tabs" style="margin:0">
       <div class="mm-tab" data-mmf="mindmap" onclick="switchMMFull('mindmap')">Mind Map</div>
-      <div class="mm-tab" data-mmf="flow" onclick="switchMMFull('flow')">Ownership Flowchart</div>
+      <div class="mm-tab" data-mmf="flow" onclick="switchMMFull('flow')">Ownership Map</div>
     </div>
     <label class="mm-tab" style="display:flex;align-items:center;gap:7px;cursor:pointer">
       <input type="checkbox" id="advToggleFull" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
@@ -1293,6 +1293,83 @@ function buildMindmapHTML(){
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${lines}${dots}${labels}${center}</svg>`;
 }
 
+/* ---------- Ownership view (same bubble style, laid out as an ownership tree) ---------- */
+function buildOwnershipSVG(){
+  const flp=(S.llcs||[]).find(l=>/flp|family limited/i.test((l.name||'')+' '+(l.notes||'')));
+  const idgt=(S.subTrusts||[]).find(s=>/idgt|intentionally defective/i.test(s.type||''));
+  const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
+  const revSub=(S.subTrusts||[]).filter(s=>!/idgt|intentionally defective/i.test(s.type||''));
+  const taxable=(S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||''));
+  const retire=(S.brokerageAccounts||[]).filter(x=>/retire|ira|401/i.test(x.kind||''));
+  const residences=(S.properties||[]).filter(x=>/personal residence/i.test(x.type||''));
+  const ust=S.profile.state||'';
+  const short=(s,n)=>{ s=String(s||'').split(/[—(]/)[0].replace(/[\[\]]/g,'').trim(); n=n||18; return s.length>n?s.slice(0,n-1)+'…':s; };
+  const Nn=(l,s,note,children,option)=>({l,s,note,children:children||[],option:option});
+  mmMeta=[];
+
+  // Revocable trust subtree
+  const tk=[];
+  residences.forEach(x=>tk.push(Nn(short(x.name),'inplace',x.name+' — held in the revocable trust; kept in the estate to preserve the step-up.')));
+  tk.push(Nn('Trust Bank','inplace','Trust-owned cash account.'));
+  taxable.forEach(x=>tk.push(Nn(short(x.institution),'review',x.institution+' taxable brokerage — trust ownership vs TOD/POD (attorney/CPA).')));
+  retire.forEach(x=>tk.push(Nn(short(x.kind),(/none|need|review/i.test(x.beneficiary||''))?'action':'review','Retirement — beneficiary designation only; do NOT retitle into the trust.')));
+  revSub.forEach(x=>tk.push(Nn(short(x.type),'proposed','Separate share created under the trust at death.')));
+
+  const top=[];
+  top.push(Nn('Revocable Trust','inplace','Holds titled assets; you serve as trustee while living.',tk));
+  top.push(Nn('Pour-Over Will','inplace','Pours any asset left outside the trust into it at death.'));
+  if(flp && rentals.length){
+    const fk=rentals.map(x=>{ const oos=x.state&&ust&&x.state.trim().toLowerCase()!==ust.trim().toLowerCase(); return Nn(short(x.name),'review',x.name+' — owned by the FLP; liability & insurance'+(oos?', multi-state':'')+' review.'); });
+    fk.push(Nn('FLP Account','proposed','Separate FLP bank account + EIN; no commingling.'));
+    top.push(Nn('FLP — GP: you','proposed','You control as General Partner; LP interests gifted/sold to the IDGT.',fk));
+    if(idgt) top.push(Nn('IDGT','proposed','Funded by you; holds FLP LP interests OUTSIDE your estate; you pay its income tax.',[
+      Nn('FLP LP interests','proposed','Gifted & installment-sold into the IDGT.'),
+      Nn('Out of estate','inplace','Future growth sits outside the taxable estate.'),
+      Nn('Children','inplace','Descendant beneficiaries of the IDGT.')
+    ]));
+  } else if(rentals.length){
+    top.push(Nn('Rentals','review','Consider an LLC for liability.',rentals.map(x=>Nn(short(x.name),'review',x.name))));
+  }
+  const personalBanks=(S.bankAccounts||[]).filter(x=>!/trust|flp|family limited/i.test(x.owner||''));
+  if(personalBanks.length) top.push(Nn('Personal Accounts','inplace','Cash held in your own name during life.',personalBanks.map(x=>Nn(short(x.bank||x.type),'inplace',[x.bank,x.type].filter(Boolean).join(' — ')+' · '+(x.owner||'')))));
+  if(showAdvanced){
+    const defs={'ILIT':'Irrevocable Life Insurance Trust — proceeds outside the estate.','Living Irrev':'Irrevocable trust funded during life (e.g., SLAT).','IDGT':'Estate-freeze trust; grantor pays its income tax.','FLP':'Family Limited Partnership — consolidate & discount-gift.','CLAT':'Charitable Lead Annuity Trust.','NFP':'Nonprofit / private foundation.'};
+    let opt=['ILIT','Living Irrev']; if(!idgt)opt.push('IDGT'); if(!flp)opt.push('FLP'); opt.push('CLAT','NFP');
+    top.push(Nn('Potential Options','proposed','Alternatives to discuss — not in the active plan.',opt.slice(0,6).map(l=>Nn(l,'proposed',(defs[l]||'')+' Discuss with your attorney & CPA.')),true));
+  }
+  const root=Nn(short(S.profile.grantor||'Grantor',16),'inplace','You — grantor and trustee while living; fund the plan.',top);
+
+  // Tidy left-to-right layout
+  let leaf=0, maxDepth=0;
+  (function assign(n,depth,opt,parent){
+    n.depth=depth; n.opt=opt||n.option; n.parent=parent; maxDepth=Math.max(maxDepth,depth);
+    if(n.children&&n.children.length){ n.children.forEach(c=>assign(c,depth+1,n.opt,n)); n.row=(n.children[0].row+n.children[n.children.length-1].row)/2; }
+    else n.row=leaf++;
+  })(root,0,false,null);
+
+  const rowH=46, colW=232, padX=64, padY=46;
+  const W=padX*2 + maxDepth*colW + 210, H=padY*2 + Math.max(1,leaf-1)*rowH + 24;
+  const col=s=>(MMSTATUS[s]||{c:'#9db4e8'}).c;
+  const px=n=>padX + n.depth*colW, py=n=>padY + n.row*rowH;
+  let lines='', dots='', labels='';
+  (function draw(n){
+    const x=px(n), y=py(n), r=n.depth===0?23:(n.children&&n.children.length?17:12), cc=col(n.s);
+    (n.children||[]).forEach(c=>{
+      const cx2=px(c), cy2=py(c), cr=c.children&&c.children.length?17:12;
+      lines+=`<path d="M ${(x+r).toFixed(1)} ${y.toFixed(1)} C ${(x+r+46).toFixed(1)} ${y.toFixed(1)}, ${(cx2-cr-46).toFixed(1)} ${cy2.toFixed(1)}, ${(cx2-cr-3).toFixed(1)} ${cy2.toFixed(1)}" fill="none" stroke="#5a6068" stroke-width="1.5" opacity="0.7" marker-end="url(#arr)" ${n.opt||c.opt?'stroke-dasharray="5 4"':''}/>`;
+      draw(c);
+    });
+    const idx=mmMeta.push({l:n.l,branch:n.parent?n.parent.l:'Ownership',status:n.s,note:n.note})-1;
+    if(n.opt && (!n.children||!n.children.length)) {}
+    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${cc}" data-i="${idx}"/>`;
+    const big=n.depth<=1;
+    labels+=`<text x="${(x+r+8).toFixed(1)}" y="${(y+4).toFixed(1)}" fill="${big?'#fafaf7':'#d4d7da'}" font-size="${big?14:12.5}" text-anchor="start" font-weight="${big?600:400}" ${big?'font-style="italic" font-family="\'Cormorant Garamond\',Georgia,serif"':'font-family="Outfit,-apple-system,Segoe UI,sans-serif"'}>${esc(n.l)}</text>`;
+  })(root);
+
+  const defs=`<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a9099"/></marker></defs>`;
+  return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${defs}${lines}${dots}${labels}</svg>`;
+}
+
 function buildMindmap(){
   const flp=(S.llcs||[]).find(l=>/flp|family limited/i.test((l.name||'')+' '+(l.notes||'')));
   const idgt=(S.subTrusts||[]).find(s=>/idgt|intentionally defective/i.test(s.type||''));
@@ -1403,19 +1480,13 @@ function buildFlow(){
   return f;
 }
 
-async function renderMermaid(){
+function renderMermaid(){
   const canvas=document.getElementById('mmCanvas');
-  const isMap=currentMM==='mindmap';
   const leg=document.getElementById('mmStatusLegend'), det=document.getElementById('mmDetail');
-  if(leg) leg.style.display=isMap?'flex':'none';
-  if(det) det.style.display=isMap?'block':'none';
-  if(isMap){ canvas.innerHTML=buildMindmapHTML(); fillStatusLegend(); renderMMDetail(-1); return; }
-  try{
-    const {svg}=await mermaid.render('mmGraph_'+Math.random().toString(36).slice(2,7), buildFlow());
-    canvas.innerHTML=svg;
-  }catch(e){
-    canvas.innerHTML='<div class="muted">Diagram could not render. Mermaid code is available in the Export Center.</div>';
-  }
+  if(leg) leg.style.display='flex';
+  if(det) det.style.display='block';
+  canvas.innerHTML = currentMM==='mindmap' ? buildMindmapHTML() : buildOwnershipSVG();
+  fillStatusLegend(); renderMMDetail(-1);
 }
 function fillStatusLegend(){
   const el=document.getElementById('mmStatusLegend'); if(!el) return;
@@ -1484,10 +1555,9 @@ async function renderMMFull(){
   const c=document.getElementById('mmFullCanvas');
   const det=document.getElementById('mmFullDetail');
   mmFullZoom=1;
-  if(mmFullTab==='mindmap'){ c.innerHTML=buildMindmapHTML(); if(det) det.style.display='block'; renderMMDetail(-1); return; }
-  if(det) det.style.display='none';
-  try{ const {svg}=await mermaid.render('mmFull_'+Math.random().toString(36).slice(2,7), buildFlow()); c.innerHTML=svg; }
-  catch(e){ c.innerHTML='<div class="muted">Diagram could not render.</div>'; }
+  c.innerHTML = mmFullTab==='mindmap' ? buildMindmapHTML() : buildOwnershipSVG();
+  if(det) det.style.display='block';
+  renderMMDetail(-1);
 }
 
 /* ---------- Review panel ---------- */
