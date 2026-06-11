@@ -155,6 +155,14 @@
   .mm-tab.active{background:var(--indigo);color:var(--accent-ink);border-color:var(--indigo)}
   .mm-canvas{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px;overflow:auto;min-height:200px}
   .mm-canvas svg{max-width:100%;height:auto}
+  /* Full-screen diagram */
+  .mm-full{position:fixed;inset:0;background:var(--bg);z-index:95;display:none;flex-direction:column}
+  .mm-full.open{display:flex}
+  .mm-full-bar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--panel)}
+  .mm-full-bar .ttl{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:600}
+  .mm-full-canvas{flex:1;overflow:auto;padding:24px;display:flex;align-items:flex-start;justify-content:center}
+  .mm-full-canvas svg{max-width:none;height:auto;min-width:70%;transform-origin:top center}
+  .mm-zoom{display:flex;align-items:center;gap:4px}
 
   /* Report memo */
   .memo{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
@@ -286,6 +294,7 @@
           <input type="checkbox" id="advToggle" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
           <span>Potential options <span class="badge b-amber" style="padding:2px 6px">to discuss</span></span>
         </label>
+        <button class="btn-soft btn-xs" onclick="openMMFull()">⛶ Full screen</button>
         <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
       </div>
       <div class="mm-canvas" id="mmCanvas"><div class="muted">Rendering diagram…</div></div>
@@ -383,6 +392,28 @@
     <div class="modal-body" id="modalBody"></div>
     <div class="modal-foot" id="modalFoot"></div>
   </div>
+</div>
+
+<!-- FULL-SCREEN DIAGRAM -->
+<div class="mm-full" id="mmFull">
+  <div class="mm-full-bar">
+    <span class="ttl">Diagram — full screen</span>
+    <div class="mm-tabs" style="margin:0">
+      <div class="mm-tab" data-mmf="mindmap" onclick="switchMMFull('mindmap')">Mind Map</div>
+      <div class="mm-tab" data-mmf="flow" onclick="switchMMFull('flow')">Ownership Flowchart</div>
+    </div>
+    <label class="mm-tab" style="display:flex;align-items:center;gap:7px;cursor:pointer">
+      <input type="checkbox" id="advToggleFull" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
+      <span>Potential options</span>
+    </label>
+    <div class="mm-zoom" style="margin-left:auto">
+      <button class="btn-ghost btn-xs" onclick="zoomMMFull(-1)">−</button>
+      <button class="btn-ghost btn-xs" onclick="zoomMMFull(0)">Reset</button>
+      <button class="btn-ghost btn-xs" onclick="zoomMMFull(1)">+</button>
+    </div>
+    <button class="btn-soft btn-xs" onclick="closeMMFull()">✕ Close</button>
+  </div>
+  <div class="mm-full-canvas" id="mmFullCanvas"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -1134,52 +1165,50 @@ function buildMindmap(){
   const flp=(S.llcs||[]).find(l=>/flp|family limited/i.test((l.name||'')+' '+(l.notes||'')));
   const idgt=(S.subTrusts||[]).find(s=>/idgt|intentionally defective/i.test(s.type||''));
   const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
+  // Concise "dot" labels — keep nodes short and readable; details live in the
+  // Tax Considerations section and the structure glossary below the diagram.
+  const short=s=>mmSafe(String(s||'').split(/[-—(]/)[0]).slice(0,28);
   let m='mindmap\n  root((Estate Plan))\n';
-  // People
+  // People (names only)
   m+='    People\n';
-  (S.people||[]).slice(0,8).forEach(x=>{ m+='      '+mmSafe(x.name+' - '+(x.role||''))+'\n'; });
+  (S.people||[]).slice(0,8).forEach(x=>{ m+='      '+short(x.name)+'\n'; });
   if(!(S.people||[]).length){ ['Grantor','Spouse','Successor Trustee','Executor','Beneficiaries'].forEach(x=>m+='      '+x+'\n'); }
   // Revocable trust (kept in estate)
-  m+='    Revocable Living Trust\n';
-  m+='      Pour-Over Will - funnels stray assets in\n';
-  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>m+='      '+mmSafe(x.name)+'\n');
+  m+='    Revocable Trust\n';
+  m+='      Pour-Over Will\n';
+  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>m+='      '+short(x.name)+'\n');
   m+='      Trust Bank Account\n';
-  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>m+='      '+mmSafe(x.institution+' Brokerage')+'\n');
+  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>m+='      '+short(x.institution)+'\n');
   const revSub=(S.subTrusts||[]).filter(s=>!/idgt|intentionally defective/i.test(s.type||''));
-  if(revSub.length){ m+='      Sub-Trusts at death\n'; revSub.forEach(x=>m+='        '+mmSafe(x.type)+'\n'); }
+  if(revSub.length){ m+='      Sub-Trusts\n'; revSub.forEach(x=>m+='        '+short(x.type)+'\n'); }
   // Rental real estate — via FLP if present
   if(rentals.length){
     if(flp){
-      m+='    Family Limited Partnership FLP\n      Grantor is General Partner - control\n';
-      rentals.forEach(x=>m+='      '+mmSafe(x.name)+'\n');
-      m+='      FLP Operating Account + EIN\n';
-      if(idgt){
-        m+='      LP interests gifted and sold\n        IDGT - lifetime estate freeze\n          Grantor pays the income tax\n          Future growth OUTSIDE estate\n          Children / descendants\n';
-      }
+      m+='    FLP\n';
+      rentals.forEach(x=>m+='      '+short(x.name)+'\n');
+      m+='      FLP Account\n';
+      if(idgt){ m+='      IDGT Freeze\n        Out of estate\n        Children\n'; }
     } else {
-      m+='    Rental Real Estate\n'; rentals.forEach(x=>{ m+='      '+mmSafe(x.name)+'\n        LLC Option\n          LLC Bank Account\n          EIN\n'; });
+      m+='    Rentals\n'; rentals.forEach(x=>{ m+='      '+short(x.name)+'\n        LLC Option\n'; });
     }
   }
   // Cash
   m+='    Cash\n';
-  (S.bankAccounts||[]).slice(0,5).forEach(x=>m+='      '+mmSafe((x.bank||'')+' '+(x.type||''))+'\n');
-  if(!(S.bankAccounts||[]).length){ ['Personal Checking','Personal Savings','Trust Account'].forEach(x=>m+='      '+x+'\n'); }
-  m+='      Estate Administration Account\n';
+  (S.bankAccounts||[]).slice(0,5).forEach(x=>m+='      '+short(x.bank)+'\n');
+  if(!(S.bankAccounts||[]).length){ ['Checking','Savings','Trust Account'].forEach(x=>m+='      '+x+'\n'); }
   // Investments
   m+='    Investments\n';
-  if((S.brokerageAccounts||[]).length){ (S.brokerageAccounts||[]).forEach(x=>m+='      '+mmSafe(x.kind)+'\n'); }
-  else { m+='      Taxable Brokerage\n      Retirement Accounts\n'; }
+  if((S.brokerageAccounts||[]).length){ (S.brokerageAccounts||[]).forEach(x=>m+='      '+short(x.kind)+'\n'); }
+  else { m+='      Taxable\n      Retirement\n'; }
   // Trustee protection
-  m+='    Trustee Protection\n      Document Vault\n      Accounting Log\n      Professional Authority\n';
-  // Advanced strategies (educational; skip FLP/IDGT when already in the data above)
+  m+='    Trustee Protection\n      Document Vault\n      Accounting Log\n';
+  // Potential options (educational; skip FLP/IDGT when already active in the data)
   if(showAdvanced){
-    m+='    Potential Options - to discuss\n';
-    m+='      ILIT - Life Insurance Trust\n        Life Insurance Policy\n        Proceeds outside taxable estate\n        Tax lever - estate tax\n';
-    m+='      Living Irrevocable Trust\n        Asset protection - gifted assets\n        Tax lever - estate tax\n';
-    if(!idgt) m+='      IDGT - Grantor Trust\n        Gift or sale of appreciating assets\n        Grantor pays income tax\n        Tax lever - estate + income tax\n';
-    if(!flp) m+='      FLP - Family Limited Partnership\n        Holds family real estate or business\n        Valuation discounts - gifting\n        Tax lever - estate tax\n';
-    m+='      CLAT - Charitable Lead Annuity Trust\n        Annuity to charity for a term\n        Remainder to heirs\n        Tax lever - charitable + estate\n';
-    m+='      NFP - Private Foundation\n        Charitable giving vehicle\n        Tax lever - charitable\n';
+    m+='    Potential Options\n';
+    m+='      ILIT\n      Living Irrevocable Trust\n';
+    if(!idgt) m+='      IDGT\n';
+    if(!flp) m+='      FLP\n';
+    m+='      CLAT\n      NFP Foundation\n';
   }
   return m;
 }
@@ -1259,9 +1288,38 @@ function switchMM(which){
 }
 function toggleAdvanced(on){
   showAdvanced=on;
+  const a=document.getElementById('advToggle'); if(a) a.checked=on;
+  const b=document.getElementById('advToggleFull'); if(b) b.checked=on;
   const leg=document.getElementById('advLegend'); if(leg) leg.style.display=on?'block':'none';
   renderMermaid();
+  if(document.getElementById('mmFull').classList.contains('open')) renderMMFull();
   const code=document.getElementById('mermaidCode'); if(code) code.textContent=buildMindmap();
+}
+
+/* ---------- Full-screen diagram ---------- */
+let mmFullTab='mindmap', mmFullZoom=1;
+function openMMFull(){
+  mmFullTab=currentMM;
+  document.getElementById('advToggleFull').checked=showAdvanced;
+  document.querySelectorAll('.mm-tab[data-mmf]').forEach(t=>t.classList.toggle('active',t.dataset.mmf===mmFullTab));
+  document.getElementById('mmFull').classList.add('open');
+  renderMMFull();
+}
+function closeMMFull(){ document.getElementById('mmFull').classList.remove('open'); }
+function switchMMFull(w){
+  mmFullTab=w;
+  document.querySelectorAll('.mm-tab[data-mmf]').forEach(t=>t.classList.toggle('active',t.dataset.mmf===w));
+  renderMMFull();
+}
+function zoomMMFull(d){
+  mmFullZoom = d===0 ? 1 : Math.min(3, Math.max(0.4, mmFullZoom + d*0.2));
+  const svg=document.querySelector('#mmFullCanvas svg'); if(svg) svg.style.transform='scale('+mmFullZoom+')';
+}
+async function renderMMFull(){
+  const code = mmFullTab==='mindmap'?buildMindmap():buildFlow();
+  const c=document.getElementById('mmFullCanvas');
+  try{ const {svg}=await mermaid.render('mmFull_'+Math.random().toString(36).slice(2,7), code); c.innerHTML=svg; mmFullZoom=1; }
+  catch(e){ c.innerHTML='<div class="muted">Diagram could not render.</div>'; }
 }
 
 /* ---------- Review panel ---------- */
@@ -1411,6 +1469,7 @@ function confirmModal(title,msg,confirmLabel,fn){
 }
 function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
 document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeModal(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeMMFull(); closeModal(); } });
 
 /* ---------- Init ---------- */
 document.getElementById('reviewNotes').addEventListener('input',e=>{ review.notes=e.target.value; saveReview(); });
