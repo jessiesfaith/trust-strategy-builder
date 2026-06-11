@@ -305,6 +305,16 @@
     </div>
   </section>
 
+  <!-- TAX CONSIDERATIONS -->
+  <section class="block" id="taxconsider">
+    <div class="section-head">
+      <span class="eyebrow">Discussion framework</span>
+      <h2>Tax Considerations</h2>
+      <span class="muted" style="font-size:12.5px">Which tax to minimize is the real question — concepts to raise with your CPA &amp; attorney, not advice.</span>
+    </div>
+    <div class="card pad" id="taxConsider"><!-- rendered --></div>
+  </section>
+
   <!-- DETAILED ACCORDIONS -->
   <section class="block" id="details">
     <div class="section-head">
@@ -661,6 +671,7 @@ function render(){
   renderAssets();
   renderAccordions();
   renderMemo();
+  renderTax();
   renderExport();
   renderMermaid();
   renderReview();
@@ -1026,6 +1037,75 @@ function renderMemo(){
     <div class="legal-foot">This memo is a planning organizer to bring to your professionals. It does not create legal documents or provide legal, tax, or financial advice.</div>`;
 }
 
+/* ---------- Tax considerations ---------- */
+function renderTax(){
+  const props=S.properties||[];
+  const grossRE=props.reduce((a,p)=>a+Number(p.value||0),0);
+  const debt=props.reduce((a,p)=>a+Number(p.mortgageBalance||0),0);
+  const cash=(S.bankAccounts||[]).reduce((a,b)=>a+Number(b.balance||0),0);
+  const invest=(S.brokerageAccounts||[]).reduce((a,b)=>a+Number(b.balance||0),0);
+  const gross=grossRE+cash+invest, net=gross-debt;
+  const married=/married/i.test(S.profile.maritalStatus||'');
+  const ILLUS=13000000; // illustrative single-person federal exemption — confirm current figure with CPA
+  const exempt=ILLUS*(married?2:1);
+  const below=net<exempt;
+
+  const lev={
+    estate:['b-amber','Estate tax'], income:['b-blue','Income tax'],
+    stepup:['b-green','Capital-gains step-up'], charity:['b-indigo','Charitable'], probate:['b-gray','Probate / neutral']
+  };
+  const b=k=>`<span class="badge ${lev[k][0]}">${lev[k][1]}</span>`;
+  const structures=[
+    ['Revocable Living Trust + Pour-Over Will','Tax-neutral during life; preserves the step-up; avoids probate. Not an estate-tax saver by itself.',['probate','stepup']],
+    ['ILIT','Keeps life-insurance proceeds outside the taxable estate.',['estate']],
+    ['IDGT','Moves appreciating assets out of the estate; grantor paying the income tax is itself a tax-free transfer to heirs.',['estate','income']],
+    ['FLP','Valuation discounts (lack of control/marketability) shrink the gift/estate value of transferred interests.',['estate']],
+    ['Living Irrevocable Trust / SLAT','Completed gifts leave the estate — but generally lose the step-up (carryover basis).',['estate']],
+    ['CLAT + NFP / Private Foundation','Charitable deduction plus estate reduction; strongest in low-interest-rate environments.',['charity','estate','income']]
+  ];
+
+  document.getElementById('taxConsider').innerHTML = `
+    <p class="lead">The real question isn't "minimize taxes" — it's <b>which tax</b>: estate tax, capital-gains tax, or income tax. The direction that lowers one can raise another. Use this to frame the conversation with your CPA and attorney; it is not tax advice or a recommendation.</p>
+
+    <h3 style="font-size:14px;margin:14px 0 8px;color:var(--indigo-ink)">1 · The fork that drives everything: estate size vs. the federal exemption</h3>
+    <div class="grid g2" style="align-items:start">
+      <div class="card pad" style="background:var(--panel2)">
+        <div class="kv"><span class="k">Real estate (entered)</span><span class="v">$${num(grossRE)}</span></div>
+        <div class="kv"><span class="k">Cash / bank</span><span class="v">$${num(cash)}</span></div>
+        <div class="kv"><span class="k">Brokerage / retirement</span><span class="v">$${num(invest)}</span></div>
+        <div class="kv"><span class="k">Less mortgages</span><span class="v">– $${num(debt)}</span></div>
+        <div class="kv" style="border-top:1px solid var(--line);margin-top:2px;padding-top:6px"><span class="k" style="font-weight:700;color:var(--ink)">Rough net estate</span><span class="v" style="font-size:15px">$${num(net)}</span></div>
+        <div class="legal-foot">Rough gross figure from entered assets only — excludes life insurance, business value, prior gifts, deductions, and state estate/inheritance tax. Your CPA computes the actual taxable estate.</div>
+      </div>
+      <div class="snap" style="align-items:flex-start;flex-direction:column;gap:8px;border-color:${below?'var(--green-line)':'var(--amber-line)'};background:${below?'var(--green-soft)':'var(--amber-soft)'}">
+        <div class="badges"><span class="badge ${below?'b-green':'b-amber'}">${below?'Likely below exemption':'May approach / exceed exemption'}</span><span class="badge b-gray">${married?'married — illustrative ~$26M':'single — illustrative ~$13M'}</span></div>
+        <div style="font-size:12.5px">${below
+          ? `Below the illustrative federal exemption, there is usually <b>no federal estate tax to minimize</b>. The biggest lever becomes <b>preserving the capital-gains step-up</b> — keep appreciated assets in the estate via the revocable trust — plus retirement-account beneficiary planning. The advanced irrevocable structures can <b>forfeit</b> that step-up, so they often aren't the tax-minimizing move here.`
+          : `Approaching or above the exemption is where the advanced gifting / irrevocable structures (IDGT, FLP, SLAT, ILIT, CLAT) earn their keep — moving assets and <b>future appreciation</b> out of the taxable estate.`}</div>
+        <div class="legal-foot">Illustrative exemption only (~$13M/person, doubled if married) — it changes with law. Confirm the current figure and your situation with your CPA.</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:14px;margin:18px 0 8px;color:var(--indigo-ink)">2 · The central tradeoff: step-up vs. gifting out</h3>
+    <div class="grid g2">
+      <div class="card pad"><div class="badges" style="margin-bottom:6px">${b('stepup')}</div>
+        <div style="font-weight:680;font-size:13.5px">Keep assets in your estate</div>
+        <div class="muted" style="font-size:12.5px;margin:4px 0">Revocable trust + pour-over will.</div>
+        <div style="font-size:12.5px"><b style="color:var(--good)">Wins:</b> step-up in basis at death wipes out capital gains on appreciated property/stock.<br><b style="color:var(--bad)">Loses:</b> no reduction of a taxable estate.</div>
+      </div>
+      <div class="card pad"><div class="badges" style="margin-bottom:6px">${b('estate')}</div>
+        <div style="font-weight:680;font-size:13.5px">Gift assets out</div>
+        <div class="muted" style="font-size:12.5px;margin:4px 0">IDGT, FLP, living irrevocable trust.</div>
+        <div style="font-size:12.5px"><b style="color:var(--good)">Wins:</b> removes the asset + future growth from a taxable estate.<br><b style="color:var(--bad)">Loses:</b> generally carryover basis — heirs keep your low basis, more capital-gains tax on sale.</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:14px;margin:18px 0 8px;color:var(--indigo-ink)">3 · Which structure pulls which tax lever</h3>
+    ${structures.map(s=>`<div class="ent"><div class="ent-top"><div style="min-width:0"><h4>${esc(s[0])}</h4><div class="ent-meta">${esc(s[1])}</div></div><div class="badges">${s[2].map(b).join('')}</div></div></div>`).join('')}
+
+    <div class="disclaimer" style="margin-top:14px"><span>⚠️</span><div><b>Not tax advice and not a recommendation.</b> These are general concepts. The tax-minimizing direction depends on your estate size, state, basis, goals, and the law in effect — determined with your CPA and estate attorney. Estate/gift-tax structures are largely irrevocable; confirm before acting.</div></div>`;
+}
+
 /* ---------- Export center ---------- */
 function renderExport(){
   const items=[
@@ -1078,13 +1158,13 @@ function buildMindmap(){
   // Advanced strategies (attorney review)
   if(showAdvanced){
     m+='    Advanced Strategies - attorney review\n';
-    m+='      Pour-Over Will\n        Routes stray assets to the trust\n';
-    m+='      ILIT - Life Insurance Trust\n        Life Insurance Policy\n        Proceeds outside taxable estate\n';
-    m+='      Living Irrevocable Trust\n        Asset protection - gifted assets\n';
-    m+='      IDGT - Grantor Trust\n        Gift or sale of appreciating assets\n        Grantor pays income tax\n';
-    m+='      FLP - Family Limited Partnership\n        Holds family real estate or business\n        Valuation discounts - gifting\n';
-    m+='      CLAT - Charitable Lead Annuity Trust\n        Annuity to charity for a term\n        Remainder to heirs\n';
-    m+='      NFP - Private Foundation\n        Charitable giving vehicle\n';
+    m+='      Pour-Over Will\n        Routes stray assets to the trust\n        Tax lever - probate / neutral\n';
+    m+='      ILIT - Life Insurance Trust\n        Life Insurance Policy\n        Proceeds outside taxable estate\n        Tax lever - estate tax\n';
+    m+='      Living Irrevocable Trust\n        Asset protection - gifted assets\n        Tax lever - estate tax\n';
+    m+='      IDGT - Grantor Trust\n        Gift or sale of appreciating assets\n        Grantor pays income tax\n        Tax lever - estate + income tax\n';
+    m+='      FLP - Family Limited Partnership\n        Holds family real estate or business\n        Valuation discounts - gifting\n        Tax lever - estate tax\n';
+    m+='      CLAT - Charitable Lead Annuity Trust\n        Annuity to charity for a term\n        Remainder to heirs\n        Tax lever - charitable + estate\n';
+    m+='      NFP - Private Foundation\n        Charitable giving vehicle\n        Tax lever - charitable\n';
   }
   return m;
 }
@@ -1109,16 +1189,16 @@ function buildFlow(){
   f+='  Exec['+mmSafe(exec?exec.name:'Executor')+'] --> Estate[Probate Estate if any]\n  Estate --> Trust\n';
   // Advanced strategies (attorney review)
   if(showAdvanced){
-    f+='  User --> Will[Pour-Over Will]\n';
+    f+='  User --> Will[Pour-Over Will - probate]\n';
     f+='  Will -. pours stray assets .-> Trust\n';
-    f+='  User --> ILIT[ILIT - Life Insurance Trust]\n';
+    f+='  User --> ILIT[ILIT Life Insurance Trust - estate tax]\n';
     f+='  ILIT --> Policy[Life Insurance Policy]\n';
     f+='  Policy --> Bene[Beneficiaries / Heirs]\n';
-    f+='  User --> LivIrr[Living Irrevocable Trust]\n';
-    f+='  User --> IDGT[IDGT - Grantor Trust]\n';
-    f+='  IDGT --> FLP[FLP - Family Limited Partnership]\n';
+    f+='  User --> LivIrr[Living Irrevocable Trust - estate tax]\n';
+    f+='  User --> IDGT[IDGT Grantor Trust - estate + income tax]\n';
+    f+='  IDGT --> FLP[FLP Family Limited Partnership - estate tax]\n';
     f+='  FLP --> FamAssets[Family Real Estate / Business]\n';
-    f+='  User --> CLAT[CLAT - Charitable Lead Annuity Trust]\n';
+    f+='  User --> CLAT[CLAT Charitable Lead Annuity Trust - charitable + estate]\n';
     f+='  CLAT --> NFP[NFP / Private Foundation]\n';
     f+='  CLAT --> Bene\n';
     f+='  classDef adv fill:#1c1c1c,stroke:#c89a2d,stroke-width:1px,color:#fafaf7,stroke-dasharray:4 3;\n';
