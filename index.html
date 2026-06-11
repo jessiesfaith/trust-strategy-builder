@@ -155,6 +155,25 @@
   .mm-tab.active{background:var(--indigo);color:var(--accent-ink);border-color:var(--indigo)}
   .mm-canvas{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px;overflow:auto;min-height:200px}
   .mm-canvas svg{max-width:100%;height:auto;max-height:66vh;display:block;margin:0 auto}
+  .mm-canvas svg circle[data-i]{cursor:pointer;transition:.1s}
+  .mm-canvas svg circle[data-i]:hover{stroke:#fafaf7;stroke-width:2}
+  .mm-layout{display:flex;gap:14px;align-items:flex-start}
+  .mm-layout .mm-canvas{flex:1;min-width:0}
+  .mm-detail{width:262px;flex:none;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:15px}
+  .mm-detail .eyb{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+  .mm-detail h4{font-size:16px;margin:5px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600}
+  .mm-detail p{font-size:12.5px;color:var(--ink);line-height:1.5}
+  .mm-detail .stat{display:flex;gap:10px;margin:10px 0}
+  .mm-detail .stat .b{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
+  .mm-detail .stat .b b{font-size:20px;font-family:'Cormorant Garamond',Georgia,serif;display:block}
+  .mm-detail .stat .b span{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .mm-status-legend{display:flex;gap:16px;flex-wrap:wrap;margin:2px 0 12px;font-size:12px}
+  .mm-status-legend .ch{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:600}
+  .mm-status-legend .ch i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  @media(max-width:820px){.mm-layout{flex-direction:column}.mm-detail{width:auto}}
+  .mm-canvas svg text,.mm-full-canvas svg text{pointer-events:none}
+  .mm-full-canvas svg circle[data-i]{cursor:pointer}
+  .mm-full-detail{padding:11px 18px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;min-height:22px}
   /* Full-screen diagram */
   .mm-full{position:fixed;inset:0;background:var(--bg);z-index:95;display:none;flex-direction:column}
   .mm-full.open{display:flex}
@@ -317,7 +336,11 @@
         <button class="btn-soft btn-xs" onclick="openMMFull()">⛶ Full screen</button>
         <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
       </div>
-      <div class="mm-canvas" id="mmCanvas"><div class="muted">Rendering diagram…</div></div>
+      <div class="mm-status-legend" id="mmStatusLegend"></div>
+      <div class="mm-layout">
+        <div class="mm-canvas" id="mmCanvas"><div class="muted">Rendering diagram…</div></div>
+        <aside class="mm-detail" id="mmDetail"></aside>
+      </div>
       <div id="advLegend" style="margin-top:12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:11px">
         <div style="font-weight:700;color:var(--ink);margin-bottom:6px;font-size:12.5px">Structure glossary <span class="muted" style="font-weight:400">— green = active in this plan · amber-dashed “Potential Options” box = alternatives to discuss with your attorney &amp; CPA. Not advice.</span></div>
         <div class="grid g3" style="gap:6px 16px">
@@ -434,6 +457,7 @@
     <button class="btn-soft btn-xs" onclick="closeMMFull()">✕ Close</button>
   </div>
   <div class="mm-full-canvas" id="mmFullCanvas"></div>
+  <div class="mm-full-detail" id="mmFullDetail"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -665,6 +689,8 @@ let S = load() || sampleScenario();
 let review = loadReview();
 let currentMM = 'mindmap';
 let showAdvanced = true;
+const MMSTATUS={ inplace:{c:'#00c805',l:'In place'}, review:{c:'#d2a23a',l:'Review needed'}, action:{c:'#ef5d5d',l:'Action / gap'}, proposed:{c:'#a78bfa',l:'Proposed / new'} };
+let mmMeta=[];
 
 /* ---------- Utils ---------- */
 function uid(){ return 'id'+Math.random().toString(36).slice(2,9); }
@@ -1189,47 +1215,79 @@ function buildMindmapHTML(){
   const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
   const revSub=(S.subTrusts||[]).filter(s=>!/idgt|intentionally defective/i.test(s.type||''));
   const short=(s,n)=>{ s=String(s||'').split(/[—\/(]/)[0].replace(/[\[\]]/g,'').trim(); n=n||16; return s.length>n?s.slice(0,n-1)+'…':s; };
+  const ust=S.profile.state||'';
+  mmMeta=[];
 
-  // Build branches from data
+  // Build branches with per-node status + a short note
   const branches=[];
-  let ppl=(S.people||[]).slice(0,6).map(p=>short(p.role||p.name,14)); if(!ppl.length) ppl=['Grantor','Spouse','Successor','Beneficiary'];
-  branches.push({t:'People',c:'#6ea8fe',n:ppl});
-  let rt=['Pour-Over Will'];
-  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>rt.push(short(x.name)));
-  rt.push('Trust Bank');
-  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>rt.push(short(x.institution)));
-  if(revSub.length) rt.push('Sub-Trusts');
-  branches.push({t:'Revocable Trust',c:'#34d39e',n:rt.slice(0,6)});
-  if(flp && rentals.length){ let h=rentals.map(x=>short(x.name)); h.push('FLP Account'); if(idgt)h.push('IDGT Freeze'); branches.push({t:'FLP — freeze',c:'#00c805',active:true,n:h.slice(0,6)}); }
-  else if(rentals.length){ branches.push({t:'Rentals',c:'#34d39e',n:rentals.map(x=>short(x.name)).slice(0,6)}); }
-  let cash=(S.bankAccounts||[]).slice(0,5).map(x=>short(x.bank||x.type)); if(!cash.length)cash=['Checking','Savings','Trust Acct'];
-  branches.push({t:'Cash',c:'#d2a23a',n:cash});
-  let inv=(S.brokerageAccounts||[]).map(x=>short(x.kind)).slice(0,5); if(!inv.length)inv=['Taxable','Retirement'];
-  branches.push({t:'Investments',c:'#b794f6',n:inv});
-  branches.push({t:'Trustee Protection',c:'#9db4e8',n:['Doc Vault','Accounting','Authority']});
-  if(showAdvanced){ let opt=['ILIT','Living Irrev']; if(!idgt)opt.push('IDGT'); if(!flp)opt.push('FLP'); opt.push('CLAT','NFP'); branches.push({t:'Potential Options',c:'#c89a2d',option:true,n:opt.slice(0,6)}); }
+  let pplNodes=(S.people||[]).slice(0,6).map(p=>{
+    const conf=/confirm|^no$/i.test(p.comfortable||'') && !/n\/a/i.test(p.comfortable||'');
+    const rev=conf||/review|minor|spendthrift/i.test(p.needsHelp||'');
+    return {l:short(p.role||p.name,14), s:rev?'review':'inplace', note:[p.name,p.relationship,p.role].filter(Boolean).join(' · ')+(p.notes?' — '+p.notes:'')};
+  });
+  if(!pplNodes.length) pplNodes=['Grantor','Spouse','Successor','Beneficiary'].map(l=>({l,s:'inplace',note:''}));
+  branches.push({t:'People',s:'inplace',n:pplNodes});
+
+  let rtNodes=[{l:'Pour-Over Will',s:'inplace',note:'Catches any asset left outside the trust and routes it into the revocable trust at death.'}];
+  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>rtNodes.push({l:short(x.name),s:'inplace',note:x.name+' — held in the revocable trust; kept in the estate to preserve the capital-gains step-up.'}));
+  rtNodes.push({l:'Trust Bank',s:'inplace',note:'Trust-owned cash account.'});
+  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>rtNodes.push({l:short(x.institution),s:'review',note:x.institution+' taxable brokerage — discuss trust ownership vs TOD/POD with your attorney & CPA.'}));
+  if(revSub.length) rtNodes.push({l:'Sub-Trusts',s:'proposed',note:'Separate shares created under the revocable trust at death (spendthrift / per-child).'});
+  branches.push({t:'Revocable Trust',s:'inplace',n:rtNodes.slice(0,6)});
+
+  if(flp && rentals.length){
+    let h=rentals.map(x=>{ const oos=x.state&&ust&&x.state.trim().toLowerCase()!==ust.trim().toLowerCase(); return {l:short(x.name),s:'review',note:x.name+' — held in the FLP; liability & insurance review'+(oos?', plus multi-state / foreign-LLC review.':'.')}; });
+    h.push({l:'FLP Account',s:'proposed',note:'Separate FLP bank account + EIN. Keep books separate — no commingling.'});
+    if(idgt) h.push({l:'IDGT Freeze',s:'proposed',note:'Gifted & installment-sold FLP interests grow OUTSIDE the taxable estate; the grantor pays the trust income tax.'});
+    branches.push({t:'FLP — freeze',s:'proposed',active:true,n:h.slice(0,6)});
+  } else if(rentals.length){
+    branches.push({t:'Rentals',s:'review',n:rentals.map(x=>({l:short(x.name),s:'review',note:x.name+' — consider an LLC for liability; lender & insurance review.'})).slice(0,6)});
+  }
+
+  let cashNodes=(S.bankAccounts||[]).slice(0,5).map(x=>{ const isFLP=/flp|family limited/i.test(x.owner||''); return {l:short(x.bank||x.type), s:isFLP?'proposed':'inplace', note:[x.bank,x.type].filter(Boolean).join(' — ')+' · owner: '+(x.owner||'—')+(isFLP?'. Collects rent / pays FLP expenses; no commingling.':'')}; });
+  if(!cashNodes.length) cashNodes=['Checking','Savings','Trust Acct'].map(l=>({l,s:'inplace',note:''}));
+  branches.push({t:'Cash',s:'inplace',n:cashNodes});
+
+  let invNodes=(S.brokerageAccounts||[]).slice(0,5).map(x=>{ const ret=/retire|ira|401/i.test(x.kind||''); const noBene=/none|need|review/i.test(x.beneficiary||''); return {l:short(x.kind), s:(ret&&noBene)?'action':'review', note: ret?'Retirement account — beneficiary designation strategy (SECURE Act 10-yr). Do NOT retitle into the trust.':'Taxable brokerage — trust ownership or TOD/POD; basis & liquidity planning with CPA.'}; });
+  if(!invNodes.length) invNodes=[{l:'Taxable',s:'review',note:''},{l:'Retirement',s:'review',note:''}];
+  branches.push({t:'Investments',s:'review',n:invNodes});
+
+  branches.push({t:'Trustee Protection',s:'review',n:[
+    {l:'Doc Vault',s:'review',note:'Indexed documents so the successor trustee can act quickly.'},
+    {l:'Accounting',s:'review',note:'Trustee accounting & decision log; reserve before distributions.'},
+    {l:'Authority',s:'review',note:'Authority to hire attorney / CPA / manager; reimbursement & compensation (attorney review).'}
+  ]});
+
+  if(showAdvanced){
+    const defs={'ILIT':'Irrevocable Life Insurance Trust — keeps policy proceeds outside the taxable estate.','Living Irrev':'Irrevocable trust funded during life (e.g., SLAT) for asset protection.','IDGT':'Estate-freeze trust; grantor pays its income tax.','FLP':'Family Limited Partnership — consolidate & discount-gift assets.','CLAT':'Charitable Lead Annuity Trust — annuity to charity, remainder to heirs.','NFP':'Nonprofit / private foundation — charitable vehicle.'};
+    let opt=['ILIT','Living Irrev']; if(!idgt)opt.push('IDGT'); if(!flp)opt.push('FLP'); opt.push('CLAT','NFP');
+    branches.push({t:'Potential Options',s:'proposed',option:true,n:opt.slice(0,6).map(l=>({l,s:'proposed',note:(defs[l]||'')+' Discuss with your attorney & CPA.'}))});
+  }
 
   const N=branches.length, W=1360, H=1060, cx=680, cy=520, R1=205;
+  const col=s=>(MMSTATUS[s]||{c:'#9db4e8'}).c;
   let lines='', dots='', labels='';
   branches.forEach((b,i)=>{
     const ang=(-90 + i*360/N)*Math.PI/180;
-    const bx=cx+R1*Math.cos(ang), by=cy+R1*Math.sin(ang);
-    lines+=`<line x1="${cx}" y1="${cy}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="${b.c}" stroke-width="2.5" opacity="0.5"/>`;
+    const bx=cx+R1*Math.cos(ang), by=cy+R1*Math.sin(ang), bc=col(b.s);
+    lines+=`<line x1="${cx}" y1="${cy}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="${bc}" stroke-width="2.5" opacity="0.45" ${b.option?'stroke-dasharray="6 5"':''}/>`;
     const k=b.n.length, span=Math.min(54,Math.max(20,k*11))*Math.PI/180;
     b.n.forEach((c,j)=>{
       const t=k===1?0:(j/(k-1)-0.5);
       const cang=ang+t*span, ringR=R1+135+((j%2)?44:0);
-      const xx=cx+ringR*Math.cos(cang), yy=cy+ringR*Math.sin(cang), co=Math.cos(cang);
-      lines+=`<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${xx.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="${b.c}" stroke-width="1.3" opacity="0.4" ${b.option?'stroke-dasharray="4 4"':''}/>`;
-      dots+=`<circle cx="${xx.toFixed(1)}" cy="${yy.toFixed(1)}" r="14" fill="${b.c}" opacity="0.92"/>`;
-      labels+=`<text x="${(xx+co*20).toFixed(1)}" y="${(yy+Math.sin(cang)*20+4).toFixed(1)}" fill="#d4d7da" font-size="13" text-anchor="${co>=0?'start':'end'}" font-family="Outfit,-apple-system,Segoe UI,sans-serif">${esc(c)}</text>`;
+      const xx=cx+ringR*Math.cos(cang), yy=cy+ringR*Math.sin(cang), co=Math.cos(cang), cc=col(c.s);
+      const idx=mmMeta.push({l:c.l,branch:b.t,status:c.s,note:c.note})-1;
+      lines+=`<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${xx.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="${cc}" stroke-width="1.3" opacity="0.4" ${b.option?'stroke-dasharray="4 4"':''}/>`;
+      dots+=`<circle cx="${xx.toFixed(1)}" cy="${yy.toFixed(1)}" r="14" fill="${cc}" opacity="0.95" data-i="${idx}"/>`;
+      labels+=`<text x="${(xx+co*20).toFixed(1)}" y="${(yy+Math.sin(cang)*20+4).toFixed(1)}" fill="#d4d7da" font-size="13" text-anchor="${co>=0?'start':'end'}" font-family="Outfit,-apple-system,Segoe UI,sans-serif">${esc(c.l)}</text>`;
     });
-    if(b.active) dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="37" fill="none" stroke="#00c805" stroke-width="2"/>`;
-    if(b.option) dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="37" fill="none" stroke="#c89a2d" stroke-width="1.5" stroke-dasharray="5 4"/>`;
-    dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="31" fill="${b.c}"/>`;
+    const bidx=mmMeta.push({l:b.t,branch:b.t,status:b.s,note:'Area: '+b.t+(b.active?' — active in this plan.':b.option?' — alternatives to discuss.':'.')+' Click the dots around it for individual items.'})-1;
+    if(b.active) dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="37" fill="none" stroke="#fafaf7" stroke-width="1.5" opacity="0.5"/>`;
+    if(b.option) dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="37" fill="none" stroke="#fafaf7" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45"/>`;
+    dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="31" fill="${bc}" data-i="${bidx}"/>`;
     labels+=`<text x="${bx.toFixed(1)}" y="${(by+(Math.sin(ang)>=0?56:-44)).toFixed(1)}" fill="#fafaf7" font-size="15" text-anchor="middle" font-weight="600" font-style="italic" font-family="'Cormorant Garamond',Georgia,serif">${esc(b.t)}</text>`;
   });
-  let center=`<circle cx="${cx}" cy="${cy}" r="52" fill="#0e1a0c" stroke="#00c805" stroke-width="2"/>`;
+  let center=`<circle cx="${cx}" cy="${cy}" r="52" fill="#0e1a0c" stroke="#9db4e8" stroke-width="2" data-i="-1"/>`;
   center+=`<text x="${cx}" y="${cy-3}" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif">Estate</text>`;
   center+=`<text x="${cx}" y="${cy+17}" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif">Plan</text>`;
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${lines}${dots}${labels}${center}</svg>`;
@@ -1347,13 +1405,46 @@ function buildFlow(){
 
 async function renderMermaid(){
   const canvas=document.getElementById('mmCanvas');
-  if(currentMM==='mindmap'){ canvas.innerHTML=buildMindmapHTML(); return; }
+  const isMap=currentMM==='mindmap';
+  const leg=document.getElementById('mmStatusLegend'), det=document.getElementById('mmDetail');
+  if(leg) leg.style.display=isMap?'flex':'none';
+  if(det) det.style.display=isMap?'block':'none';
+  if(isMap){ canvas.innerHTML=buildMindmapHTML(); fillStatusLegend(); renderMMDetail(-1); return; }
   try{
     const {svg}=await mermaid.render('mmGraph_'+Math.random().toString(36).slice(2,7), buildFlow());
     canvas.innerHTML=svg;
   }catch(e){
     canvas.innerHTML='<div class="muted">Diagram could not render. Mermaid code is available in the Export Center.</div>';
   }
+}
+function fillStatusLegend(){
+  const el=document.getElementById('mmStatusLegend'); if(!el) return;
+  el.innerHTML=Object.values(MMSTATUS).map(s=>`<span class="ch"><i style="background:${s.c}"></i>${s.l}</span>`).join('')+`<span class="ch" style="margin-left:auto;color:var(--muted);font-weight:400">Tap any dot →</span>`;
+}
+function mmOverview(){
+  const c={inplace:0,review:0,action:0,proposed:0};
+  mmMeta.forEach(m=>{ if(c[m.status]!=null) c[m.status]++; });
+  const areas=new Set(mmMeta.map(m=>m.branch)).size;
+  const box=(n,col,lab)=>`<div class="b"><b style="color:${col}">${n}</b><span>${lab}</span></div>`;
+  return `<div class="eyb">Tap a dot</div><h4>Your map at a glance</h4>
+    <p>${mmMeta.length} items across ${areas} areas. Click any dot to see what it is and what to review with your professionals.</p>
+    <div class="stat">${box(c.inplace,'#00c805','In place')}${box(c.review,'#d2a23a','Review')}${box(c.proposed,'#a78bfa','Proposed')}</div>
+    ${c.action?`<p style="color:#ef5d5d;font-size:12px">⚑ ${c.action} item${c.action>1?'s':''} flagged as an action / gap.</p>`:''}
+    <div class="legal-foot">Status reflects your inputs — for discussion with your attorney &amp; CPA, not advice.</div>`;
+}
+function renderMMDetail(idx){
+  const inline=document.getElementById('mmDetail'), full=document.getElementById('mmFullDetail');
+  if(idx===-1||idx==null||!mmMeta[idx]){
+    if(inline) inline.innerHTML=mmOverview();
+    if(full) full.innerHTML='<span class="muted">Tap any dot for details.</span>';
+    return;
+  }
+  const m=mmMeta[idx], st=MMSTATUS[m.status]||{c:'#9db4e8',l:m.status};
+  if(inline) inline.innerHTML=`<div class="eyb">${esc(m.branch)}</div><h4>${esc(m.l)}</h4>
+    <span class="badge" style="background:${st.c}22;color:${st.c};border:1px solid ${st.c}66">${esc(st.l)}</span>
+    <p style="margin-top:10px">${esc(m.note||'—')}</p>
+    <div class="legal-foot">Planning only — confirm with your attorney &amp; CPA.</div>`;
+  if(full) full.innerHTML=`<b style="color:${st.c}">${esc(m.l)}</b> · <span style="color:${st.c}">${esc(st.l)}</span> <span class="muted">— ${esc(m.note||'')}</span>`;
 }
 function switchMM(which){
   currentMM=which;
@@ -1391,8 +1482,10 @@ function zoomMMFull(d){
 }
 async function renderMMFull(){
   const c=document.getElementById('mmFullCanvas');
+  const det=document.getElementById('mmFullDetail');
   mmFullZoom=1;
-  if(mmFullTab==='mindmap'){ c.innerHTML=buildMindmapHTML(); return; }
+  if(mmFullTab==='mindmap'){ c.innerHTML=buildMindmapHTML(); if(det) det.style.display='block'; renderMMDetail(-1); return; }
+  if(det) det.style.display='none';
   try{ const {svg}=await mermaid.render('mmFull_'+Math.random().toString(36).slice(2,7), buildFlow()); c.innerHTML=svg; }
   catch(e){ c.innerHTML='<div class="muted">Diagram could not render.</div>'; }
 }
@@ -1545,6 +1638,7 @@ function confirmModal(title,msg,confirmLabel,fn){
 function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
 document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeModal(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeMMFull(); closeModal(); } });
+document.addEventListener('click',e=>{ const t=e.target; if(t&&t.tagName==='circle'&&t.hasAttribute('data-i')) renderMMDetail(+t.getAttribute('data-i')); });
 
 /* ---------- Init ---------- */
 document.getElementById('reviewNotes').addEventListener('input',e=>{ review.notes=e.target.value; saveReview(); });
