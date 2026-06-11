@@ -154,14 +154,14 @@
   .mm-tab{padding:7px 12px;border-radius:9px;font-size:13px;font-weight:600;background:var(--panel2);border:1px solid var(--line);cursor:pointer}
   .mm-tab.active{background:var(--indigo);color:var(--accent-ink);border-color:var(--indigo)}
   .mm-canvas{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px;overflow:auto;min-height:200px}
-  .mm-canvas svg{max-width:100%;height:auto}
+  .mm-canvas svg{max-width:100%;height:auto;max-height:66vh;display:block;margin:0 auto}
   /* Full-screen diagram */
   .mm-full{position:fixed;inset:0;background:var(--bg);z-index:95;display:none;flex-direction:column}
   .mm-full.open{display:flex}
   .mm-full-bar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--panel)}
   .mm-full-bar .ttl{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:600}
   .mm-full-canvas{flex:1;overflow:auto;padding:24px;display:flex;align-items:flex-start;justify-content:center}
-  .mm-full-canvas svg{max-width:none;height:auto;min-width:70%;transform-origin:top center}
+  .mm-full-canvas svg{width:min(1500px,96%);height:auto;transform-origin:top center;margin:0 auto}
   .mm-zoom{display:flex;align-items:center;gap:4px}
   /* Native mind-map tree (readable bubble/dot layout) */
   .mindtree{display:flex;flex-direction:column;gap:14px}
@@ -1183,55 +1183,56 @@ function mmSafe(s){ return String(s||'').replace(/[()[\]{}|#"]/g,'').replace(/\s
 
 /* ---------- Native HTML mind-map tree (readable on-screen view) ---------- */
 function buildMindmapHTML(){
+  // Radial "bubble map" (ScoutQuest style): center -> branch hubs -> child dots.
   const flp=(S.llcs||[]).find(l=>/flp|family limited/i.test((l.name||'')+' '+(l.notes||'')));
   const idgt=(S.subTrusts||[]).find(s=>/idgt|intentionally defective/i.test(s.type||''));
   const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
-  const node=(t,sub)=>`<div class="mt-node${sub?' sub':''}">${esc(t)}</div>`;
-  const branch=(title,inner,cls)=>`<div class="mt-branch ${cls||''}"><div class="mt-head"><span class="d"></span>${esc(title)}</div>${inner}</div>`;
-  const cols=[];
-  // People
-  let ppl=(S.people||[]).slice(0,8).map(x=>node(x.name+(x.role?' — '+x.role:''))).join('');
-  if(!ppl) ppl=['Grantor','Spouse','Successor Trustee','Beneficiaries'].map(x=>node(x)).join('');
-  cols.push(branch('People',ppl));
-  // Revocable trust
-  let rt=node('Pour-Over Will');
-  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>rt+=node(x.name));
-  rt+=node('Trust Bank Account');
-  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>rt+=node(x.institution+' (brokerage)'));
   const revSub=(S.subTrusts||[]).filter(s=>!/idgt|intentionally defective/i.test(s.type||''));
-  if(revSub.length){ rt+=node('Sub-Trusts (at death)'); revSub.forEach(x=>rt+=node(x.type,true)); }
-  cols.push(branch('Revocable Trust',rt));
-  // FLP / rentals
-  if(rentals.length){
-    if(flp){
-      let h=''; rentals.forEach(x=>h+=node(x.name));
-      h+=node('FLP Operating Account + EIN');
-      if(idgt){ h+=node('IDGT — estate freeze'); h+=node('Future growth out of estate',true); h+=node('Children / descendants',true); }
-      cols.push(branch('FLP — active freeze',h,'active'));
-    } else {
-      let h=''; rentals.forEach(x=>{ h+=node(x.name); h+=node('LLC option',true); });
-      cols.push(branch('Rental Real Estate',h));
-    }
-  }
-  // Cash
-  let cash=(S.bankAccounts||[]).slice(0,5).map(x=>node((x.bank||'Account')+(x.type?' — '+x.type:''))).join('');
-  if(!cash) cash=['Checking','Savings','Trust Account'].map(x=>node(x)).join('');
-  cols.push(branch('Cash',cash));
-  // Investments
-  let inv=(S.brokerageAccounts||[]).map(x=>node(x.kind)).join('');
-  if(!inv) inv=node('Taxable brokerage')+node('Retirement');
-  cols.push(branch('Investments',inv));
-  // Trustee protection
-  cols.push(branch('Trustee Protection',node('Document Vault')+node('Accounting Log')+node('Professional Authority')));
-  // Potential options
-  if(showAdvanced){
-    let opt=node('ILIT')+node('Living Irrevocable Trust');
-    if(!idgt) opt+=node('IDGT');
-    if(!flp) opt+=node('FLP');
-    opt+=node('CLAT')+node('NFP / Private Foundation');
-    cols.push(branch('Potential Options — to discuss',opt,'option'));
-  }
-  return '<div class="mindtree"><span class="mt-root">Estate Plan</span><div class="mt-cols">'+cols.join('')+'</div></div>';
+  const short=(s,n)=>{ s=String(s||'').split(/[—\/(]/)[0].replace(/[\[\]]/g,'').trim(); n=n||16; return s.length>n?s.slice(0,n-1)+'…':s; };
+
+  // Build branches from data
+  const branches=[];
+  let ppl=(S.people||[]).slice(0,6).map(p=>short(p.role||p.name,14)); if(!ppl.length) ppl=['Grantor','Spouse','Successor','Beneficiary'];
+  branches.push({t:'People',c:'#6ea8fe',n:ppl});
+  let rt=['Pour-Over Will'];
+  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>rt.push(short(x.name)));
+  rt.push('Trust Bank');
+  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>rt.push(short(x.institution)));
+  if(revSub.length) rt.push('Sub-Trusts');
+  branches.push({t:'Revocable Trust',c:'#34d39e',n:rt.slice(0,6)});
+  if(flp && rentals.length){ let h=rentals.map(x=>short(x.name)); h.push('FLP Account'); if(idgt)h.push('IDGT Freeze'); branches.push({t:'FLP — freeze',c:'#00c805',active:true,n:h.slice(0,6)}); }
+  else if(rentals.length){ branches.push({t:'Rentals',c:'#34d39e',n:rentals.map(x=>short(x.name)).slice(0,6)}); }
+  let cash=(S.bankAccounts||[]).slice(0,5).map(x=>short(x.bank||x.type)); if(!cash.length)cash=['Checking','Savings','Trust Acct'];
+  branches.push({t:'Cash',c:'#d2a23a',n:cash});
+  let inv=(S.brokerageAccounts||[]).map(x=>short(x.kind)).slice(0,5); if(!inv.length)inv=['Taxable','Retirement'];
+  branches.push({t:'Investments',c:'#b794f6',n:inv});
+  branches.push({t:'Trustee Protection',c:'#9db4e8',n:['Doc Vault','Accounting','Authority']});
+  if(showAdvanced){ let opt=['ILIT','Living Irrev']; if(!idgt)opt.push('IDGT'); if(!flp)opt.push('FLP'); opt.push('CLAT','NFP'); branches.push({t:'Potential Options',c:'#c89a2d',option:true,n:opt.slice(0,6)}); }
+
+  const N=branches.length, W=1360, H=1060, cx=680, cy=520, R1=205;
+  let lines='', dots='', labels='';
+  branches.forEach((b,i)=>{
+    const ang=(-90 + i*360/N)*Math.PI/180;
+    const bx=cx+R1*Math.cos(ang), by=cy+R1*Math.sin(ang);
+    lines+=`<line x1="${cx}" y1="${cy}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="${b.c}" stroke-width="2.5" opacity="0.5"/>`;
+    const k=b.n.length, span=Math.min(54,Math.max(20,k*11))*Math.PI/180;
+    b.n.forEach((c,j)=>{
+      const t=k===1?0:(j/(k-1)-0.5);
+      const cang=ang+t*span, ringR=R1+135+((j%2)?44:0);
+      const xx=cx+ringR*Math.cos(cang), yy=cy+ringR*Math.sin(cang), co=Math.cos(cang);
+      lines+=`<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${xx.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="${b.c}" stroke-width="1.3" opacity="0.4" ${b.option?'stroke-dasharray="4 4"':''}/>`;
+      dots+=`<circle cx="${xx.toFixed(1)}" cy="${yy.toFixed(1)}" r="14" fill="${b.c}" opacity="0.92"/>`;
+      labels+=`<text x="${(xx+co*20).toFixed(1)}" y="${(yy+Math.sin(cang)*20+4).toFixed(1)}" fill="#d4d7da" font-size="13" text-anchor="${co>=0?'start':'end'}" font-family="Outfit,-apple-system,Segoe UI,sans-serif">${esc(c)}</text>`;
+    });
+    if(b.active) dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="37" fill="none" stroke="#00c805" stroke-width="2"/>`;
+    if(b.option) dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="37" fill="none" stroke="#c89a2d" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="31" fill="${b.c}"/>`;
+    labels+=`<text x="${bx.toFixed(1)}" y="${(by+(Math.sin(ang)>=0?56:-44)).toFixed(1)}" fill="#fafaf7" font-size="15" text-anchor="middle" font-weight="600" font-style="italic" font-family="'Cormorant Garamond',Georgia,serif">${esc(b.t)}</text>`;
+  });
+  let center=`<circle cx="${cx}" cy="${cy}" r="52" fill="#0e1a0c" stroke="#00c805" stroke-width="2"/>`;
+  center+=`<text x="${cx}" y="${cy-3}" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif">Estate</text>`;
+  center+=`<text x="${cx}" y="${cy+17}" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif">Plan</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${lines}${dots}${labels}${center}</svg>`;
 }
 
 function buildMindmap(){
