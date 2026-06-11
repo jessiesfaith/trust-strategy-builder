@@ -1220,7 +1220,7 @@ function buildMindmapHTML(){
 
   // Build branches with per-node status + a short note
   const branches=[];
-  let pplNodes=(S.people||[]).slice(0,6).map(p=>{
+  let pplNodes=(S.people||[]).map(p=>{
     const conf=/confirm|^no$/i.test(p.comfortable||'') && !/n\/a/i.test(p.comfortable||'');
     const rev=conf||/review|minor|spendthrift/i.test(p.needsHelp||'');
     return {l:short(p.role||p.name,14), s:rev?'review':'inplace', note:[p.name,p.relationship,p.role].filter(Boolean).join(' · ')+(p.notes?' — '+p.notes:'')};
@@ -1233,22 +1233,22 @@ function buildMindmapHTML(){
   rtNodes.push({l:'Trust Bank',s:'inplace',note:'Trust-owned cash account.'});
   (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>rtNodes.push({l:short(x.institution),s:'review',note:x.institution+' taxable brokerage — discuss trust ownership vs TOD/POD with your attorney & CPA.'}));
   if(revSub.length) rtNodes.push({l:'Sub-Trusts',s:'proposed',note:'Separate shares created under the revocable trust at death (spendthrift / per-child).'});
-  branches.push({t:'Revocable Trust',s:'inplace',n:rtNodes.slice(0,6)});
+  branches.push({t:'Revocable Trust',s:'inplace',n:rtNodes});
 
   if(flp && rentals.length){
     let h=rentals.map(x=>{ const oos=x.state&&ust&&x.state.trim().toLowerCase()!==ust.trim().toLowerCase(); return {l:short(x.name),s:'review',note:x.name+' — held in the FLP; liability & insurance review'+(oos?', plus multi-state / foreign-LLC review.':'.')}; });
     h.push({l:'FLP Account',s:'proposed',note:'Separate FLP bank account + EIN. Keep books separate — no commingling.'});
     if(idgt) h.push({l:'IDGT Freeze',s:'proposed',note:'Gifted & installment-sold FLP interests grow OUTSIDE the taxable estate; the grantor pays the trust income tax.'});
-    branches.push({t:'FLP — freeze',s:'proposed',active:true,n:h.slice(0,6)});
+    branches.push({t:'FLP — freeze',s:'proposed',active:true,n:h});
   } else if(rentals.length){
-    branches.push({t:'Rentals',s:'review',n:rentals.map(x=>({l:short(x.name),s:'review',note:x.name+' — consider an LLC for liability; lender & insurance review.'})).slice(0,6)});
+    branches.push({t:'Rentals',s:'review',n:rentals.map(x=>({l:short(x.name),s:'review',note:x.name+' — consider an LLC for liability; lender & insurance review.'}))});
   }
 
-  let cashNodes=(S.bankAccounts||[]).slice(0,5).map(x=>{ const isFLP=/flp|family limited/i.test(x.owner||''); return {l:short(x.bank||x.type), s:isFLP?'proposed':'inplace', note:[x.bank,x.type].filter(Boolean).join(' — ')+' · owner: '+(x.owner||'—')+(isFLP?'. Collects rent / pays FLP expenses; no commingling.':'')}; });
+  let cashNodes=(S.bankAccounts||[]).map(x=>{ const isFLP=/flp|family limited/i.test(x.owner||''); return {l:short(x.bank||x.type), s:isFLP?'proposed':'inplace', note:[x.bank,x.type].filter(Boolean).join(' — ')+' · owner: '+(x.owner||'—')+(isFLP?'. Collects rent / pays FLP expenses; no commingling.':'')}; });
   if(!cashNodes.length) cashNodes=['Checking','Savings','Trust Acct'].map(l=>({l,s:'inplace',note:''}));
   branches.push({t:'Cash',s:'inplace',n:cashNodes});
 
-  let invNodes=(S.brokerageAccounts||[]).slice(0,5).map(x=>{ const ret=/retire|ira|401/i.test(x.kind||''); const noBene=/none|need|review/i.test(x.beneficiary||''); return {l:short(x.kind), s:(ret&&noBene)?'action':'review', note: ret?'Retirement account — beneficiary designation strategy (SECURE Act 10-yr). Do NOT retitle into the trust.':'Taxable brokerage — trust ownership or TOD/POD; basis & liquidity planning with CPA.'}; });
+  let invNodes=(S.brokerageAccounts||[]).map(x=>{ const ret=/retire|ira|401/i.test(x.kind||''); const noBene=/none|need|review/i.test(x.beneficiary||''); return {l:short(x.kind), s:(ret&&noBene)?'action':'review', note: ret?'Retirement account — beneficiary designation strategy (SECURE Act 10-yr). Do NOT retitle into the trust.':'Taxable brokerage — trust ownership or TOD/POD; basis & liquidity planning with CPA.'}; });
   if(!invNodes.length) invNodes=[{l:'Taxable',s:'review',note:''},{l:'Retirement',s:'review',note:''}];
   branches.push({t:'Investments',s:'review',n:invNodes});
 
@@ -1264,17 +1264,24 @@ function buildMindmapHTML(){
     branches.push({t:'Potential Options',s:'proposed',option:true,n:opt.slice(0,6).map(l=>({l,s:'proposed',note:(defs[l]||'')+' Discuss with your attorney & CPA.'}))});
   }
 
-  const N=branches.length, W=1360, H=1060, cx=680, cy=520, R1=205;
+  // Layout grows with the data: many children stack into concentric rings, and the
+  // canvas sizes itself to the densest branch so nothing overlaps neighbours.
+  const N=branches.length, R1=205, perRing=6, base=128, spacing=66, dotR=14;
+  const maxRings=Math.max(1,...branches.map(b=>Math.ceil((b.n.length||1)/perRing)));
+  const maxOuter=R1+base+(maxRings-1)*spacing+dotR;
+  const half=maxOuter+172, W=2*half, H=2*half, cx=half, cy=half;
+  const wedge=(360/N)*0.9*Math.PI/180;
   const col=s=>(MMSTATUS[s]||{c:'#9db4e8'}).c;
   let lines='', dots='', labels='';
   branches.forEach((b,i)=>{
     const ang=(-90 + i*360/N)*Math.PI/180;
     const bx=cx+R1*Math.cos(ang), by=cy+R1*Math.sin(ang), bc=col(b.s);
     lines+=`<line x1="${cx}" y1="${cy}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="${bc}" stroke-width="2.5" opacity="0.45" ${b.option?'stroke-dasharray="6 5"':''}/>`;
-    const k=b.n.length, span=Math.min(54,Math.max(20,k*11))*Math.PI/180;
+    const k=b.n.length;
     b.n.forEach((c,j)=>{
-      const t=k===1?0:(j/(k-1)-0.5);
-      const cang=ang+t*span, ringR=R1+135+((j%2)?44:0);
+      const ring=Math.floor(j/perRing), inRing=j-ring*perRing, cnt=Math.min(perRing,k-ring*perRing);
+      const t=cnt===1?0:(inRing/(cnt-1)-0.5);
+      const cang=ang+t*wedge, ringR=R1+base+ring*spacing;
       const xx=cx+ringR*Math.cos(cang), yy=cy+ringR*Math.sin(cang), co=Math.cos(cang), cc=col(c.s);
       const idx=mmMeta.push({l:c.l,branch:b.t,status:c.s,note:c.note})-1;
       lines+=`<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${xx.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="${cc}" stroke-width="1.3" opacity="0.4" ${b.option?'stroke-dasharray="4 4"':''}/>`;
