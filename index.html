@@ -325,13 +325,13 @@
   <section class="block" id="mindmap">
     <div class="section-head">
       <span class="eyebrow">Live diagram</span>
-      <h2>Dynamic Mind Map</h2>
+      <h2>Estate Map</h2>
       <span class="muted" style="font-size:12.5px">Updates automatically as you add or remove people, assets, LLCs, and sub-trusts.</span>
     </div>
     <div class="card pad">
       <div class="mm-tabs">
-        <div class="mm-tab active" data-mm="mindmap" onclick="switchMM('mindmap')">Mind Map</div>
-        <div class="mm-tab" data-mm="flow" onclick="switchMM('flow')">Ownership Map</div>
+        <div class="mm-tab active" data-mm="flow" onclick="switchMM('flow')">Ownership Map</div>
+        <div class="mm-tab" data-mm="mindmap" onclick="switchMM('mindmap')">Mind Map</div>
         <label class="mm-tab" style="margin-left:auto;display:flex;align-items:center;gap:7px;cursor:pointer">
           <input type="checkbox" id="advToggle" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
           <span>Potential options <span class="badge b-amber" style="padding:2px 6px">to discuss</span></span>
@@ -691,7 +691,7 @@ const ENTITY = {
 /* ---------- State ---------- */
 let S = load() || sampleScenario();
 let review = loadReview();
-let currentMM = 'mindmap';
+let currentMM = 'flow';
 let showAdvanced = true;
 const MMSTATUS={ inplace:{c:'#00c805',l:'In place'}, review:{c:'#d2a23a',l:'Review needed'}, action:{c:'#ef5d5d',l:'Action / gap'}, proposed:{c:'#a78bfa',l:'Proposed / new'} };
 let mmMeta=[];
@@ -1577,7 +1577,7 @@ function toggleAdvanced(on){
 }
 
 /* ---------- Full-screen diagram ---------- */
-let mmFullTab='mindmap', mmFullZoom=1;
+let mmFullTab='flow', mmFullZoom=1;
 function openMMFull(){
   mmFullTab=currentMM;
   document.getElementById('advToggleFull').checked=showAdvanced;
