@@ -336,6 +336,7 @@
           <input type="checkbox" id="advToggle" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
           <span>Potential options <span class="badge b-amber" style="padding:2px 6px">to discuss</span></span>
         </label>
+        <button class="btn-soft btn-xs" onclick="openStructurePalette()" title="Add an entity/trust structure where it's available in your state">+ Add structure</button>
         <button class="btn-ghost btn-xs" id="mmResetBtn" onclick="resetMMLayout()" title="Snap all dots back to the auto layout">↺ Reset layout</button>
         <button class="btn-soft btn-xs" onclick="openMMFull()">⛶ Full screen</button>
         <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
@@ -695,6 +696,38 @@ let currentMM = 'flow';
 let showAdvanced = true;
 const MMSTATUS={ inplace:{c:'#00c805',l:'In place'}, review:{c:'#d2a23a',l:'Review needed'}, action:{c:'#ef5d5d',l:'Action / gap'}, proposed:{c:'#a78bfa',l:'Proposed / new'} };
 let mmMeta=[];
+
+/* ---------- Structure palette (what's generally available by state — not legal advice) ---------- */
+const CP_STATES=['Arizona','California','Idaho','Louisiana','Nevada','New Mexico','Texas','Washington','Wisconsin'];
+const DAPT_STATES=['Alabama','Alaska','Connecticut','Delaware','Hawaii','Indiana','Michigan','Mississippi','Missouri','Nevada','New Hampshire','Ohio','Oklahoma','Rhode Island','South Dakota','Tennessee','Utah','Virginia','West Virginia','Wyoming'];
+const SERIES_LLC_STATES=['Alabama','Arkansas','Delaware','District of Columbia','Georgia','Illinois','Indiana','Iowa','Kansas','Minnesota','Mississippi','Missouri','Montana','Nebraska','Nevada','North Dakota','Oklahoma','Tennessee','Texas','Utah','Virginia','Wisconsin','Wyoming'];
+const NO_TOD_DEED_STATES=['Connecticut','Delaware','Florida','Georgia','Iowa','Kentucky','Louisiana','Maryland','Massachusetts','New Jersey','New York','North Carolina','Pennsylvania','Rhode Island','South Carolina','Vermont'];
+const STRUCTURES=[
+  {k:'llc',  name:'LLC',        full:'Limited Liability Company',                 avail:'all', blurb:'Liability shield for a rental or business; can be owned by your trust.'},
+  {k:'series',name:'Series LLC',full:'Series LLC',                                avail:st=>SERIES_LLC_STATES.includes(st)?'available':'na', blurb:'One LLC with internal liability-separated “series.” Only some states authorize formation.'},
+  {k:'flp',  name:'FLP',        full:'Family Limited Partnership',                avail:'all', blurb:'Holds family assets under your control; enables valuation-discounted gifts.'},
+  {k:'idgt', name:'IDGT',       full:'Intentionally Defective Grantor Trust',     avail:'all', blurb:'Estate freeze — you pay the trust’s income tax. Federal construct; all states.'},
+  {k:'ilit', name:'ILIT',       full:'Irrevocable Life Insurance Trust',          avail:'all', blurb:'Keeps life-insurance proceeds outside the taxable estate.'},
+  {k:'grat', name:'GRAT',       full:'Grantor Retained Annuity Trust',            avail:'all', blurb:'Passes appreciation to heirs with little gift tax (IRC §2702); all states.'},
+  {k:'crt',  name:'CRT',        full:'Charitable Remainder Trust',                avail:'all', blurb:'Income to you/heirs for a term, remainder to charity; partial deduction.'},
+  {k:'clat', name:'CLAT',       full:'Charitable Lead Annuity Trust',             avail:'all', blurb:'Annuity to charity for a term, remainder to heirs.'},
+  {k:'qprt', name:'QPRT',       full:'Qualified Personal Residence Trust',        avail:'all', blurb:'Moves your home out of the estate at a discounted gift value.'},
+  {k:'slat', name:'SLAT',       full:'Spousal Lifetime Access Trust',             avail:'all', cp:true, blurb:'Gift to a trust for your spouse; uses exemption while keeping indirect access.'},
+  {k:'dapt', name:'DAPT',       full:'Domestic Asset Protection Trust',           avail:st=>DAPT_STATES.includes(st)?'available':'na', blurb:'Self-settled asset-protection trust. Only ~20 states permit them.'},
+  {k:'tod',  name:'TOD Deed',   full:'Transfer-on-Death / Beneficiary Deed',      avail:st=>NO_TOD_DEED_STATES.includes(st)?'na':'available', blurb:'Passes real estate at death outside probate. Not available in every state.'},
+  {k:'ing',  name:'ING trust',  full:'Incomplete-gift Non-Grantor Trust (NING/DING)', avail:st=>DAPT_STATES.includes(st)?'available':'verify', cp:true, blurb:'State income-tax planning trust, usually sited in a no-tax / DAPT state. Some states (e.g., NY) disregard them.'}
+];
+function structAvail(s, state){
+  let lvl = typeof s.avail==='function' ? s.avail(state||'') : s.avail;
+  if(lvl==='all') lvl='available';
+  let note;
+  if(lvl==='available') note='Generally available'+(state?(' in '+state):'')+'.';
+  else if(lvl==='na') note='Not typically available'+(state?(' in '+state):'')+' — some use an out-of-state version. Attorney review.';
+  else note='Availability varies'+(state?(' in '+state):'')+' — confirm with your attorney.';
+  if(s.cp && CP_STATES.includes(state)) note+=' '+state+' is a community-property state — added spousal / basis nuances.';
+  return {lvl, note, status: lvl==='available'?'proposed':(lvl==='na'?'action':'review')};
+}
+function structByKey(k){ return STRUCTURES.find(s=>s.k===k); }
 
 /* ---------- Utils ---------- */
 function uid(){ return 'id'+Math.random().toString(36).slice(2,9); }
@@ -1267,6 +1300,8 @@ function buildMindmapHTML(){
     let opt=['ILIT','Living Irrev']; if(!idgt)opt.push('IDGT'); if(!flp)opt.push('FLP'); opt.push('CLAT','NFP');
     branches.push({t:'Potential Options',s:'proposed',option:true,n:opt.slice(0,6).map(l=>({l,s:'proposed',note:(defs[l]||'')+' Discuss with your attorney & CPA.'}))});
   }
+  const cust=(S.customStructures||[]).map(cs=>{ const s=structByKey(cs.k); if(!s) return null; const a=structAvail(s,S.profile.state||''); return {l:s.name,s:a.status,note:s.full+' — '+s.blurb+' '+a.note}; }).filter(Boolean);
+  if(cust.length) branches.push({t:'Considered',s:'proposed',n:cust});
 
   // Layout grows with the data: many children stack into concentric rings, and the
   // canvas sizes itself to the densest branch so nothing overlaps neighbours.
@@ -1378,6 +1413,7 @@ function buildOwnershipSVG(){
     let opt=['ILIT','Living Irrev']; if(!idgt)opt.push('IDGT'); if(!flp)opt.push('FLP'); opt.push('CLAT','NFP');
     top.push(Nn('Potential Options','proposed','Alternatives to discuss — not in the active plan.',opt.slice(0,6).map(l=>Nn(l,'proposed',(defs[l]||'')+' Discuss with your attorney & CPA.')),true));
   }
+  (S.customStructures||[]).forEach(cs=>{ const s=structByKey(cs.k); if(!s) return; const a=structAvail(s,S.profile.state||''); top.push(Nn(s.name,a.status,s.full+' — '+s.blurb+' '+a.note)); });
   const root=Nn(short(S.profile.grantor||'Grantor',16),'inplace','You — grantor and trustee while living; fund the plan.',top);
 
   // Tidy left-to-right layout; nodes get stable keys so positions persist & drag.
@@ -1797,6 +1833,28 @@ document.addEventListener('pointerup',()=>{
   save(); renderMermaid(); if(document.getElementById('mmFull').classList.contains('open')) renderMMFull();
 });
 function resetMMLayout(){ delete S.mmPos; delete S.mmParent; delete S.ownPos; save(); renderMermaid(); if(document.getElementById('mmFull').classList.contains('open')) renderMMFull(); toast('Layout reset'); }
+
+/* ---------- Structure palette (add a structure dot where it's allowed) ---------- */
+function openStructurePalette(){
+  const state=S.profile.state||'';
+  const have=new Set((S.customStructures||[]).map(c=>c.k));
+  const body=`<div class="disclaimer" style="margin-bottom:10px"><span>⚠️</span><div>Availability below is <b>general guidance for ${esc(state||'your state')}</b> — not legal advice. Rules change and have nuances; confirm every structure with your attorney &amp; CPA before acting.</div></div>`+
+    STRUCTURES.map(s=>{ const a=structAvail(s,state); const c=MMSTATUS[a.status].c; const added=have.has(s.k);
+      const tag=a.lvl==='available'?'Available':(a.lvl==='na'?'Not typical here':'Verify');
+      return `<div class="ent" style="margin-top:8px"><div class="ent-top"><div style="min-width:0">
+        <h4>${esc(s.name)} <span class="muted" style="font-weight:400;font-size:12px">${esc(s.full)}</span></h4>
+        <div class="ent-meta">${esc(s.blurb)}</div>
+        <div class="ent-flags badges"><span class="badge" style="background:${c}22;color:${c};border:1px solid ${c}66">${tag}</span> <span class="muted" style="font-size:11.5px">${esc(a.note)}</span></div>
+      </div><div class="ent-actions"><button class="btn-${added?'danger':'primary'} btn-xs" onclick="toggleStructure('${s.k}')">${added?'Remove':'Add to map'}</button></div></div></div>`;
+    }).join('');
+  openModal('Add a structure to the map', body, [{label:'Done',cls:'btn-primary',fn:closeModal}]);
+}
+function toggleStructure(k){
+  S.customStructures=S.customStructures||[];
+  const i=S.customStructures.findIndex(c=>c.k===k);
+  if(i>=0){ S.customStructures.splice(i,1); toast('Removed'); } else { S.customStructures.push({k}); toast('Added to map'); }
+  save(); render(); openStructurePalette();
+}
 
 /* ---------- Init ---------- */
 document.getElementById('reviewNotes').addEventListener('input',e=>{ review.notes=e.target.value; saveReview(); });
