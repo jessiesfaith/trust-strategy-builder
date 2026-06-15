@@ -157,6 +157,9 @@
   .mm-canvas svg{max-width:100%;height:auto;max-height:66vh;display:block;margin:0 auto}
   .mm-canvas svg circle[data-i]{cursor:pointer;transition:.1s}
   .mm-canvas svg circle[data-i]:hover{stroke:#fafaf7;stroke-width:2}
+  g.mm-node{cursor:grab}
+  g.mm-node:active{cursor:grabbing}
+  g.mm-node.mm-dragging{cursor:grabbing}
   .mm-layout{display:flex;gap:14px;align-items:flex-start}
   .mm-layout .mm-canvas{flex:1;min-width:0}
   .mm-detail{width:262px;flex:none;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:15px}
@@ -333,6 +336,7 @@
           <input type="checkbox" id="advToggle" checked onchange="toggleAdvanced(this.checked)" style="width:auto;margin:0">
           <span>Potential options <span class="badge b-amber" style="padding:2px 6px">to discuss</span></span>
         </label>
+        <button class="btn-ghost btn-xs" id="mmResetBtn" onclick="resetMMLayout()" title="Snap all dots back to the auto layout">↺ Reset layout</button>
         <button class="btn-soft btn-xs" onclick="openMMFull()">⛶ Full screen</button>
         <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
       </div>
@@ -1282,37 +1286,52 @@ function buildMindmapHTML(){
   web+=`<circle cx="${cx}" cy="${cy}" r="${(maxOuter+18).toFixed(1)}" fill="none" stroke="rgba(0,200,5,0.08)" stroke-width="1"/>`;
   for(let s=0;s<N*2;s++){ const a=(-90+s*180/N)*Math.PI/180; web+=`<line x1="${cx}" y1="${cy}" x2="${(cx+(maxOuter+18)*Math.cos(a)).toFixed(1)}" y2="${(cy+(maxOuter+18)*Math.sin(a)).toFixed(1)}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>`; }
 
-  let lines='', dots='', labels='';
+  // Two-pass layout so nodes become draggable groups and connectors can follow them.
+  const ov=S.mmPos||{}, pov=S.mmParent||{};
+  const pos={'C':{x:cx,y:cy}};
+  const nodeList=[];  // {key,idx,r,fill,ring,lbl}
+  const conns=[];     // {from,to,stroke,w,op,dash,childKey}
   branches.forEach((b,i)=>{
-    const ang=(-90 + i*360/N)*Math.PI/180;
-    const bx=cx+R1*Math.cos(ang), by=cy+R1*Math.sin(ang), bc=col(b.s);
-    lines+=`<line x1="${cx}" y1="${cy}" x2="${bx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="${bc}" stroke-width="2.5" opacity="0.5" ${b.option?'stroke-dasharray="6 5"':''}/>`;
+    const ang=(-90 + i*360/N)*Math.PI/180, bc=col(b.s), hk='H:'+b.t;
+    pos[hk]={x:cx+R1*Math.cos(ang), y:cy+R1*Math.sin(ang)};
+    conns.push({from:'C',to:hk,stroke:bc,w:2.5,op:0.5,dash:b.option});
     const k=b.n.length;
     b.n.forEach((c,j)=>{
       const ring=Math.floor(j/perRing), inRing=j-ring*perRing, cnt=Math.min(perRing,k-ring*perRing);
       const t=cnt===1?0:(inRing/(cnt-1)-0.5);
-      const cang=ang+t*wedge, ringR=R1+base+ring*spacing;
-      const xx=cx+ringR*Math.cos(cang), yy=cy+ringR*Math.sin(cang), co=Math.cos(cang), cc=col(c.s);
+      const cang=ang+t*wedge, ringR=R1+base+ring*spacing, co=Math.cos(cang);
+      const ck='K:'+b.t+'::'+c.l;
+      pos[ck]={x:cx+ringR*Math.cos(cang), y:cy+ringR*Math.sin(cang)};
       const idx=mmMeta.push({l:c.l,branch:b.t,status:c.s,note:c.note})-1;
-      lines+=`<line x1="${bx.toFixed(1)}" y1="${by.toFixed(1)}" x2="${xx.toFixed(1)}" y2="${yy.toFixed(1)}" stroke="${cc}" stroke-width="1.4" opacity="0.45" ${b.option?'stroke-dasharray="4 4"':''}/>`;
-      dots+=`<circle cx="${xx.toFixed(1)}" cy="${yy.toFixed(1)}" r="14" fill="${cc}" data-i="${idx}" filter="url(#mmShadow)"/>`+gloss(xx.toFixed(1),yy.toFixed(1),14);
-      labels+=`<text x="${(xx+co*20).toFixed(1)}" y="${(yy+Math.sin(cang)*20+4).toFixed(1)}" fill="#dfe2e5" font-size="13" text-anchor="${co>=0?'start':'end'}" font-family="Outfit,-apple-system,Segoe UI,sans-serif">${esc(c.l)}</text>`;
+      const lx=(co*20).toFixed(1), ly=(Math.sin(cang)*20+4).toFixed(1), anc=co>=0?'start':'end';
+      nodeList.push({key:ck,idx,r:14,fill:col(c.s),ring:'',lbl:`<text x="${lx}" y="${ly}" fill="#dfe2e5" font-size="13" text-anchor="${anc}" font-family="Outfit,-apple-system,Segoe UI,sans-serif" pointer-events="none">${esc(c.l)}</text>`});
+      conns.push({from:hk,to:ck,stroke:col(c.s),w:1.4,op:0.45,dash:b.option,childKey:ck});
     });
-    const bidx=mmMeta.push({l:b.t,branch:b.t,status:b.s,note:'Area: '+b.t+(b.active?' — active in this plan.':b.option?' — alternatives to discuss.':'.')+' Click the dots around it for individual items.'})-1;
-    if(b.active) dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="38" fill="none" stroke="#fafaf7" stroke-width="1.5" opacity="0.5"/>`;
-    if(b.option) dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="38" fill="none" stroke="#fafaf7" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45"/>`;
-    dots+=`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="31" fill="${bc}" data-i="${bidx}" filter="url(#mmShadow)"/>`+gloss(bx.toFixed(1),by.toFixed(1),31);
-    labels+=`<text x="${bx.toFixed(1)}" y="${(by+(Math.sin(ang)>=0?58:-46)).toFixed(1)}" fill="#fafaf7" font-size="15" text-anchor="middle" font-weight="600" font-style="italic" font-family="'Cormorant Garamond',Georgia,serif">${esc(b.t)}</text>`;
+    const bidx=mmMeta.push({l:b.t,branch:b.t,status:b.s,note:'Area: '+b.t+(b.active?' — active in this plan.':b.option?' — alternatives to discuss.':'.')+' Drag the dots to rearrange; drop one near another branch to reassign it.'})-1;
+    let ring='';
+    if(b.active) ring=`<circle r="38" fill="none" stroke="#fafaf7" stroke-width="1.5" opacity="0.5"/>`;
+    else if(b.option) ring=`<circle r="38" fill="none" stroke="#fafaf7" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.45"/>`;
+    const sgn=Math.sin(ang)>=0?58:-46;
+    nodeList.push({key:hk,idx:bidx,r:31,fill:bc,ring,lbl:`<text x="0" y="${sgn}" fill="#fafaf7" font-size="15" text-anchor="middle" font-weight="600" font-style="italic" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">${esc(b.t)}</text>`});
   });
-  let center=`<circle cx="${cx}" cy="${cy}" r="54" fill="#0e1a0c" stroke="#34d39e" stroke-width="2" data-i="-1" filter="url(#mmShadow)"/>`+gloss(cx,cy,54);
-  center+=`<text x="${cx}" y="${cy-3}" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">Estate</text>`;
-  center+=`<text x="${cx}" y="${cy+17}" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">Plan</text>`;
+  // apply parent reassignments + saved positions
+  conns.forEach(cn=>{ if(cn.childKey && pov[cn.childKey] && pos[pov[cn.childKey]]) cn.from=pov[cn.childKey]; });
+  Object.keys(ov).forEach(key=>{ if(pos[key]) pos[key]={x:cx+(+ov[key].dx||0), y:cy+(+ov[key].dy||0)}; });
+
+  let lines='';
+  conns.forEach(cn=>{ const a=pos[cn.from], z=pos[cn.to]; if(!a||!z) return; lines+=`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${z.x.toFixed(1)}" y2="${z.y.toFixed(1)}" stroke="${cn.stroke}" stroke-width="${cn.w}" opacity="${cn.op}" data-from="${esc(cn.from)}" data-to="${esc(cn.to)}" ${cn.dash?'stroke-dasharray="6 5"':''}/>`; });
+
+  let g='';
+  nodeList.forEach(n=>{ const p=pos[n.key]; g+=`<g class="mm-node" data-k="${esc(n.key)}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})">${n.ring}<circle r="${n.r}" fill="${n.fill}" data-i="${n.idx}" filter="url(#mmShadow)"/><circle r="${n.r}" fill="url(#mmSphere)" pointer-events="none"/>${n.lbl}</g>`; });
+  const cp=pos['C'];
+  g+=`<g class="mm-node" data-k="C" transform="translate(${cp.x.toFixed(1)},${cp.y.toFixed(1)})"><circle r="54" fill="#0e1a0c" stroke="#34d39e" stroke-width="2" data-i="-1" filter="url(#mmShadow)"/><circle r="54" fill="url(#mmSphere)" pointer-events="none"/><text x="0" y="-3" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">Estate</text><text x="0" y="17" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">Plan</text></g>`;
+
   const defs=`<defs>`+
     `<radialGradient id="mmGlow" cx="50%" cy="50%" r="62%"><stop offset="0%" stop-color="#14241a"/><stop offset="45%" stop-color="#0c0c0c"/><stop offset="100%" stop-color="#070707"/></radialGradient>`+
     `<radialGradient id="mmSphere" cx="34%" cy="30%" r="78%"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/><stop offset="34%" stop-color="#ffffff" stop-opacity="0.10"/><stop offset="100%" stop-color="#000000" stop-opacity="0.28"/></radialGradient>`+
     `<filter id="mmShadow" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="2.5" stdDeviation="3.5" flood-color="#000000" flood-opacity="0.55"/></filter>`+
     `</defs>`;
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${defs}${web}${lines}${dots}${labels}${center}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${defs}${web}${lines}${g}</svg>`;
 }
 
 /* ---------- Ownership view (same bubble style, laid out as an ownership tree) ---------- */
@@ -1512,7 +1531,7 @@ function renderMermaid(){
 }
 function fillStatusLegend(){
   const el=document.getElementById('mmStatusLegend'); if(!el) return;
-  el.innerHTML=Object.values(MMSTATUS).map(s=>`<span class="ch"><i style="background:${s.c}"></i>${s.l}</span>`).join('')+`<span class="ch" style="margin-left:auto;color:var(--muted);font-weight:400">Tap any dot →</span>`;
+  el.innerHTML=Object.values(MMSTATUS).map(s=>`<span class="ch"><i style="background:${s.c}"></i>${s.l}</span>`).join('')+`<span class="ch" style="margin-left:auto;color:var(--muted);font-weight:400">Tap a dot for detail · drag to rearrange · drop near a branch to reassign</span>`;
 }
 function mmOverview(){
   const c={inplace:0,review:0,action:0,proposed:0};
@@ -1730,7 +1749,47 @@ function confirmModal(title,msg,confirmLabel,fn){
 function closeModal(){ document.getElementById('overlay').classList.remove('open'); }
 document.getElementById('overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeModal(); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeMMFull(); closeModal(); } });
-document.addEventListener('click',e=>{ const t=e.target; if(t&&t.tagName==='circle'&&t.hasAttribute('data-i')) renderMMDetail(+t.getAttribute('data-i')); });
+document.addEventListener('click',e=>{ if(mmJustDragged) return; const t=e.target; if(t&&t.tagName==='circle'&&t.hasAttribute('data-i')) renderMMDetail(+t.getAttribute('data-i')); });
+
+/* ---------- Drag-to-rearrange the mind-map dots ---------- */
+let mmDrag=null, mmJustDragged=false;
+function mmSvgPt(svg,e){ const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY; const ctm=svg.getScreenCTM(); if(!ctm) return {x:0,y:0}; const q=p.matrixTransform(ctm.inverse()); return {x:q.x,y:q.y}; }
+function mmAttr(v){ return '"'+String(v).replace(/\\/g,'\\\\').replace(/"/g,'\\"')+'"'; }
+function mmConn(svg,k,x,y){ try{
+  svg.querySelectorAll('line[data-from='+mmAttr(k)+']').forEach(l=>{l.setAttribute('x1',x.toFixed(1));l.setAttribute('y1',y.toFixed(1));});
+  svg.querySelectorAll('line[data-to='+mmAttr(k)+']').forEach(l=>{l.setAttribute('x2',x.toFixed(1));l.setAttribute('y2',y.toFixed(1));});
+}catch(_){} }
+document.addEventListener('pointerdown',e=>{
+  const g=e.target.closest && e.target.closest('g.mm-node'); if(!g||!g.ownerSVGElement) return;
+  const svg=g.ownerSVGElement, tr=g.transform.baseVal.consolidate();
+  const ox=tr?tr.matrix.e:0, oy=tr?tr.matrix.f:0, st=mmSvgPt(svg,e);
+  mmDrag={g,svg,k:g.getAttribute('data-k'),sx:st.x,sy:st.y,ox,oy,cx:ox,cy:oy,moved:false};
+  g.classList.add('mm-dragging'); try{ g.setPointerCapture(e.pointerId); }catch(_){}
+});
+document.addEventListener('pointermove',e=>{
+  if(!mmDrag) return;
+  const p=mmSvgPt(mmDrag.svg,e);
+  const nx=mmDrag.ox+(p.x-mmDrag.sx), ny=mmDrag.oy+(p.y-mmDrag.sy);
+  if(Math.abs(p.x-mmDrag.sx)+Math.abs(p.y-mmDrag.sy)>3) mmDrag.moved=true;
+  mmDrag.cx=nx; mmDrag.cy=ny;
+  mmDrag.g.setAttribute('transform','translate('+nx.toFixed(1)+','+ny.toFixed(1)+')');
+  mmConn(mmDrag.svg,mmDrag.k,nx,ny);
+  e.preventDefault();
+});
+document.addEventListener('pointerup',()=>{
+  if(!mmDrag) return; const d=mmDrag; mmDrag=null; d.g.classList.remove('mm-dragging');
+  if(!d.moved) return; // no real movement → let the click handler open the detail
+  mmJustDragged=true; setTimeout(()=>{mmJustDragged=false;},350);
+  const vb=d.svg.viewBox.baseVal, cx=vb.width/2, cy=vb.height/2;
+  S.mmPos=S.mmPos||{}; S.mmPos[d.k]={dx:Math.round(d.cx-cx),dy:Math.round(d.cy-cy)};
+  if(d.k.charAt(0)==='K'){ // reassign a child dot to the nearest branch hub / center
+    let best=null,bd=1e9;
+    d.svg.querySelectorAll('g.mm-node').forEach(g=>{ const kk=g.getAttribute('data-k'); if(kk!=='C'&&kk.charAt(0)!=='H') return; const t=g.transform.baseVal.consolidate(); const gx=t?t.matrix.e:0, gy=t?t.matrix.f:0; const dd=(gx-d.cx)**2+(gy-d.cy)**2; if(dd<bd){bd=dd;best=kk;} });
+    if(best){ S.mmParent=S.mmParent||{}; S.mmParent[d.k]=best; }
+  }
+  save(); renderMermaid(); if(document.getElementById('mmFull').classList.contains('open')) renderMMFull();
+});
+function resetMMLayout(){ delete S.mmPos; delete S.mmParent; save(); renderMermaid(); if(document.getElementById('mmFull').classList.contains('open')) renderMMFull(); toast('Mind map layout reset'); }
 
 /* ---------- Init ---------- */
 document.getElementById('reviewNotes').addEventListener('input',e=>{ review.notes=e.target.value; saveReview(); });
