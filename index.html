@@ -1322,9 +1322,9 @@ function buildMindmapHTML(){
   conns.forEach(cn=>{ const a=pos[cn.from], z=pos[cn.to]; if(!a||!z) return; lines+=`<line x1="${a.x.toFixed(1)}" y1="${a.y.toFixed(1)}" x2="${z.x.toFixed(1)}" y2="${z.y.toFixed(1)}" stroke="${cn.stroke}" stroke-width="${cn.w}" opacity="${cn.op}" data-from="${esc(cn.from)}" data-to="${esc(cn.to)}" ${cn.dash?'stroke-dasharray="6 5"':''}/>`; });
 
   let g='';
-  nodeList.forEach(n=>{ const p=pos[n.key]; g+=`<g class="mm-node" data-k="${esc(n.key)}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})">${n.ring}<circle r="${n.r}" fill="${n.fill}" data-i="${n.idx}" filter="url(#mmShadow)"/><circle r="${n.r}" fill="url(#mmSphere)" pointer-events="none"/>${n.lbl}</g>`; });
+  nodeList.forEach(n=>{ const p=pos[n.key]; g+=`<g class="mm-node" data-view="mm" data-k="${esc(n.key)}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})">${n.ring}<circle r="${n.r}" fill="${n.fill}" data-i="${n.idx}" filter="url(#mmShadow)"/><circle r="${n.r}" fill="url(#mmSphere)" pointer-events="none"/>${n.lbl}</g>`; });
   const cp=pos['C'];
-  g+=`<g class="mm-node" data-k="C" transform="translate(${cp.x.toFixed(1)},${cp.y.toFixed(1)})"><circle r="54" fill="#0e1a0c" stroke="#34d39e" stroke-width="2" data-i="-1" filter="url(#mmShadow)"/><circle r="54" fill="url(#mmSphere)" pointer-events="none"/><text x="0" y="-3" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">Estate</text><text x="0" y="17" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">Plan</text></g>`;
+  g+=`<g class="mm-node" data-view="mm" data-k="C" transform="translate(${cp.x.toFixed(1)},${cp.y.toFixed(1)})"><circle r="54" fill="#0e1a0c" stroke="#34d39e" stroke-width="2" data-i="-1" filter="url(#mmShadow)"/><circle r="54" fill="url(#mmSphere)" pointer-events="none"/><text x="0" y="-3" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">Estate</text><text x="0" y="17" fill="#fafaf7" font-size="18" text-anchor="middle" font-weight="600" font-family="'Cormorant Garamond',Georgia,serif" pointer-events="none">Plan</text></g>`;
 
   const defs=`<defs>`+
     `<radialGradient id="mmGlow" cx="50%" cy="50%" r="62%"><stop offset="0%" stop-color="#14241a"/><stop offset="45%" stop-color="#0c0c0c"/><stop offset="100%" stop-color="#070707"/></radialGradient>`+
@@ -1380,35 +1380,38 @@ function buildOwnershipSVG(){
   }
   const root=Nn(short(S.profile.grantor||'Grantor',16),'inplace','You — grantor and trustee while living; fund the plan.',top);
 
-  // Tidy left-to-right layout
-  let leaf=0, maxDepth=0;
+  // Tidy left-to-right layout; nodes get stable keys so positions persist & drag.
+  let leaf=0, maxDepth=0, kid=0; const all=[];
   (function assign(n,depth,opt,parent){
-    n.depth=depth; n.opt=opt||n.option; n.parent=parent; maxDepth=Math.max(maxDepth,depth);
+    n.depth=depth; n.opt=opt||n.option; n.parent=parent; n.key='O:'+(kid++); maxDepth=Math.max(maxDepth,depth); all.push(n);
     if(n.children&&n.children.length){ n.children.forEach(c=>assign(c,depth+1,n.opt,n)); n.row=(n.children[0].row+n.children[n.children.length-1].row)/2; }
     else n.row=leaf++;
   })(root,0,false,null);
 
   const rowH=46, colW=232, padX=64, padY=46;
-  const W=padX*2 + maxDepth*colW + 210, H=padY*2 + Math.max(1,leaf-1)*rowH + 24;
   const col=s=>(MMSTATUS[s]||{c:'#9db4e8'}).c;
-  const px=n=>padX + n.depth*colW, py=n=>padY + n.row*rowH;
-  let lines='', dots='', labels='';
-  (function draw(n){
-    const x=px(n), y=py(n), r=n.depth===0?23:(n.children&&n.children.length?17:12), cc=col(n.s);
-    (n.children||[]).forEach(c=>{
-      const cx2=px(c), cy2=py(c), cr=c.children&&c.children.length?17:12;
-      lines+=`<path d="M ${(x+r).toFixed(1)} ${y.toFixed(1)} C ${(x+r+46).toFixed(1)} ${y.toFixed(1)}, ${(cx2-cr-46).toFixed(1)} ${cy2.toFixed(1)}, ${(cx2-cr-3).toFixed(1)} ${cy2.toFixed(1)}" fill="none" stroke="#5a6068" stroke-width="1.5" opacity="0.7" marker-end="url(#arr)" ${n.opt||c.opt?'stroke-dasharray="5 4"':''}/>`;
-      draw(c);
-    });
-    const idx=mmMeta.push({l:n.l,branch:n.parent?n.parent.l:'Ownership',status:n.s,note:n.note})-1;
-    if(n.opt && (!n.children||!n.children.length)) {}
-    dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${cc}" data-i="${idx}"/>`;
-    const big=n.depth<=1;
-    labels+=`<text x="${(x+r+8).toFixed(1)}" y="${(y+4).toFixed(1)}" fill="${big?'#fafaf7':'#d4d7da'}" font-size="${big?14:12.5}" text-anchor="start" font-weight="${big?600:400}" ${big?'font-style="italic" font-family="\'Cormorant Garamond\',Georgia,serif"':'font-family="Outfit,-apple-system,Segoe UI,sans-serif"'}>${esc(n.l)}</text>`;
-  })(root);
+  const rOf=n=>n.depth===0?23:(n.children&&n.children.length?17:12);
+  const own=S.ownPos||{};
+  const pos={};
+  all.forEach(n=>{ const d={x:padX+n.depth*colW, y:padY+n.row*rowH}; pos[n.key]= own[n.key]?{x:+own[n.key].x,y:+own[n.key].y}:d; });
+  let W=padX*2 + maxDepth*colW + 210, H=padY*2 + Math.max(1,leaf-1)*rowH + 24;
+  all.forEach(n=>{ const p=pos[n.key]; W=Math.max(W,p.x+220); H=Math.max(H,p.y+60); });
 
-  const defs=`<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a9099"/></marker></defs>`;
-  return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${defs}${lines}${dots}${labels}</svg>`;
+  let lines='';
+  all.forEach(n=>{ if(!n.parent) return; const a=pos[n.parent.key], z=pos[n.key]; const dx=z.x-a.x, dy=z.y-a.y, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L, ar=rOf(n), pr=rOf(n.parent);
+    lines+=`<line x1="${(a.x+ux*pr).toFixed(1)}" y1="${(a.y+uy*pr).toFixed(1)}" x2="${(z.x-ux*(ar+5)).toFixed(1)}" y2="${(z.y-uy*(ar+5)).toFixed(1)}" stroke="#5a6068" stroke-width="1.5" opacity="0.7" marker-end="url(#arr)" data-from="${esc(n.parent.key)}" data-to="${esc(n.key)}" ${n.opt||n.parent.opt?'stroke-dasharray="5 4"':''}/>`;
+  });
+
+  let g='';
+  all.forEach(n=>{ const p=pos[n.key], r=rOf(n), cc=col(n.s), big=n.depth<=1;
+    const idx=mmMeta.push({l:n.l,branch:n.parent?n.parent.l:'Ownership',status:n.s,note:n.note})-1;
+    const lbl=`<text x="${(r+8).toFixed(1)}" y="4" fill="${big?'#fafaf7':'#d4d7da'}" font-size="${big?14:12.5}" text-anchor="start" font-weight="${big?600:400}" ${big?'font-style="italic" font-family="\'Cormorant Garamond\',Georgia,serif"':'font-family="Outfit,-apple-system,Segoe UI,sans-serif"'} pointer-events="none">${esc(n.l)}</text>`;
+    g+=`<g class="mm-node" data-view="own" data-k="${esc(n.key)}" transform="translate(${p.x.toFixed(1)},${p.y.toFixed(1)})"><circle r="${r}" fill="${cc}" data-i="${idx}" filter="url(#mmShadow2)"/>${lbl}</g>`;
+  });
+
+  const defs=`<defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a9099"/></marker>`+
+    `<filter id="mmShadow2" x="-60%" y="-60%" width="220%" height="220%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.5"/></filter></defs>`;
+  return `<svg viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto">${defs}${lines}${g}</svg>`;
 }
 
 function buildMindmap(){
@@ -1763,7 +1766,7 @@ document.addEventListener('pointerdown',e=>{
   const g=e.target.closest && e.target.closest('g.mm-node'); if(!g||!g.ownerSVGElement) return;
   const svg=g.ownerSVGElement, tr=g.transform.baseVal.consolidate();
   const ox=tr?tr.matrix.e:0, oy=tr?tr.matrix.f:0, st=mmSvgPt(svg,e);
-  mmDrag={g,svg,k:g.getAttribute('data-k'),sx:st.x,sy:st.y,ox,oy,cx:ox,cy:oy,moved:false};
+  mmDrag={g,svg,k:g.getAttribute('data-k'),view:g.getAttribute('data-view')||'mm',sx:st.x,sy:st.y,ox,oy,cx:ox,cy:oy,moved:false};
   g.classList.add('mm-dragging'); try{ g.setPointerCapture(e.pointerId); }catch(_){}
 });
 document.addEventListener('pointermove',e=>{
@@ -1780,16 +1783,20 @@ document.addEventListener('pointerup',()=>{
   if(!mmDrag) return; const d=mmDrag; mmDrag=null; d.g.classList.remove('mm-dragging');
   if(!d.moved) return; // no real movement → let the click handler open the detail
   mmJustDragged=true; setTimeout(()=>{mmJustDragged=false;},350);
-  const vb=d.svg.viewBox.baseVal, cx=vb.width/2, cy=vb.height/2;
-  S.mmPos=S.mmPos||{}; S.mmPos[d.k]={dx:Math.round(d.cx-cx),dy:Math.round(d.cy-cy)};
-  if(d.k.charAt(0)==='K'){ // reassign a child dot to the nearest branch hub / center
-    let best=null,bd=1e9;
-    d.svg.querySelectorAll('g.mm-node').forEach(g=>{ const kk=g.getAttribute('data-k'); if(kk!=='C'&&kk.charAt(0)!=='H') return; const t=g.transform.baseVal.consolidate(); const gx=t?t.matrix.e:0, gy=t?t.matrix.f:0; const dd=(gx-d.cx)**2+(gy-d.cy)**2; if(dd<bd){bd=dd;best=kk;} });
-    if(best){ S.mmParent=S.mmParent||{}; S.mmParent[d.k]=best; }
+  if(d.view==='own'){
+    S.ownPos=S.ownPos||{}; S.ownPos[d.k]={x:Math.max(24,Math.round(d.cx)),y:Math.max(24,Math.round(d.cy))};
+  } else {
+    const vb=d.svg.viewBox.baseVal, cx=vb.width/2, cy=vb.height/2;
+    S.mmPos=S.mmPos||{}; S.mmPos[d.k]={dx:Math.round(d.cx-cx),dy:Math.round(d.cy-cy)};
+    if(d.k.charAt(0)==='K'){ // reassign a child dot to the nearest branch hub / center
+      let best=null,bd=1e9;
+      d.svg.querySelectorAll('g.mm-node').forEach(g=>{ const kk=g.getAttribute('data-k'); if(kk!=='C'&&kk.charAt(0)!=='H') return; const t=g.transform.baseVal.consolidate(); const gx=t?t.matrix.e:0, gy=t?t.matrix.f:0; const dd=(gx-d.cx)**2+(gy-d.cy)**2; if(dd<bd){bd=dd;best=kk;} });
+      if(best){ S.mmParent=S.mmParent||{}; S.mmParent[d.k]=best; }
+    }
   }
   save(); renderMermaid(); if(document.getElementById('mmFull').classList.contains('open')) renderMMFull();
 });
-function resetMMLayout(){ delete S.mmPos; delete S.mmParent; save(); renderMermaid(); if(document.getElementById('mmFull').classList.contains('open')) renderMMFull(); toast('Mind map layout reset'); }
+function resetMMLayout(){ delete S.mmPos; delete S.mmParent; delete S.ownPos; save(); renderMermaid(); if(document.getElementById('mmFull').classList.contains('open')) renderMMFull(); toast('Layout reset'); }
 
 /* ---------- Init ---------- */
 document.getElementById('reviewNotes').addEventListener('input',e=>{ review.notes=e.target.value; saveReview(); });
