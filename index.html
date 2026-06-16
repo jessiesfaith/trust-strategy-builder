@@ -254,9 +254,31 @@
   hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
   code.inline{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px}
   pre.code{background:#000;color:#e8e6df;padding:14px;border-radius:11px;overflow:auto;font-size:12px;line-height:1.5;max-height:320px;border:1px solid var(--line)}
+  /* Private login gate */
+  .login-gate{position:fixed;inset:0;z-index:1000;background:#0a0a0a;display:flex;align-items:center;justify-content:center;padding:20px}
+  .login-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.6)}
+  .login-card .login-logo{width:46px;height:46px;border-radius:12px;background:var(--indigo);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-size:18px;margin:0 auto 14px}
+  .login-card h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:600}
+  .login-card input{width:100%;margin-top:10px;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink)}
+  .login-card input:focus{outline:2px solid var(--indigo-soft);border-color:var(--indigo)}
+  .lg-err{color:var(--red);font-size:12px;min-height:16px;margin-top:8px}
 </style>
 </head>
 <body>
+
+<div class="login-gate" id="loginGate">
+  <form class="login-card" onsubmit="login(event)">
+    <div class="login-logo">TS</div>
+    <h2>Trust Strategy Builder</h2>
+    <p class="muted" style="font-size:13px;margin-top:2px">Private preview — please sign in.</p>
+    <input id="lg_user" type="text" placeholder="Username" autocomplete="username">
+    <input id="lg_pass" type="password" placeholder="Password" autocomplete="current-password">
+    <div class="lg-err" id="lg_err"></div>
+    <button type="submit" class="btn-primary" style="width:100%">Sign in</button>
+    <div class="muted" style="font-size:11px;margin-top:12px">Private demo — access limited.</div>
+  </form>
+</div>
+<script>if(localStorage.getItem('tsb_auth')==='1'){var _g=document.getElementById('loginGate');if(_g)_g.style.display='none';}</script>
 
 <div class="preview-banner">
   <strong>Preview Mode:</strong> This is a planning prototype using sample data. No legal documents are created.
@@ -277,6 +299,7 @@
       <button class="btn-ghost" onclick="scrollToId('export')">⬇ Export</button>
       <button class="btn-soft" onclick="resetToSample()">↺ Reset to Sample Data</button>
       <button class="btn-danger" onclick="clearScenario()">🗑 Clear Scenario</button>
+      <button class="btn-ghost" onclick="lockApp()" title="Lock this module (sign out)">🔒 Lock</button>
     </div>
   </div>
   <nav class="toptabs" id="topTabs"></nav>
@@ -883,6 +906,16 @@ function saveReview(){ try{ localStorage.setItem(LS_REVIEW, JSON.stringify(revie
 function loadReview(){ try{ const r=localStorage.getItem(LS_REVIEW); return r?JSON.parse(r):{checks:{},notes:''}; }catch(e){ return {checks:{},notes:''}; } }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1900); }
 function scrollToId(id){ document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'}); }
+/* Client-side demo gate (NOT real security — keeps casual viewers out only) */
+function login(e){ if(e&&e.preventDefault) e.preventDefault();
+  const u=(document.getElementById('lg_user').value||'').trim();
+  const p=document.getElementById('lg_pass').value||'';
+  const U=[74,101,115,115,105,99,97,32,68,111,117,103,104,101,114,116,121].map(c=>String.fromCharCode(c)).join('');
+  const P=[102,97,115,116,105,110,115,105,103,104,116,115].map(c=>String.fromCharCode(c)).join('');
+  if(u.toLowerCase()===U.toLowerCase() && p===P){ try{localStorage.setItem('tsb_auth','1');}catch(_){} document.getElementById('loginGate').style.display='none'; }
+  else { document.getElementById('lg_err').textContent='Incorrect username or password.'; }
+}
+function lockApp(){ try{localStorage.removeItem('tsb_auth');}catch(_){} const g=document.getElementById('loginGate'); g.style.display='flex'; const p=document.getElementById('lg_pass'); if(p) p.value=''; const u=document.getElementById('lg_user'); if(u) u.focus(); }
 
 /* ---------- Recommendation / flag logic (Module 16) ---------- */
 function propertyFlags(e){
