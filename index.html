@@ -776,21 +776,61 @@ const TRUST_INFO={
   llc:{what:'A liability-shielded entity that can own a rental/business; your trust can own the LLC.',when:'When a rental or business carries liability you want separated from personal assets.',cons:['Separate bank account + EIN; never commingle','Operating agreement + registered agent','Insurance & lender consent before retitling property','Annual state fee / franchise tax']},
   series:{what:'One LLC with internal, liability-separated “series.”',when:'Several properties needing separation without many filings — only in authorizing states.',cons:['Only some states authorize formation','Liability separation untested in some courts','Banking/lender familiarity varies']},
   flp:{what:'A partnership holding family assets; you keep control as general partner, others hold limited interests.',when:'Consolidated management plus discounted gifting of LP interests to heirs / an IDGT.',cons:['Qualified appraisal for valuation discounts','Bona-fide purpose; respect formalities','Often paired with an IDGT gift/sale']},
-  idgt:{what:'An irrevocable trust that’s a grantor trust for income tax but sits OUTSIDE your estate.',when:'Estate freeze — gift/sell appreciating assets so future growth escapes estate tax.',cons:['Seed gift (~10%) before an installment sale','Note interest rate (AFR) and term','You pay its income tax — a bonus tax-free transfer','Independent trustee; you can’t serve']},
-  ilit:{what:'An irrevocable trust that owns a life-insurance policy.',when:'Keep a large death benefit out of your taxable estate.',cons:['Trust (not you) owns + is beneficiary','Crummey notices for gifted premiums','3-year lookback if transferring an existing policy']},
+  idgt:{what:'An irrevocable trust that’s a grantor trust for income tax but sits OUTSIDE your estate.',when:'Estate freeze — gift/sell appreciating assets so future growth escapes estate tax.',cons:['Seed gift (~10%) before an installment sale — the sale is ignored for income tax (Rev. Rul. 85-13)','Note interest rate (AFR) and term','You pay its income tax — a bonus tax-free transfer (grantor-trust rules, IRC §§671–679)','Independent trustee; avoid retained powers (IRC §§2036/2038)']},
+  ilit:{what:'An irrevocable trust that owns a life-insurance policy.',when:'Keep a large death benefit out of your taxable estate.',cons:['Trust (not you) owns + is beneficiary — avoid incidents of ownership (IRC §2042)','Crummey notices for gifted premiums (IRC §2503(b))','3-year lookback if transferring an existing policy (IRC §2035)']},
   grat:{what:'You transfer assets and keep an annuity for a term; the remainder passes to heirs.',when:'Pass appreciation above the §7520 hurdle rate ~gift-tax-free; great in low-rate/high-growth cases.',cons:['You must outlive the term','Pick term + annuity (often “zeroed-out”)','Best for volatile / high-growth assets']},
   crt:{what:'You donate an asset; it pays you/heirs income for a term, remainder to charity.',when:'Appreciated asset + charitable intent + income need; defers capital gain.',cons:['Choose payout % and term (CRAT vs CRUT)','Partial income-tax deduction now','Irrevocable — charity gets the remainder']},
   clat:{what:'Pays an annuity to charity for a term; the remainder goes to heirs.',when:'Charitable intent + passing the remainder to heirs at low gift cost; strong in low-rate years.',cons:['Grantor vs non-grantor (deduction timing)','Choose term + annuity amount','Remainder to heirs ~gift-tax-free if well structured']},
   qprt:{what:'You give your home to a trust but keep living there for a term.',when:'Move a home out of the estate at a discounted gift value.',cons:['You must outlive the term','Pay fair-market rent after the term','Loses the step-up on the residence']},
   slat:{what:'An irrevocable trust for your spouse’s benefit, funded with your exemption.',when:'Use exemption now and remove growth from the estate while keeping indirect access via your spouse.',cons:['Reciprocal-trust doctrine if both spouses do one','Access ends at spouse’s death / divorce','Community-property nuances (e.g., CA)']},
-  dapt:{what:'A self-settled irrevocable trust that can protect assets you place in it.',when:'Asset protection — only in states allowing self-settled spendthrift trusts.',cons:['Not allowed in CA — out-of-state DAPT + attorney review','Fraudulent-transfer lookback period','Not an estate-tax saver by itself']},
-  tod:{what:'A deed naming who receives your real estate at death, outside probate.',when:'Simple probate avoidance for a property; available in many states.',cons:['Revocable; no creditor protection','Not available in every state','Coordinate with the trust plan']}
+  dapt:{what:'A self-settled irrevocable trust that can protect assets you place in it.',when:'Asset protection — only in states allowing self-settled spendthrift trusts.',cons:['Not allowed in CA — a settlor’s creditors can reach a self-settled trust (Prob. Code §15304); some use an out-of-state DAPT','Fraudulent-transfer lookback period','Not an estate-tax saver by itself']},
+  tod:{what:'A deed naming who receives your real estate at death, outside probate.',when:'Simple probate avoidance for a property; available in many states.',cons:['Revocable; beneficiary takes subject to liens & the decedent’s debts (Prob. Code §5652)','Use the statutory form (Prob. Code §5642)','Coordinate with the trust plan']}
 };
 const TRUSTS=[
   {k:'rlt',name:'Revocable Trust',full:'Revocable Living Trust',avail:'all'},
   {k:'pour',name:'Pour-Over Will',full:'Pour-Over Will',avail:'all'}
 ].concat(STRUCTURES.map(s=>({k:s.k,name:s.name,full:s.full,avail:s.avail,cp:s.cp,blurb:s.blurb})))
  .map(t=>({...t, info:TRUST_INFO[t.k]||{what:t.blurb||'',when:'',cons:[]}}));
+// Move structures that aren't typical in California to the right of the tab bar.
+TRUSTS.sort((a,b)=>(structAvail(a,'California').lvl==='na'?1:0)-(structAvail(b,'California').lvl==='na'?1:0));
+
+/* CA statutory probate fee (Prob. Code §10800 / §10810) — one statutory fee (executor OR attorney) */
+function caProbateFee(v){ v=Math.max(0,v); let f=0;
+  f+=Math.min(v,100000)*0.04;
+  if(v>100000) f+=Math.min(v-100000,100000)*0.03;
+  if(v>200000) f+=Math.min(v-200000,800000)*0.02;
+  if(v>1000000) f+=Math.min(v-1000000,9000000)*0.01;
+  if(v>10000000) f+=Math.min(v-10000000,15000000)*0.005;
+  return f;
+}
+function grossEstate(){ return (S.properties||[]).reduce((a,p)=>a+ +(p.value||0),0)+(S.bankAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0)+(S.brokerageAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0); }
+// Tax/cost impact tied to the Overview estate values + statutory max/min
+function trustStatLine(k){
+  ensureTax(); const t=S.tax, M=n=>'$'+Math.round(n).toLocaleString('en-US');
+  const gross=grossEstate(), exTot=(+t.exemption||0)*(t.dual?2:1), overBy=Math.max(0,(+t.estate||0)-exTot);
+  if(k==='rlt'||k==='pour'||k==='tod'){ const fee=caProbateFee(gross);
+    return 'From your Overview estate (~'+M(gross)+' gross): California statutory probate fees would run ≈ '+M(fee)+' executor + '+M(fee)+' attorney = ~'+M(2*fee)+' (Prob. Code §10800 / §10810). '+(k==='tod'?'A TOD deed':'A funded revocable trust')+' avoids probate on those assets. Small estates under ~$184,500 may use a §13100 affidavit (verify the current limit).'; }
+  if(k==='llc'||k==='series'){ return 'Statutory cost floor: California’s $800 minimum annual franchise tax per entity (Rev. & Tax. Code §17941) plus the §17942 gross-receipts fee. Not an estate-tax item.'; }
+  return overBy>0
+    ? ('Your Overview taxable estate (~'+M(+t.estate||0)+') exceeds the '+M(exTot)+' federal exemption (IRC §2010, the max before tax) by ~'+M(overBy)+' — exposed at 40%. This structure aims to move value below that line.')
+    : ('Your Overview taxable estate (~'+M(+t.estate||0)+') is under the '+M(exTot)+' federal exemption (IRC §2010) — estate tax isn’t the current driver; weigh the lost step-up before gifting out.');
+}
+const CODE_REFS={
+  rlt:[{c:'Cal. Prob. Code §§15200–15210',s:'How a trust is created — by declaration or transfer of property to a trustee with trust intent.'},{c:'Cal. Prob. Code §15400–§15401',s:'A trust is revocable by the settlor unless made expressly irrevocable; §15401 sets the revocation methods.'},{c:'Cal. Prob. Code §15800',s:'While the settlor is competent, the trustee’s duties run to the settlor, not the beneficiaries.'},{c:'Cal. Prob. Code §18100.5',s:'Certification of Trust — what a bank or title company may rely on instead of the full trust.'},{c:'Cal. Prob. Code §16060–§16064',s:'Trustee’s duty to keep beneficiaries reasonably informed and to account.'}],
+  pour:[{c:'Cal. Prob. Code §6300 (UTATA)',s:'A will may pour assets into a trust that exists at death, even one that is amendable/revocable.'},{c:'Cal. Prob. Code §6110',s:'Will execution: in writing, signed by the testator, witnessed by two persons (or harmless-error proof).'},{c:'Cal. Prob. Code §§10800, 10810',s:'Assets passing through the will (probate) incur statutory executor + attorney fees — see Tax/cost impact.'}],
+  llc:[{c:'Cal. Corp. Code §17701.01 et seq. (RULLCA)',s:'California Revised Uniform LLC Act governs formation and operation.'},{c:'Cal. Corp. Code §17703.04',s:'Members/managers aren’t personally liable for the LLC’s debts merely by being members.'},{c:'Cal. Rev. & Tax. Code §§17941, 17942',s:'$800 minimum annual franchise tax plus a gross-receipts LLC fee.'}],
+  series:[{c:'Cal. Corp. Code §17701.01 et seq.',s:'California has NOT adopted series-LLC formation — you cannot form one under CA law.'},{c:'Cal. Rev. & Tax. Code §17941',s:'The FTB treats each series doing business in / registered in CA as owing the $800 tax.'}],
+  flp:[{c:'Cal. Corp. Code §15900 et seq.',s:'Uniform Limited Partnership Act of 2008 governs California limited partnerships.'},{c:'Cal. Corp. Code §15903.03',s:'A limited partner isn’t liable for partnership obligations merely by being a limited partner.'},{c:'IRC §2704',s:'Limits certain valuation-discount strategies on transfers among family members.'}],
+  idgt:[{c:'IRC §§671–679',s:'Grantor-trust rules — trust income is taxed to the grantor (the intentional “defect”).'},{c:'Rev. Rul. 85-13',s:'A sale between a grantor and the grantor’s trust is ignored for income tax (no gain on the sale).'},{c:'IRC §§2036, 2038',s:'Avoid retained powers/enjoyment or the assets get pulled back into the taxable estate.'},{c:'Cal. Prob. Code §§15200, 15403',s:'Trust creation; an irrevocable trust generally needs all beneficiaries’ consent to modify/revoke.'}],
+  ilit:[{c:'IRC §2042',s:'Life-insurance proceeds are in your estate if the insured holds “incidents of ownership.”'},{c:'IRC §2035',s:'A transferred existing policy is pulled back if the insured dies within 3 years.'},{c:'IRC §2503(b); Crummey v. Comm’r',s:'Annual-exclusion gifts to pay premiums need beneficiary withdrawal (Crummey) rights/notices.'}],
+  grat:[{c:'IRC §2702',s:'Special valuation rules; a qualified annuity interest (GRAT) is the recognized exception.'},{c:'IRC §7520',s:'The IRS hurdle rate the GRAT assets must beat to transfer value to heirs.'}],
+  crt:[{c:'IRC §664',s:'Defines charitable remainder annuity trusts (CRAT) and unitrusts (CRUT).'},{c:'IRC §170',s:'Income-tax charitable deduction for the present value of the remainder to charity.'}],
+  clat:[{c:'IRC §170(f)(2), §§2055, 2522',s:'Income/estate/gift charitable deductions for the charity’s lead interest.'},{c:'IRC §7520',s:'Valuation rate used to value the charitable annuity stream.'}],
+  qprt:[{c:'IRC §2702(a)(3); Treas. Reg. §25.2702-5',s:'Personal-residence trust exception to the §2702 valuation rules (QPRT).'},{c:'Cal. Prob. Code §§15200, 15403',s:'Irrevocable trust creation and limits on revocation.'}],
+  slat:[{c:'IRC §§2503, 2010',s:'Completed gift uses your lifetime exemption; remaining exemption is set by §2010.'},{c:'United States v. Estate of Grace',s:'Reciprocal-trust doctrine — near-identical SLATs for each spouse may be “uncrossed” by the IRS.'},{c:'Cal. Fam. Code §§760, 770',s:'Community vs. separate property — affects what each spouse can gift in California.'}],
+  dapt:[{c:'Cal. Prob. Code §15304',s:'A settlor’s creditors CAN reach a self-settled trust — why California does not recognize DAPTs.'},{c:'e.g., Nev. Rev. Stat. ch. 166',s:'Some states authorize self-settled spendthrift trusts; conflict-of-laws risk for a CA resident.'}],
+  tod:[{c:'Cal. Prob. Code §§5600–5696',s:'Revocable Transfer-on-Death (TOD) deed for real property — passes outside probate.'},{c:'Cal. Prob. Code §5642',s:'The statutory TOD deed form and required content.'},{c:'Cal. Prob. Code §5652',s:'Beneficiary takes subject to liens; the property can stay liable for the decedent’s debts/Medi-Cal claims.'}]
+};
 function renderTopTabs(){
   const el=document.getElementById('topTabs'); if(!el) return;
   const tabs=[{k:'overview',n:'Overview'}].concat(TRUSTS.map(t=>({k:t.k,n:t.name})));
@@ -821,13 +861,14 @@ function renderTrustPanel(key){
       </div>
       <div class="grid g2">
         <div class="card pad"><h3 ${h3}>What it is</h3><p style="font-size:13px">${esc(tr.info.what)}</p>${tr.info.when?`<h3 ${h3} style="margin-top:12px;color:var(--indigo-ink)">When it’s used</h3><p style="font-size:13px">${esc(tr.info.when)}</p>`:''}</div>
-        <div class="card pad"><h3 ${h3}>Tax impact</h3><p style="font-size:13px">${esc(structImpact(tr))}</p><div class="legal-foot" style="margin-top:8px"><b>Availability:</b> ${esc(a.note)}</div></div>
+        <div class="card pad"><h3 ${h3}>Tax / cost impact <span class="muted" style="font-weight:400;font-size:11px">(from your Overview values + statutory limits)</span></h3><p style="font-size:13px">${esc(structImpact(tr))}</p><p style="font-size:13px;margin-top:8px">${esc(trustStatLine(tr.k))}</p><div class="legal-foot" style="margin-top:8px"><b>Availability:</b> ${esc(a.note)}</div></div>
       </div>
       ${tr.info.cons&&tr.info.cons.length?`<div class="card pad" style="margin-top:14px"><h3 ${h3}>Key decisions &amp; questions for your attorney / CPA</h3><ul class="lite">${tr.info.cons.map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div>`:''}
       <div class="card pad" style="margin-top:14px"><h3 ${h3}>Your notes &amp; build ideas for this trust</h3>
         <textarea oninput="updTrustNote('${tr.k}',this.value)" placeholder="What to add for ${esc(tr.name)} — intake fields, funding steps, calculators…" style="width:100%;min-height:120px;font-family:inherit;font-size:13px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);resize:vertical">${esc(S.trustNotes[tr.k]||'')}</textarea>
         <div class="legal-foot" style="margin-top:6px">Scaffold tab — we’ll flesh out per-trust intake, funding checklist, and calculators here as you build.</div>
       </div>
+      ${CODE_REFS[tr.k]?`<div class="card pad" style="margin-top:14px"><h3 ${h3}>Probate &amp; statutory references</h3>${CODE_REFS[tr.k].map(r=>`<div style="border-bottom:1px dashed var(--line);padding:7px 0"><div style="font-weight:700;font-size:12.5px;color:var(--ink)">${esc(r.c)}</div><div class="muted" style="font-size:12px">${esc(r.s)}</div></div>`).join('')}<div class="legal-foot" style="margin-top:8px">⚠️ Plain-language summaries for orientation only — these are not the statutes and not legal advice. Read the official California Probate / Corporations Code (leginfo.ca.gov) and the Internal Revenue Code, and confirm with your attorney. Section numbers and dollar limits change.</div></div>`:''}
       <div class="disclaimer" style="margin-top:14px"><span>⚠️</span><div>Planning / organization only — not legal or tax advice. Confirm with your attorney &amp; CPA.</div></div>
     </section>`;
 }
