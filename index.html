@@ -1264,18 +1264,25 @@ const TAXC={
 };
 // State income tax (estimates). Most states tax cap gains/dividends as ordinary income.
 const STATE_TAX={
-  'California':{ surtax1m:true,
+  'California':{ surtax1m:.01,
     Single:[[0,.01],[10756,.02],[25499,.04],[40245,.06],[55866,.08],[70606,.093],[360659,.103],[432787,.113],[721314,.123]],
     MFJ:[[0,.01],[21512,.02],[50998,.04],[80490,.06],[111732,.08],[141212,.093],[721318,.103],[865574,.113],[1442628,.123]] },
   'New York':{
     Single:[[0,.04],[8500,.045],[11700,.0525],[13900,.055],[80650,.06],[215400,.0685],[1077550,.0965],[5000000,.103],[25000000,.109]],
-    MFJ:[[0,.04],[17150,.045],[23600,.0525],[27900,.055],[161550,.06],[323200,.0685],[2155350,.0965],[5000000,.103],[25000000,.109]] }
+    MFJ:[[0,.04],[17150,.045],[23600,.0525],[27900,.055],[161550,.06],[323200,.0685],[2155350,.0965],[5000000,.103],[25000000,.109]] },
+  'New Jersey':{ MFJ:[[0,.014],[20000,.0175],[50000,.0245],[70000,.035],[80000,.05525],[150000,.0637],[500000,.0897],[1000000,.1075]] },
+  'Oregon':{ MFJ:[[0,.0475],[8100,.0675],[20400,.0875],[250000,.099]] },
+  'Minnesota':{ MFJ:[[0,.0535],[47620,.068],[189180,.0785],[330410,.0985]] },
+  'Virginia':{ MFJ:[[0,.02],[3000,.03],[5000,.05],[17000,.0575]] },
+  'Illinois':{ flat:.0495 }, 'Pennsylvania':{ flat:.0307 }, 'Massachusetts':{ flat:.05, surtax1m:.04 },
+  'North Carolina':{ flat:.045 }, 'Georgia':{ flat:.0539 }, 'Colorado':{ flat:.044 }, 'Arizona':{ flat:.025 },
+  'Michigan':{ flat:.0425 }, 'Indiana':{ flat:.0305 }, 'Utah':{ flat:.0455 }, 'Kentucky':{ flat:.04 }, 'Ohio':{ flat:.035 }
 };
 const NO_TAX_STATES=['Texas','Florida','Nevada','Washington','Wyoming','South Dakota','Alaska','Tennessee','New Hampshire'];
 const STATE_ESTATE_TAX=['New York','Washington','Massachusetts','Oregon','Minnesota','Illinois','Maryland','Connecticut','Hawaii','Maine','Rhode Island','Vermont','District of Columbia'];
 function progTax(inc,br){ inc=Math.max(0,inc); let t=0; for(let i=0;i<br.length;i++){ const lo=br[i][0], hi=i+1<br.length?br[i+1][0]:Infinity; if(inc>lo) t+=(Math.min(inc,hi)-lo)*br[i][1]; } return t; }
 function margRate(inc,br){ let r=br[0][1]; for(const b of br) if(inc>=b[0]) r=b[1]; return r; }
-function stateTax(x){ const st=S.tax.state||'California', f=S.tax.filing||'MFJ'; if(NO_TAX_STATES.includes(st)) return 0; const cfg=STATE_TAX[st]; if(!cfg) return 0; let t=progTax(x,cfg[f]||cfg.MFJ); if(cfg.surtax1m && x>1000000) t+=(x-1000000)*0.01; return t; }
+function stateTax(x){ const st=S.tax.state||'California', f=S.tax.filing||'MFJ'; if(NO_TAX_STATES.includes(st)) return 0; const cfg=STATE_TAX[st]; if(!cfg) return 0; let t = cfg.flat!=null ? Math.max(0,x)*cfg.flat : progTax(x,cfg[f]||cfg.MFJ); if(cfg.surtax1m && x>1000000) t+=(x-1000000)*cfg.surtax1m; return t; }
 function ltcgStack(ord,gain,br){ let t=0, lo=ord, hi=ord+gain; for(let i=0;i<br.length;i++){ const bLo=br[i][0], bHi=i+1<br.length?br[i+1][0]:Infinity, seg=Math.max(0,Math.min(hi,bHi)-Math.max(lo,bLo)); if(seg>0) t+=seg*br[i][1]; } return t; }
 function seTaxCalc(net){ const base=Math.max(0,net)*0.9235; return Math.min(base,TAXC.ssBase)*0.124 + base*0.029; }
 function ensureTax(){
@@ -1294,7 +1301,7 @@ function renderTaxEstimator(){
   const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:15px':''}">—</span></div>`;
   const card=(title,body)=>`<div class="card pad"><h3 style="font-size:14px;margin-bottom:10px;color:var(--indigo-ink)">${title}</h3>${body}</div>`;
   const selSty='style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"';
-  const STATE_OPTS=['California','New York','Texas','Florida','Nevada','Washington','Wyoming','Tennessee','Other'];
+  const STATE_OPTS=Array.from(new Set([...Object.keys(STATE_TAX),...NO_TAX_STATES])).sort().concat('Other');
   const optsArr=STATE_OPTS.includes(t.state)?STATE_OPTS:[t.state].concat(STATE_OPTS);
   const stateOpts=optsArr.map(s=>`<option ${t.state===s?'selected':''}>${esc(s)}</option>`).join('');
   document.getElementById('taxEstimator').innerHTML=`
@@ -1304,6 +1311,14 @@ function renderTaxEstimator(){
       <div class="field" style="margin-bottom:0"><label>State</label><select onchange="updTax('state',this.value)" ${selSty}>${stateOpts}</select></div>
       <div class="field" style="margin-bottom:0"><label>Other ordinary income ($)</label>${inp('ordinary')}</div>
     </div></div>
+    <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
+      <div class="grid g3">
+        <div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em">Est. annual income tax</div><div id="r_total_annual" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:11px">ordinary + investment + SE − QBI</div></div>
+        <div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em">Estate tax now (at death)</div><div id="r_total_estate" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:11px">federal; state flagged separately</div></div>
+        <div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:11px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
+      </div>
+      <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts only ILIT, FLP (~30% discount) and QPRT removals — illustrative, attorney/CPA review.</div>
+    </div>
     <div class="grid g2">
       ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}`)}
       ${card('Estate tax', `<div class="form-grid">${fld('Taxable estate ($)','estate')}${fld('Exemption / person ($)','exemption')}</div>${chk('Married — use 2× exemption (portability)','dual')}${res('Federal estate tax','r_est_tax',1)}${res('State estate','r_est_ca')}<div class="legal-foot" id="r_est_note"></div>`)}
@@ -1352,6 +1367,17 @@ function computeTax(){
   const age=+t.age||0, comp=+t.seComp||0;
   set('r_ret_401',m$(23500+(age>=50?7500:0))); set('r_ret_ira',m$(7000+(age>=50?1000:0)));
   set('r_ret_simple',m$(16500+(age>=50?3500:0))); set('r_ret_sep',m$(Math.min(comp*0.25,70000)));
+  // ---- Summary: single annual total + estate before/after structures ----
+  const ordTax=progTax(ord,fedBr)+stateTax(ord);
+  const annual=ordTax + fedCG+stCG+niit + llcSE - qsaved;
+  set('r_total_annual', m$(annual));
+  set('r_total_estate', m$(estTax));
+  const flpVal=(S.properties||[]).filter(p=>/rental|commercial|vacation/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
+  const resVal=(S.properties||[]).filter(p=>/personal residence/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
+  let removed=0; (S.customStructures||[]).forEach(cs=>{ if(cs.k==='ilit') removed+= +t.deathBenefit||0; else if(cs.k==='flp') removed+=0.30*flpVal; else if(cs.k==='qprt') removed+=resVal; });
+  const afterEstate=Math.max(0,(+t.estate||0)-removed), afterTax=Math.max(0,afterEstate-exTot)*TAXC.estRate, estSaved=estTax-afterTax;
+  set('r_total_after', m$(afterTax));
+  note('r_total_saved', removed>0?('saves ≈ '+m$(estSaved)+' (removes ~'+m$(removed)+')'):'add FLP / ILIT / QPRT to project');
 }
 
 /* ---------- Export center ---------- */
