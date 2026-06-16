@@ -303,6 +303,7 @@
     </div>
     <div class="header-actions">
       <span class="badge b-indigo" style="align-self:center">● Preview Mode</span>
+      <button class="btn-soft" onclick="switchTab('overview')" title="Jump back to the Overview tab">🏠 Overview</button>
       <button class="btn-ghost" onclick="saveDraft()">💾 Save Draft</button>
       <button class="btn-ghost" onclick="scrollToId('export')">⬇ Export</button>
       <button class="btn-soft" onclick="resetToSample()">↺ Reset to Sample Data</button>
@@ -410,8 +411,8 @@
     <div class="card pad" id="taxConsider"><!-- rendered --></div>
   </section>
 
-  <!-- TAX ESTIMATOR -->
-  <section class="block" id="taxest">
+  <!-- TAX ESTIMATOR (its own tab — hidden on the Overview tab) -->
+  <section class="block" id="taxest" style="display:none">
     <div class="section-head">
       <span class="eyebrow">Estimator</span>
       <h2>Tax Estimator</h2>
@@ -873,7 +874,7 @@ function allTrusts(){ return TRUSTS.concat(S.customTrusts||[]); }
 function trustByKey(k){ return allTrusts().find(t=>t.k===k); }
 function renderTopTabs(){
   const el=document.getElementById('topTabs'); if(!el) return;
-  const tabs=[{k:'overview',n:'Overview'}].concat(allTrusts().map(t=>({k:t.k,n:t.name})));
+  const tabs=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'}].concat(allTrusts().map(t=>({k:t.k,n:t.name})));
   el.innerHTML=tabs.map(t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`).join('')
     + `<button class="toptab add-trust" onclick="newTrust()" title="Add your own trust or entity tab">＋ New trust</button>`;
 }
@@ -898,11 +899,18 @@ function deleteTrust(k){
   save(); renderTopTabs(); switchTab('overview');
 }
 function switchTab(key){
-  currentTab=key; const isOv=key==='overview';
+  currentTab=key;
+  const isOv=key==='overview', isTax=key==='tax', isTrust=!isOv&&!isTax;
   document.querySelectorAll('.toptab').forEach(b=>b.classList.toggle('active',b.dataset.tab===key));
-  document.querySelectorAll('.wrap > *').forEach(el=>{ if(el.id==='tab-trust') return; el.style.display=isOv?'':'none'; });
-  const panel=document.getElementById('tab-trust'); panel.style.display=isOv?'none':'block';
-  if(!isOv) renderTrustPanel(key);
+  // The Tax Estimator lives in its own tab; every other .wrap section belongs to Overview.
+  document.querySelectorAll('.wrap > *').forEach(el=>{
+    if(el.id==='tab-trust') return;                       // trust panel handled below
+    if(el.id==='taxest'){ el.style.display=isTax?'':'none'; return; }
+    el.style.display=isOv?'':'none';
+  });
+  const panel=document.getElementById('tab-trust'); panel.style.display=isTrust?'block':'none';
+  if(isTrust) renderTrustPanel(key);
+  if(isTax) renderTaxEstimator();
   window.scrollTo(0,0);
 }
 function updTrustNote(k,v){ S.trustNotes=S.trustNotes||{}; S.trustNotes[k]=v; save(); }
