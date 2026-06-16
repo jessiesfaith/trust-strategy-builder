@@ -401,16 +401,6 @@
     </div>
   </section>
 
-  <!-- TAX CONSIDERATIONS -->
-  <section class="block" id="taxconsider">
-    <div class="section-head">
-      <span class="eyebrow">Discussion framework</span>
-      <h2>Tax Considerations</h2>
-      <span class="muted" style="font-size:14px">Which tax to minimize is the real question — concepts to raise with your CPA &amp; attorney, not advice.</span>
-    </div>
-    <div class="card pad" id="taxConsider"><!-- rendered --></div>
-  </section>
-
   <!-- TAX ESTIMATOR (its own tab — hidden on the Overview tab) -->
   <section class="block" id="taxest" style="display:none">
     <div class="section-head">
@@ -420,6 +410,16 @@
       <button class="btn-soft btn-xs" style="margin-left:auto" onclick="downloadTaxSummary()">⬇ Download tax summary</button>
     </div>
     <div id="taxEstimator"><!-- rendered --></div>
+  </section>
+
+  <!-- TAX CONSIDERATIONS (bottom of the Tax Estimator tab) -->
+  <section class="block" id="taxconsider" style="display:none">
+    <div class="section-head">
+      <span class="eyebrow">Discussion framework</span>
+      <h2>Tax Considerations</h2>
+      <span class="muted" style="font-size:14px">Which tax to minimize is the real question — concepts to raise with your CPA &amp; attorney, not advice.</span>
+    </div>
+    <div class="card pad" id="taxConsider"><!-- rendered --></div>
   </section>
 
   <!-- DETAILED ACCORDIONS -->
@@ -905,7 +905,7 @@ function switchTab(key){
   // The Tax Estimator lives in its own tab; every other .wrap section belongs to Overview.
   document.querySelectorAll('.wrap > *').forEach(el=>{
     if(el.id==='tab-trust') return;                       // trust panel handled below
-    if(el.id==='taxest'){ el.style.display=isTax?'':'none'; return; }
+    if(el.id==='taxest'||el.id==='taxconsider'){ el.style.display=isTax?'':'none'; return; }
     el.style.display=isOv?'':'none';
   });
   const panel=document.getElementById('tab-trust'); panel.style.display=isTrust?'block':'none';
