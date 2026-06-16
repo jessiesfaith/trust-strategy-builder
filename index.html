@@ -714,8 +714,7 @@ const STRUCTURES=[
   {k:'qprt', name:'QPRT',       full:'Qualified Personal Residence Trust',        avail:'all', blurb:'Moves your home out of the estate at a discounted gift value.'},
   {k:'slat', name:'SLAT',       full:'Spousal Lifetime Access Trust',             avail:'all', cp:true, blurb:'Gift to a trust for your spouse; uses exemption while keeping indirect access.'},
   {k:'dapt', name:'DAPT',       full:'Domestic Asset Protection Trust',           avail:st=>DAPT_STATES.includes(st)?'available':'na', blurb:'Self-settled asset-protection trust. Only ~20 states permit them.'},
-  {k:'tod',  name:'TOD Deed',   full:'Transfer-on-Death / Beneficiary Deed',      avail:st=>NO_TOD_DEED_STATES.includes(st)?'na':'available', blurb:'Passes real estate at death outside probate. Not available in every state.'},
-  {k:'ing',  name:'ING trust',  full:'Incomplete-gift Non-Grantor Trust (NING/DING)', avail:st=>DAPT_STATES.includes(st)?'available':'verify', cp:true, blurb:'State income-tax planning trust, usually sited in a no-tax / DAPT state. Some states (e.g., NY) disregard them.'}
+  {k:'tod',  name:'TOD Deed',   full:'Transfer-on-Death / Beneficiary Deed',      avail:st=>NO_TOD_DEED_STATES.includes(st)?'na':'available', blurb:'Passes real estate at death outside probate. Not available in every state.'}
 ];
 function structAvail(s, state){
   let lvl = typeof s.avail==='function' ? s.avail(state||'') : s.avail;
