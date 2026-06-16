@@ -294,16 +294,16 @@
 
 <header class="app">
   <div class="header-inner">
-    <div class="brand">
+    <div class="brand" onclick="switchTab('overview')" style="cursor:pointer" title="Back to Overview">
       <div class="logo">TS</div>
       <div>
         <div class="name">Trust Strategy Builder</div>
         <div class="sub">Estate &amp; entity planning organizer · attorney-prep tool</div>
       </div>
     </div>
+    <button class="btn-primary" onclick="switchTab('overview')" title="Jump back to the Overview tab" style="align-self:center;margin-left:14px">🏠 Overview</button>
     <div class="header-actions">
       <span class="badge b-indigo" style="align-self:center">● Preview Mode</span>
-      <button class="btn-soft" onclick="switchTab('overview')" title="Jump back to the Overview tab">🏠 Overview</button>
       <button class="btn-ghost" onclick="saveDraft()">💾 Save Draft</button>
       <button class="btn-ghost" onclick="scrollToId('export')">⬇ Export</button>
       <button class="btn-soft" onclick="resetToSample()">↺ Reset to Sample Data</button>
