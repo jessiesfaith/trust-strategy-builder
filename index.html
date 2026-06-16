@@ -58,6 +58,8 @@
   @media(max-width:760px){.layout{flex-direction:column}.toptabs{width:auto;position:static;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);max-height:none;padding:8px 18px}.toptab{width:auto}}
   .toptab:hover{color:var(--ink);background:var(--panel2)}
   .toptab.active{background:var(--indigo-soft);color:var(--indigo-ink);border-color:var(--indigo)}
+  .toptab.add-trust{margin-top:6px;color:var(--indigo-ink);border:1px dashed var(--line)}
+  .toptab.add-trust:hover{border-color:var(--indigo);background:var(--indigo-soft);color:var(--indigo-ink)}
 
   /* Buttons */
   button{font-family:inherit;cursor:pointer;border:0;border-radius:10px;font-size:13px;font-weight:600;padding:8px 12px;transition:.12s;display:inline-flex;align-items:center;gap:6px}
@@ -80,8 +82,8 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
   .card.pad{padding:16px}
   .grid{display:grid;gap:14px}
-  .g3{grid-template-columns:repeat(3,1fr)}
-  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
   @media(max-width:900px){.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
   @media(max-width:620px){.g3{grid-template-columns:1fr}.header-actions{width:100%}}
 
@@ -116,7 +118,11 @@
   .snap b{font-weight:660}
 
   /* Asset summary cards */
-  .asset-card{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;flex-direction:column;gap:8px}
+  .asset-card{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;flex-direction:column;gap:8px;min-width:0}
+  .asset-card .sub{margin-top:2px}
+  .asset-card .sub.scroll{max-height:54px;overflow-y:auto;white-space:normal;word-break:break-word;padding-right:4px}
+  .asset-card .sub.scroll::-webkit-scrollbar{width:6px}
+  .asset-card .sub.scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
   .asset-card .top{display:flex;align-items:center;justify-content:space-between}
   .asset-card .big{font-size:22px;font-weight:780;letter-spacing:-.02em}
   .asset-card .icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;background:var(--indigo-soft)}
@@ -791,6 +797,7 @@ function structImpact(s){
     case 'llc': case 'series': return 'Liability shielding & management — not an estate-tax saver on its own.';
     case 'tod': return 'Avoids probate on real estate — not a tax saver.';
     case 'rlt': return 'Tax-neutral during life; preserves the capital-gains step-up at death and avoids probate. Not an estate-tax saver by itself.';
+    case 'ilt': return 'Moving assets into an irrevocable trust can take their future growth out of your estate'+(over?(' — at 40% that can be meaningful above the '+M(exTot)+' exemption'):'')+'. Trade-offs: lost control and possibly the date-of-death basis step-up. Net benefit depends on the assets and how it’s structured.';
     case 'pour': return 'Catches any asset left outside the trust and routes it in at death — not a tax saver.';
     default: return '';
   }
@@ -799,6 +806,7 @@ function structImpact(s){
 /* ---------- Per-trust-type tabs (scaffold to build each one out) ---------- */
 const TRUST_INFO={
   rlt:{what:'A trust you create and fully control during life — amend or revoke it anytime.',when:'The foundation of most plans: avoid probate, manage incapacity, and keep affairs private.',cons:['Must be FUNDED — retitle assets in, or it does nothing','Name successor trustee(s) and define their powers','Pair with a pour-over will for stray assets','Define sub-trust shares for beneficiaries at death']},
+  ilt:{what:'A trust you cannot freely amend or revoke once it is signed — the terms and the assets you transfer in are locked.',when:'When you need assets out of your taxable estate or shielded from creditors, and you accept giving up control in exchange.',cons:['Generally irrevocable — modifying usually needs all beneficiaries’ consent or court / decanting (Cal. Prob. Code §15403)','Use an independent trustee; avoid retained powers that pull assets back into the estate (IRC §§2036/2038)','Must be FUNDED — retitle assets into the trust to have any effect','Decide grantor vs. non-grantor for income tax — it changes who pays tax and the basis treatment']},
   pour:{what:'A short will that “pours” anything you didn’t retitle into your revocable trust at death.',when:'Always paired with a revocable living trust as the safety net.',cons:['Assets passing through it still hit probate first','Name a guardian for minor children here','Keep it consistent with the trust']},
   llc:{what:'A liability-shielded entity that can own a rental/business; your trust can own the LLC.',when:'When a rental or business carries liability you want separated from personal assets.',cons:['Separate bank account + EIN; never commingle','Operating agreement + registered agent','Insurance & lender consent before retitling property','Annual state fee / franchise tax']},
   series:{what:'One LLC with internal, liability-separated “series.”',when:'Several properties needing separation without many filings — only in authorizing states.',cons:['Only some states authorize formation','Liability separation untested in some courts','Banking/lender familiarity varies']},
@@ -815,6 +823,7 @@ const TRUST_INFO={
 };
 const TRUSTS=[
   {k:'rlt',name:'Revocable Trust',full:'Revocable Living Trust',avail:'all'},
+  {k:'ilt',name:'Irrevocable Living Trust',full:'Irrevocable Living Trust',avail:'all'},
   {k:'pour',name:'Pour-Over Will',full:'Pour-Over Will',avail:'all'}
 ].concat(STRUCTURES.map(s=>({k:s.k,name:s.name,full:s.full,avail:s.avail,cp:s.cp,blurb:s.blurb})))
  .map(t=>({...t, info:TRUST_INFO[t.k]||{what:t.blurb||'',when:'',cons:[]}}));
@@ -844,6 +853,7 @@ function trustStatLine(k){
 }
 const CODE_REFS={
   rlt:[{c:'Cal. Prob. Code §§15200–15210',s:'How a trust is created — by declaration or transfer of property to a trustee with trust intent.'},{c:'Cal. Prob. Code §15400–§15401',s:'A trust is revocable by the settlor unless made expressly irrevocable; §15401 sets the revocation methods.'},{c:'Cal. Prob. Code §15800',s:'While the settlor is competent, the trustee’s duties run to the settlor, not the beneficiaries.'},{c:'Cal. Prob. Code §18100.5',s:'Certification of Trust — what a bank or title company may rely on instead of the full trust.'},{c:'Cal. Prob. Code §16060–§16064',s:'Trustee’s duty to keep beneficiaries reasonably informed and to account.'}],
+  ilt:[{c:'Cal. Prob. Code §§15200–15210',s:'How a trust is created — by declaration or transfer of property to a trustee with trust intent.'},{c:'Cal. Prob. Code §15403',s:'Modifying or terminating an irrevocable trust generally requires the consent of all beneficiaries (and may need court approval).'},{c:'Cal. Prob. Code §§15400–15401',s:'A trust is revocable unless made expressly irrevocable; once irrevocable, the §15401 revocation methods no longer apply.'},{c:'IRC §§2036, 2038',s:'Retained enjoyment or powers over transferred assets pull them back into your taxable estate — defeating the purpose.'},{c:'IRC §§671–679',s:'Grantor-trust rules decide whether trust income is taxed to you (grantor) or to the trust (non-grantor).'}],
   pour:[{c:'Cal. Prob. Code §6300 (UTATA)',s:'A will may pour assets into a trust that exists at death, even one that is amendable/revocable.'},{c:'Cal. Prob. Code §6110',s:'Will execution: in writing, signed by the testator, witnessed by two persons (or harmless-error proof).'},{c:'Cal. Prob. Code §§10800, 10810',s:'Assets passing through the will (probate) incur statutory executor + attorney fees — see Tax/cost impact.'}],
   llc:[{c:'Cal. Corp. Code §17701.01 et seq. (RULLCA)',s:'California Revised Uniform LLC Act governs formation and operation.'},{c:'Cal. Corp. Code §17703.04',s:'Members/managers aren’t personally liable for the LLC’s debts merely by being members.'},{c:'Cal. Rev. & Tax. Code §§17941, 17942',s:'$800 minimum annual franchise tax plus a gross-receipts LLC fee.'}],
   series:[{c:'Cal. Corp. Code §17701.01 et seq.',s:'California has NOT adopted series-LLC formation — you cannot form one under CA law.'},{c:'Cal. Rev. & Tax. Code §17941',s:'The FTB treats each series doing business in / registered in CA as owing the $800 tax.'}],
@@ -858,10 +868,34 @@ const CODE_REFS={
   dapt:[{c:'Cal. Prob. Code §15304',s:'A settlor’s creditors CAN reach a self-settled trust — why California does not recognize DAPTs.'},{c:'e.g., Nev. Rev. Stat. ch. 166',s:'Some states authorize self-settled spendthrift trusts; conflict-of-laws risk for a CA resident.'}],
   tod:[{c:'Cal. Prob. Code §§5600–5696',s:'Revocable Transfer-on-Death (TOD) deed for real property — passes outside probate.'},{c:'Cal. Prob. Code §5642',s:'The statutory TOD deed form and required content.'},{c:'Cal. Prob. Code §5652',s:'Beneficiary takes subject to liens; the property can stay liable for the decedent’s debts/Medi-Cal claims.'}]
 };
+// Built-in trusts + any custom trusts the user has created (persisted in state).
+function allTrusts(){ return TRUSTS.concat(S.customTrusts||[]); }
+function trustByKey(k){ return allTrusts().find(t=>t.k===k); }
 function renderTopTabs(){
   const el=document.getElementById('topTabs'); if(!el) return;
-  const tabs=[{k:'overview',n:'Overview'}].concat(TRUSTS.map(t=>({k:t.k,n:t.name})));
-  el.innerHTML=tabs.map(t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`).join('');
+  const tabs=[{k:'overview',n:'Overview'}].concat(allTrusts().map(t=>({k:t.k,n:t.name})));
+  el.innerHTML=tabs.map(t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`).join('')
+    + `<button class="toptab add-trust" onclick="newTrust()" title="Add your own trust or entity tab">＋ New trust</button>`;
+}
+function newTrust(){
+  const name=(prompt('Name this trust or entity (e.g. “2026 Family Irrevocable Trust”):')||'').trim();
+  if(!name) return;
+  S.customTrusts=S.customTrusts||[];
+  const k='cust_'+uid();
+  S.customTrusts.push({k,name,full:name,avail:'all',custom:true,
+    info:{what:'A custom trust / entity you added. Use the notes section below to capture its purpose, funding steps, trustees, and questions for your attorney & CPA.',when:'',cons:[]}});
+  save(); renderTopTabs(); switchTab(k);
+}
+function renameTrust(k){
+  const t=(S.customTrusts||[]).find(x=>x.k===k); if(!t) return;
+  const name=(prompt('Rename this trust:',t.name)||'').trim(); if(!name) return;
+  t.name=name; t.full=name; save(); renderTopTabs(); renderTrustPanel(k);
+}
+function deleteTrust(k){
+  if(!confirm('Delete this trust tab? Your notes for it will be removed.')) return;
+  S.customTrusts=(S.customTrusts||[]).filter(x=>x.k!==k);
+  if(S.trustNotes) delete S.trustNotes[k];
+  save(); renderTopTabs(); switchTab('overview');
 }
 function switchTab(key){
   currentTab=key; const isOv=key==='overview';
@@ -873,7 +907,7 @@ function switchTab(key){
 }
 function updTrustNote(k,v){ S.trustNotes=S.trustNotes||{}; S.trustNotes[k]=v; save(); }
 function renderTrustPanel(key){
-  const tr=TRUSTS.find(x=>x.k===key); const panel=document.getElementById('tab-trust'); if(!tr){ panel.innerHTML=''; return; }
+  const tr=trustByKey(key); const panel=document.getElementById('tab-trust'); if(!tr){ panel.innerHTML=''; return; }
   const a=structAvail(tr,S.profile.state||''), ac=(MMSTATUS[a.status]||{c:'#9db4e8'}).c;
   S.trustNotes=S.trustNotes||{};
   const tag=a.lvl==='available'?'Available':(a.lvl==='na'?('Not typical in '+(S.profile.state||'your state')):'Verify');
@@ -881,7 +915,9 @@ function renderTrustPanel(key){
   panel.innerHTML=`
     <section class="block">
       <div class="section-head"><span class="eyebrow">Trust / entity</span><h2>${esc(tr.full)}</h2><span class="muted" style="font-size:12.5px">${esc(tr.name)}</span>
-        <button class="btn-ghost btn-xs" style="margin-left:auto" onclick="switchTab('overview')">← Back to overview</button></div>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          ${tr.custom?`<button class="btn-ghost btn-xs" onclick="renameTrust('${tr.k}')">Rename</button><button class="btn-ghost btn-xs" onclick="deleteTrust('${tr.k}')">Delete</button>`:''}
+          <button class="btn-ghost btn-xs" onclick="switchTab('overview')">← Back to overview</button></div></div>
       <div class="badges" style="margin-bottom:12px">
         <span class="badge" style="background:${ac}22;color:${ac};border:1px solid ${ac}66">${tag}</span>
         <span class="badge b-amber">Attorney review</span><span class="badge b-amber">CPA review</span>
@@ -1048,7 +1084,7 @@ function renderAssets(){
   const llcs=S.llcs||[];
   const cards=[
     {ic:'🏠',t:'Personal Residence',n:residence.length,sub:residence.map(r=>r.name).join(', ')||'None added',type:'properties'},
-    {ic:'🏘️',t:'Rental Properties',n:rentals.length,sub:rentals.map(r=>r.name).join(', ')||'None added',type:'properties'},
+    {ic:'🏘️',t:'Rental Properties',n:rentals.length,sub:rentals.map(r=>r.name).join(', ')||'None added',type:'properties',scroll:true},
     {ic:'🏦',t:'Cash / Bank',n:cash.length,sub:'$'+num(cash.reduce((a,b)=>a+Number(b.balance||0),0)),type:'bankAccounts'},
     {ic:'📈',t:'Taxable Brokerage',n:taxable.length,sub:'$'+num(taxable.reduce((a,b)=>a+Number(b.balance||0),0)),type:'brokerageAccounts'},
     {ic:'💼',t:'Retirement',n:retire.length,sub:'Beneficiary designation review',type:'brokerageAccounts'},
@@ -1060,8 +1096,8 @@ function renderAssets(){
         <div class="icon">${c.ic}</div>
         <div class="big">${c.n}</div>
       </div>
-      <div><div style="font-weight:680;font-size:14px">${esc(c.t)}</div>
-      <div class="muted" style="font-size:12px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.sub)}</div></div>
+      <div style="min-width:0"><div style="font-weight:680;font-size:14px">${esc(c.t)}</div>
+      <div class="muted sub${c.scroll?' scroll':''}" style="font-size:12px${c.scroll?'':';white-space:nowrap;overflow:hidden;text-overflow:ellipsis'}">${esc(c.sub)}</div></div>
       <div class="btn-row">
         <button class="btn-soft btn-xs" onclick="openEntityForm('${c.type}')">+ Add</button>
         <button class="btn-ghost btn-xs" onclick="openAccordionFor('${c.type}')">View details</button>
