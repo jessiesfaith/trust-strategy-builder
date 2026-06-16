@@ -737,6 +737,27 @@ function structAvail(s, state){
   return {lvl, note, status: lvl==='available'?'proposed':(lvl==='na'?'action':'review')};
 }
 function structByKey(k){ return STRUCTURES.find(s=>s.k===k); }
+function structImpact(s){
+  if(typeof ensureTax==='function') ensureTax(); const t=S.tax||{};
+  const exTot=(+t.exemption||13990000)*(t.dual?2:1), over=(+t.estate||0)>exTot, rate=0.40;
+  const flpVal=(S.properties||[]).filter(p=>/rental|commercial|vacation/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
+  const resVal=(S.properties||[]).filter(p=>/personal residence/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
+  const M=n=>'$'+Math.round(n).toLocaleString('en-US');
+  switch(s.k){
+    case 'ilit': return over?('≈ saves '+M(rate*(+t.deathBenefit||0))+' estate tax — keeps the death benefit out of your estate.'):'Keeps life-insurance proceeds out of the estate (no estate tax now — estate is under the exemption).';
+    case 'flp': return flpVal?('Holds ~'+M(flpVal)+' of rentals; a ~30% valuation discount trims taxable value ~'+M(0.30*flpVal)+(over?(' → ≈ '+M(rate*0.30*flpVal)+' estate tax saved'):'')+' (illustrative — needs an appraisal + CPA).'):'Consolidates family assets and enables valuation-discounted gifts.';
+    case 'qprt': return resVal?('Moves your ~'+M(resVal)+' home out of the estate at a discounted gift'+(over?(' → ≈ '+M(rate*resVal)+' estate tax saved'):'')+' (you must outlive the term).'):'Moves your residence out of the estate at a discounted gift value.';
+    case 'idgt': return 'Freezes today’s value; future growth grows OUTSIDE your estate (savings scale with growth & time). You pay its income tax — a further tax-free transfer.';
+    case 'grat': return 'Passes appreciation above the IRS §7520 hurdle rate to heirs ~gift-tax-free; strongest in low-rate / high-growth cases.';
+    case 'slat': return 'Uses your exemption now and removes future growth from the estate, while your spouse keeps indirect access.';
+    case 'crt': return 'Partial income-tax deduction now + removes the asset from the estate; income to you, remainder to charity.';
+    case 'clat': return 'Income-tax deduction + estate reduction; charitable annuity for a term, remainder to heirs.';
+    case 'dapt': return 'Asset protection — not an estate-tax saver by itself (completed gifts into it can remove value).';
+    case 'llc': case 'series': return 'Liability shielding & management — not an estate-tax saver on its own.';
+    case 'tod': return 'Avoids probate on real estate — not a tax saver.';
+    default: return '';
+  }
+}
 
 /* ---------- Utils ---------- */
 function uid(){ return 'id'+Math.random().toString(36).slice(2,9); }
@@ -1239,16 +1260,27 @@ const TAXC={
   ltcg:{ Single:[[0,0],[48350,.15],[533400,.20]], MFJ:[[0,0],[96700,.15],[600050,.20]] },
   ca:{ Single:[[0,.01],[10756,.02],[25499,.04],[40245,.06],[55866,.08],[70606,.093],[360659,.103],[432787,.113],[721314,.123]],
        MFJ:[[0,.01],[21512,.02],[50998,.04],[80490,.06],[111732,.08],[141212,.093],[721318,.103],[865574,.113],[1442628,.123]] },
-  niit:{ Single:200000, MFJ:250000 }, ssBase:176100, estRate:.40, corpRate:.21
+  niit:{ Single:200000, MFJ:250000 }, ssBase:176100, estRate:.40, corpRate:.21, addlMed:{ Single:200000, MFJ:250000 }
 };
+// State income tax (estimates). Most states tax cap gains/dividends as ordinary income.
+const STATE_TAX={
+  'California':{ surtax1m:true,
+    Single:[[0,.01],[10756,.02],[25499,.04],[40245,.06],[55866,.08],[70606,.093],[360659,.103],[432787,.113],[721314,.123]],
+    MFJ:[[0,.01],[21512,.02],[50998,.04],[80490,.06],[111732,.08],[141212,.093],[721318,.103],[865574,.113],[1442628,.123]] },
+  'New York':{
+    Single:[[0,.04],[8500,.045],[11700,.0525],[13900,.055],[80650,.06],[215400,.0685],[1077550,.0965],[5000000,.103],[25000000,.109]],
+    MFJ:[[0,.04],[17150,.045],[23600,.0525],[27900,.055],[161550,.06],[323200,.0685],[2155350,.0965],[5000000,.103],[25000000,.109]] }
+};
+const NO_TAX_STATES=['Texas','Florida','Nevada','Washington','Wyoming','South Dakota','Alaska','Tennessee','New Hampshire'];
+const STATE_ESTATE_TAX=['New York','Washington','Massachusetts','Oregon','Minnesota','Illinois','Maryland','Connecticut','Hawaii','Maine','Rhode Island','Vermont','District of Columbia'];
 function progTax(inc,br){ inc=Math.max(0,inc); let t=0; for(let i=0;i<br.length;i++){ const lo=br[i][0], hi=i+1<br.length?br[i+1][0]:Infinity; if(inc>lo) t+=(Math.min(inc,hi)-lo)*br[i][1]; } return t; }
 function margRate(inc,br){ let r=br[0][1]; for(const b of br) if(inc>=b[0]) r=b[1]; return r; }
-function caTax(x){ const f=S.tax.filing||'MFJ'; let t=progTax(x,TAXC.ca[f]); if(x>1000000) t+=(x-1000000)*0.01; return t; } // +1% mental-health surtax
+function stateTax(x){ const st=S.tax.state||'California', f=S.tax.filing||'MFJ'; if(NO_TAX_STATES.includes(st)) return 0; const cfg=STATE_TAX[st]; if(!cfg) return 0; let t=progTax(x,cfg[f]||cfg.MFJ); if(cfg.surtax1m && x>1000000) t+=(x-1000000)*0.01; return t; }
 function ltcgStack(ord,gain,br){ let t=0, lo=ord, hi=ord+gain; for(let i=0;i<br.length;i++){ const bLo=br[i][0], bHi=i+1<br.length?br[i+1][0]:Infinity, seg=Math.max(0,Math.min(hi,bHi)-Math.max(lo,bLo)); if(seg>0) t+=seg*br[i][1]; } return t; }
 function seTaxCalc(net){ const base=Math.max(0,net)*0.9235; return Math.min(base,TAXC.ssBase)*0.124 + base*0.029; }
 function ensureTax(){
   S.tax=S.tax||{};
-  const d={filing:'MFJ',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,exemption:13990000,dual:true,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000};
+  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,exemption:13990000,dual:true,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000};
   for(const k in d){ if(S.tax[k]===undefined) S.tax[k]=d[k]; }
   if(S.tax.estate===undefined){ const P=(S.properties||[]).reduce((a,p)=>a+ +(p.value||0),0), D=(S.properties||[]).reduce((a,p)=>a+ +(p.mortgageBalance||0),0), C=(S.bankAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0), I=(S.brokerageAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0); S.tax.estate=Math.max(0,P+C+I-D); }
 }
@@ -1261,15 +1293,20 @@ function renderTaxEstimator(){
   const chk=(lab,k)=>`<label class="field chk" style="margin-bottom:8px"><input type="checkbox" ${t[k]?'checked':''} onchange="updTax('${k}',this.checked)" style="width:auto"> ${lab}</label>`;
   const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:15px':''}">—</span></div>`;
   const card=(title,body)=>`<div class="card pad"><h3 style="font-size:14px;margin-bottom:10px;color:var(--indigo-ink)">${title}</h3>${body}</div>`;
+  const selSty='style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"';
+  const STATE_OPTS=['California','New York','Texas','Florida','Nevada','Washington','Wyoming','Tennessee','Other'];
+  const optsArr=STATE_OPTS.includes(t.state)?STATE_OPTS:[t.state].concat(STATE_OPTS);
+  const stateOpts=optsArr.map(s=>`<option ${t.state===s?'selected':''}>${esc(s)}</option>`).join('');
   document.getElementById('taxEstimator').innerHTML=`
-    <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Rough estimates, not tax advice.</b> 2025 federal + California brackets (CA brackets indexed annually). Ignores AMT, deductions/credits, phase-outs beyond those noted, and many special rules. Confirm every figure with your CPA.</div></div>
-    <div class="card pad" style="margin-bottom:14px"><div class="form-grid">
-      <div class="field" style="margin-bottom:0"><label>Filing status</label><select onchange="updTax('filing',this.value)" style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option ${t.filing==='MFJ'?'selected':''}>MFJ</option><option ${t.filing==='Single'?'selected':''}>Single</option></select></div>
-      <div class="field" style="margin-bottom:0"><label>Other ordinary taxable income ($) — sets your bracket</label>${inp('ordinary')}</div>
+    <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Rough estimates, not tax advice.</b> 2025 federal brackets; state income tax modeled for <b>California</b> &amp; <b>New York</b> (other states treated as $0 — verify). Ignores AMT, deductions/credits, most phase-outs, and many special rules. Confirm every figure with your CPA.</div></div>
+    <div class="card pad" style="margin-bottom:14px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0 14px">
+      <div class="field" style="margin-bottom:0"><label>Filing status</label><select onchange="updTax('filing',this.value)" ${selSty}><option ${t.filing==='MFJ'?'selected':''}>MFJ</option><option ${t.filing==='Single'?'selected':''}>Single</option></select></div>
+      <div class="field" style="margin-bottom:0"><label>State</label><select onchange="updTax('state',this.value)" ${selSty}>${stateOpts}</select></div>
+      <div class="field" style="margin-bottom:0"><label>Other ordinary income ($)</label>${inp('ordinary')}</div>
     </div></div>
     <div class="grid g2">
-      ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('California','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}`)}
-      ${card('Estate tax', `<div class="form-grid">${fld('Taxable estate ($)','estate')}${fld('Exemption / person ($)','exemption')}</div>${chk('Married — use 2× exemption (portability)','dual')}${res('Federal estate tax','r_est_tax',1)}${res('California','r_est_ca')}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}`)}
+      ${card('Estate tax', `<div class="form-grid">${fld('Taxable estate ($)','estate')}${fld('Exemption / person ($)','exemption')}</div>${chk('Married — use 2× exemption (portability)','dual')}${res('Federal estate tax','r_est_tax',1)}${res('State estate','r_est_ca')}<div class="legal-foot" id="r_est_note"></div>`)}
       ${card('Life-insurance proceeds', `${fld('Death benefit ($)','deathBenefit')}${chk('Held in an ILIT (outside your estate)','inILIT')}${res('Income tax','r_ins_inc')}${res('Estate-tax impact','r_ins_est',1)}`)}
       ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${fld('Net business profit ($)','profit')}${fld('S-corp reasonable salary ($)','salary')}</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
       ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
@@ -1287,20 +1324,21 @@ function computeTax(){
   const fedLT=ltcgStack(ord, lt+qd, ltBr);
   const fedOrdAddl=progTax(ord+st+od,fedBr)-progTax(ord,fedBr);
   const fedCG=fedLT+fedOrdAddl;
-  const caCG=caTax(ord+lt+st+qd+od)-caTax(ord);
+  const stCG=stateTax(ord+lt+st+qd+od)-stateTax(ord);
   const invest=lt+st+qd+od, magi=ord+invest, niitBase=Math.max(0,Math.min(invest,magi-TAXC.niit[f])), niit=niitBase*0.038;
-  set('r_cg_fed',m$(fedCG)); set('r_cg_ca',m$(caCG)); set('r_cg_niit',m$(niit)); set('r_cg_tot',m$(fedCG+caCG+niit));
+  set('r_cg_fed',m$(fedCG)); set('r_cg_ca',m$(stCG)); set('r_cg_niit',m$(niit)); set('r_cg_tot',m$(fedCG+stCG+niit));
   // estate
   const exTot=(+t.exemption||0)*(t.dual?2:1), taxable=Math.max(0,(+t.estate||0)-exTot), estTax=taxable*TAXC.estRate;
-  set('r_est_tax',m$(estTax)); set('r_est_ca','$0 (CA has no estate tax)');
+  set('r_est_tax',m$(estTax)); set('r_est_ca', STATE_ESTATE_TAX.includes(t.state)?('⚑ '+t.state+' has a state estate/inheritance tax — CPA review'):'$0 (no state estate tax)');
   note('r_est_note', taxable>0?('Taxable estate above exemption: '+m$(taxable)+' × 40%.'):('Estate is at or below the '+m$(exTot)+' exemption — no federal estate tax at current law.'));
   // life insurance
   set('r_ins_inc','$0 (generally income-tax-free)');
   const insInEstate=t.inILIT?0:(+t.deathBenefit||0), insEstTax=( (+t.estate||0)+insInEstate>exTot )?insInEstate*TAXC.estRate:0;
   set('r_ins_est', t.inILIT?'$0 — ILIT keeps it out of the estate':(insEstTax>0?('+'+m$(insEstTax)+' estate tax (in your estate)'):'$0 — estate under exemption'));
   // LLC vs S-corp + SE
-  const profit=+t.profit||0, salary=+t.salary||0;
-  const llcSE=seTaxCalc(profit), scPay=Math.min(salary,TAXC.ssBase)*0.124+salary*0.029, save=llcSE-scPay;
+  const profit=+t.profit||0, salary=+t.salary||0, medThr=TAXC.addlMed[f];
+  const llcSE=seTaxCalc(profit)+Math.max(0,(profit*0.9235)-medThr)*0.009;        // +0.9% Additional Medicare
+  const scPay=Math.min(salary,TAXC.ssBase)*0.124+salary*0.029+Math.max(0,salary-medThr)*0.009, save=llcSE-scPay;
   set('r_llc_se',m$(llcSE)); set('r_sc_pay',m$(scPay)); set('r_sc_save',(save>=0?'+':'')+m$(save));
   // QBI
   const qbi=+t.qbi||0, ded=qbi*0.20, mr=margRate(ord+qbi,fedBr), qsaved=ded*mr;
@@ -1394,7 +1432,7 @@ function buildMindmapHTML(){
     let opt=['ILIT','Living Irrev']; if(!idgt)opt.push('IDGT'); if(!flp)opt.push('FLP'); opt.push('CLAT','NFP');
     branches.push({t:'Potential Options',s:'proposed',option:true,n:opt.slice(0,6).map(l=>({l,s:'proposed',note:(defs[l]||'')+' Discuss with your attorney & CPA.'}))});
   }
-  const cust=(S.customStructures||[]).map(cs=>{ const s=structByKey(cs.k); if(!s) return null; const a=structAvail(s,S.profile.state||''); return {l:s.name,s:a.status,note:s.full+' — '+s.blurb+' '+a.note}; }).filter(Boolean);
+  const cust=(S.customStructures||[]).map(cs=>{ const s=structByKey(cs.k); if(!s) return null; const a=structAvail(s,S.profile.state||''); return {l:s.name,s:a.status,note:s.full+' — '+s.blurb+' '+a.note+' • Tax impact: '+structImpact(s)}; }).filter(Boolean);
   if(cust.length) branches.push({t:'Considered',s:'proposed',n:cust});
 
   // Layout grows with the data: many children stack into concentric rings, and the
@@ -1507,7 +1545,7 @@ function buildOwnershipSVG(){
     let opt=['ILIT','Living Irrev']; if(!idgt)opt.push('IDGT'); if(!flp)opt.push('FLP'); opt.push('CLAT','NFP');
     top.push(Nn('Potential Options','proposed','Alternatives to discuss — not in the active plan.',opt.slice(0,6).map(l=>Nn(l,'proposed',(defs[l]||'')+' Discuss with your attorney & CPA.')),true));
   }
-  (S.customStructures||[]).forEach(cs=>{ const s=structByKey(cs.k); if(!s) return; const a=structAvail(s,S.profile.state||''); top.push(Nn(s.name,a.status,s.full+' — '+s.blurb+' '+a.note)); });
+  (S.customStructures||[]).forEach(cs=>{ const s=structByKey(cs.k); if(!s) return; const a=structAvail(s,S.profile.state||''); top.push(Nn(s.name,a.status,s.full+' — '+s.blurb+' '+a.note+' • Tax impact: '+structImpact(s))); });
   const root=Nn(short(S.profile.grantor||'Grantor',16),'inplace','You — grantor and trustee while living; fund the plan.',top);
 
   // Tidy left-to-right layout; nodes get stable keys so positions persist & drag.
@@ -1939,6 +1977,7 @@ function openStructurePalette(){
         <h4>${esc(s.name)} <span class="muted" style="font-weight:400;font-size:12px">${esc(s.full)}</span></h4>
         <div class="ent-meta">${esc(s.blurb)}</div>
         <div class="ent-flags badges"><span class="badge" style="background:${c}22;color:${c};border:1px solid ${c}66">${tag}</span> <span class="muted" style="font-size:11.5px">${esc(a.note)}</span></div>
+        <div class="muted" style="font-size:11.5px;margin-top:5px"><b style="color:var(--green)">Tax impact:</b> ${esc(structImpact(s))}</div>
       </div><div class="ent-actions"><button class="btn-${added?'danger':'primary'} btn-xs" onclick="toggleStructure('${s.k}')">${added?'Remove':'Add to map'}</button></div></div></div>`;
     }).join('');
   openModal('Add a structure to the map', body, [{label:'Done',cls:'btn-primary',fn:closeModal}]);
