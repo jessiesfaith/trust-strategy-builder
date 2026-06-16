@@ -52,6 +52,10 @@
   .brand .name{font-size:22px;font-weight:600;letter-spacing:0;font-family:'Cormorant Garamond',Georgia,serif}
   .brand .sub{font-size:11px;color:var(--muted);margin-top:-2px}
   .header-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .toptabs{display:flex;gap:4px;overflow-x:auto;padding:6px 18px 8px;border-top:1px solid var(--line);max-width:1180px;margin:0 auto}
+  .toptab{flex:none;padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:600;background:transparent;color:var(--muted);border:1px solid transparent;cursor:pointer;white-space:nowrap}
+  .toptab:hover{color:var(--ink);background:var(--panel2)}
+  .toptab.active{background:var(--indigo-soft);color:var(--indigo-ink);border-color:var(--indigo)}
 
   /* Buttons */
   button{font-family:inherit;cursor:pointer;border:0;border-radius:10px;font-size:13px;font-weight:600;padding:8px 12px;transition:.12s;display:inline-flex;align-items:center;gap:6px}
@@ -275,9 +279,11 @@
       <button class="btn-danger" onclick="clearScenario()">🗑 Clear Scenario</button>
     </div>
   </div>
+  <nav class="toptabs" id="topTabs"></nav>
 </header>
 
 <div class="wrap">
+  <div id="tab-trust" style="display:none"></div>
 
   <div class="disclaimer tight" style="margin-top:16px">
     <span>⚠️</span>
@@ -704,6 +710,7 @@ const ENTITY = {
 let S = load() || sampleScenario();
 let review = loadReview();
 let currentMM = 'flow';
+let currentTab = 'overview';
 let showAdvanced = true;
 const MMSTATUS={ inplace:{c:'#00c805',l:'In place'}, review:{c:'#d2a23a',l:'Review needed'}, action:{c:'#ef5d5d',l:'Action / gap'}, proposed:{c:'#a78bfa',l:'Proposed / new'} };
 let mmMeta=[];
@@ -756,8 +763,73 @@ function structImpact(s){
     case 'dapt': return 'Asset protection — not an estate-tax saver by itself (completed gifts into it can remove value).';
     case 'llc': case 'series': return 'Liability shielding & management — not an estate-tax saver on its own.';
     case 'tod': return 'Avoids probate on real estate — not a tax saver.';
+    case 'rlt': return 'Tax-neutral during life; preserves the capital-gains step-up at death and avoids probate. Not an estate-tax saver by itself.';
+    case 'pour': return 'Catches any asset left outside the trust and routes it in at death — not a tax saver.';
     default: return '';
   }
+}
+
+/* ---------- Per-trust-type tabs (scaffold to build each one out) ---------- */
+const TRUST_INFO={
+  rlt:{what:'A trust you create and fully control during life — amend or revoke it anytime.',when:'The foundation of most plans: avoid probate, manage incapacity, and keep affairs private.',cons:['Must be FUNDED — retitle assets in, or it does nothing','Name successor trustee(s) and define their powers','Pair with a pour-over will for stray assets','Define sub-trust shares for beneficiaries at death']},
+  pour:{what:'A short will that “pours” anything you didn’t retitle into your revocable trust at death.',when:'Always paired with a revocable living trust as the safety net.',cons:['Assets passing through it still hit probate first','Name a guardian for minor children here','Keep it consistent with the trust']},
+  llc:{what:'A liability-shielded entity that can own a rental/business; your trust can own the LLC.',when:'When a rental or business carries liability you want separated from personal assets.',cons:['Separate bank account + EIN; never commingle','Operating agreement + registered agent','Insurance & lender consent before retitling property','Annual state fee / franchise tax']},
+  series:{what:'One LLC with internal, liability-separated “series.”',when:'Several properties needing separation without many filings — only in authorizing states.',cons:['Only some states authorize formation','Liability separation untested in some courts','Banking/lender familiarity varies']},
+  flp:{what:'A partnership holding family assets; you keep control as general partner, others hold limited interests.',when:'Consolidated management plus discounted gifting of LP interests to heirs / an IDGT.',cons:['Qualified appraisal for valuation discounts','Bona-fide purpose; respect formalities','Often paired with an IDGT gift/sale']},
+  idgt:{what:'An irrevocable trust that’s a grantor trust for income tax but sits OUTSIDE your estate.',when:'Estate freeze — gift/sell appreciating assets so future growth escapes estate tax.',cons:['Seed gift (~10%) before an installment sale','Note interest rate (AFR) and term','You pay its income tax — a bonus tax-free transfer','Independent trustee; you can’t serve']},
+  ilit:{what:'An irrevocable trust that owns a life-insurance policy.',when:'Keep a large death benefit out of your taxable estate.',cons:['Trust (not you) owns + is beneficiary','Crummey notices for gifted premiums','3-year lookback if transferring an existing policy']},
+  grat:{what:'You transfer assets and keep an annuity for a term; the remainder passes to heirs.',when:'Pass appreciation above the §7520 hurdle rate ~gift-tax-free; great in low-rate/high-growth cases.',cons:['You must outlive the term','Pick term + annuity (often “zeroed-out”)','Best for volatile / high-growth assets']},
+  crt:{what:'You donate an asset; it pays you/heirs income for a term, remainder to charity.',when:'Appreciated asset + charitable intent + income need; defers capital gain.',cons:['Choose payout % and term (CRAT vs CRUT)','Partial income-tax deduction now','Irrevocable — charity gets the remainder']},
+  clat:{what:'Pays an annuity to charity for a term; the remainder goes to heirs.',when:'Charitable intent + passing the remainder to heirs at low gift cost; strong in low-rate years.',cons:['Grantor vs non-grantor (deduction timing)','Choose term + annuity amount','Remainder to heirs ~gift-tax-free if well structured']},
+  qprt:{what:'You give your home to a trust but keep living there for a term.',when:'Move a home out of the estate at a discounted gift value.',cons:['You must outlive the term','Pay fair-market rent after the term','Loses the step-up on the residence']},
+  slat:{what:'An irrevocable trust for your spouse’s benefit, funded with your exemption.',when:'Use exemption now and remove growth from the estate while keeping indirect access via your spouse.',cons:['Reciprocal-trust doctrine if both spouses do one','Access ends at spouse’s death / divorce','Community-property nuances (e.g., CA)']},
+  dapt:{what:'A self-settled irrevocable trust that can protect assets you place in it.',when:'Asset protection — only in states allowing self-settled spendthrift trusts.',cons:['Not allowed in CA — out-of-state DAPT + attorney review','Fraudulent-transfer lookback period','Not an estate-tax saver by itself']},
+  tod:{what:'A deed naming who receives your real estate at death, outside probate.',when:'Simple probate avoidance for a property; available in many states.',cons:['Revocable; no creditor protection','Not available in every state','Coordinate with the trust plan']}
+};
+const TRUSTS=[
+  {k:'rlt',name:'Revocable Trust',full:'Revocable Living Trust',avail:'all'},
+  {k:'pour',name:'Pour-Over Will',full:'Pour-Over Will',avail:'all'}
+].concat(STRUCTURES.map(s=>({k:s.k,name:s.name,full:s.full,avail:s.avail,cp:s.cp,blurb:s.blurb})))
+ .map(t=>({...t, info:TRUST_INFO[t.k]||{what:t.blurb||'',when:'',cons:[]}}));
+function renderTopTabs(){
+  const el=document.getElementById('topTabs'); if(!el) return;
+  const tabs=[{k:'overview',n:'Overview'}].concat(TRUSTS.map(t=>({k:t.k,n:t.name})));
+  el.innerHTML=tabs.map(t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`).join('');
+}
+function switchTab(key){
+  currentTab=key; const isOv=key==='overview';
+  document.querySelectorAll('.toptab').forEach(b=>b.classList.toggle('active',b.dataset.tab===key));
+  document.querySelectorAll('.wrap > *').forEach(el=>{ if(el.id==='tab-trust') return; el.style.display=isOv?'':'none'; });
+  const panel=document.getElementById('tab-trust'); panel.style.display=isOv?'none':'block';
+  if(!isOv) renderTrustPanel(key);
+  window.scrollTo(0,0);
+}
+function updTrustNote(k,v){ S.trustNotes=S.trustNotes||{}; S.trustNotes[k]=v; save(); }
+function renderTrustPanel(key){
+  const tr=TRUSTS.find(x=>x.k===key); const panel=document.getElementById('tab-trust'); if(!tr){ panel.innerHTML=''; return; }
+  const a=structAvail(tr,S.profile.state||''), ac=(MMSTATUS[a.status]||{c:'#9db4e8'}).c;
+  S.trustNotes=S.trustNotes||{};
+  const tag=a.lvl==='available'?'Available':(a.lvl==='na'?('Not typical in '+(S.profile.state||'your state')):'Verify');
+  const h3='style="font-size:14px;margin-bottom:8px;color:var(--indigo-ink)"';
+  panel.innerHTML=`
+    <section class="block">
+      <div class="section-head"><span class="eyebrow">Trust / entity</span><h2>${esc(tr.full)}</h2><span class="muted" style="font-size:12.5px">${esc(tr.name)}</span>
+        <button class="btn-ghost btn-xs" style="margin-left:auto" onclick="switchTab('overview')">← Back to overview</button></div>
+      <div class="badges" style="margin-bottom:12px">
+        <span class="badge" style="background:${ac}22;color:${ac};border:1px solid ${ac}66">${tag}</span>
+        <span class="badge b-amber">Attorney review</span><span class="badge b-amber">CPA review</span>
+      </div>
+      <div class="grid g2">
+        <div class="card pad"><h3 ${h3}>What it is</h3><p style="font-size:13px">${esc(tr.info.what)}</p>${tr.info.when?`<h3 ${h3} style="margin-top:12px;color:var(--indigo-ink)">When it’s used</h3><p style="font-size:13px">${esc(tr.info.when)}</p>`:''}</div>
+        <div class="card pad"><h3 ${h3}>Tax impact</h3><p style="font-size:13px">${esc(structImpact(tr))}</p><div class="legal-foot" style="margin-top:8px"><b>Availability:</b> ${esc(a.note)}</div></div>
+      </div>
+      ${tr.info.cons&&tr.info.cons.length?`<div class="card pad" style="margin-top:14px"><h3 ${h3}>Key decisions &amp; questions for your attorney / CPA</h3><ul class="lite">${tr.info.cons.map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div>`:''}
+      <div class="card pad" style="margin-top:14px"><h3 ${h3}>Your notes &amp; build ideas for this trust</h3>
+        <textarea oninput="updTrustNote('${tr.k}',this.value)" placeholder="What to add for ${esc(tr.name)} — intake fields, funding steps, calculators…" style="width:100%;min-height:120px;font-family:inherit;font-size:13px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);resize:vertical">${esc(S.trustNotes[tr.k]||'')}</textarea>
+        <div class="legal-foot" style="margin-top:6px">Scaffold tab — we’ll flesh out per-trust intake, funding checklist, and calculators here as you build.</div>
+      </div>
+      <div class="disclaimer" style="margin-top:14px"><span>⚠️</span><div>Planning / organization only — not legal or tax advice. Confirm with your attorney &amp; CPA.</div></div>
+    </section>`;
 }
 
 /* ---------- Utils ---------- */
@@ -823,6 +895,8 @@ function render(){
   renderExport();
   renderMermaid();
   renderReview();
+  renderTopTabs();
+  if(currentTab!=='overview') renderTrustPanel(currentTab);
   save();
 }
 
