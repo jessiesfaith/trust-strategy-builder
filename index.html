@@ -26,7 +26,8 @@
     background:var(--bg); color:var(--ink); line-height:1.45; -webkit-font-smoothing:antialiased;
   }
   a{color:var(--indigo)}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 18px 90px}
+  .layout{display:flex;align-items:flex-start;gap:0;max-width:1280px;margin:0 auto}
+  .wrap{flex:1;min-width:0;padding:0 18px 90px}
   h1,h2,h3,h4{margin:0;font-weight:680;letter-spacing:-.01em}
   h2{font-size:21px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;letter-spacing:0}
   h3{font-size:15px}
@@ -52,8 +53,9 @@
   .brand .name{font-size:22px;font-weight:600;letter-spacing:0;font-family:'Cormorant Garamond',Georgia,serif}
   .brand .sub{font-size:11px;color:var(--muted);margin-top:-2px}
   .header-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-  .toptabs{display:flex;gap:6px;flex-wrap:wrap;padding:8px 18px 10px;border-top:1px solid var(--line);max-width:1180px;margin:0 auto}
-  .toptab{flex:none;padding:6px 11px;border-radius:8px;font-size:12.5px;font-weight:600;background:transparent;color:var(--muted);border:1px solid transparent;cursor:pointer;white-space:nowrap}
+  .toptabs{flex:none;width:178px;position:sticky;top:14px;align-self:flex-start;display:flex;flex-direction:column;gap:4px;padding:14px 10px;border-right:1px solid var(--line);max-height:calc(100vh - 24px);overflow-y:auto}
+  .toptab{display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;font-size:12.5px;font-weight:600;background:transparent;color:var(--muted);border:1px solid transparent;cursor:pointer;white-space:nowrap}
+  @media(max-width:760px){.layout{flex-direction:column}.toptabs{width:auto;position:static;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);max-height:none;padding:8px 18px}.toptab{width:auto}}
   .toptab:hover{color:var(--ink);background:var(--panel2)}
   .toptab.active{background:var(--indigo-soft);color:var(--indigo-ink);border-color:var(--indigo)}
 
@@ -302,10 +304,11 @@
       <button class="btn-ghost" onclick="lockApp()" title="Lock this module (sign out)">🔒 Lock</button>
     </div>
   </div>
-  <nav class="toptabs" id="topTabs"></nav>
 </header>
 
-<div class="wrap">
+<div class="layout">
+  <nav class="toptabs" id="topTabs"></nav>
+  <div class="wrap">
   <div id="tab-trust" style="display:none"></div>
 
   <div class="disclaimer tight" style="margin-top:16px">
@@ -451,6 +454,7 @@
   <div class="legal-foot" style="margin-top:26px;text-align:center;max-width:760px;margin-left:auto;margin-right:auto">
     Trust Strategy Builder is a planning and organization tool only. It does not provide legal, tax, investment, banking, lending, or insurance advice and does not create legal documents.
     Before retitling property, forming an LLC, changing beneficiaries, opening entity accounts, or transferring assets, confirm with your attorney, CPA, lender, bank, and insurance provider.
+  </div>
   </div>
 </div>
 
