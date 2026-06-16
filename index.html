@@ -372,6 +372,16 @@
     <div class="card pad" id="taxConsider"><!-- rendered --></div>
   </section>
 
+  <!-- TAX ESTIMATOR -->
+  <section class="block" id="taxest">
+    <div class="section-head">
+      <span class="eyebrow">Estimator</span>
+      <h2>Tax Estimator</h2>
+      <span class="muted" style="font-size:12.5px">CA + federal, 2025 figures. Rough estimates for planning — not tax advice; confirm with your CPA.</span>
+    </div>
+    <div id="taxEstimator"><!-- rendered --></div>
+  </section>
+
   <!-- DETAILED ACCORDIONS -->
   <section class="block" id="details">
     <div class="section-head">
@@ -787,6 +797,7 @@ function render(){
   renderAccordions();
   renderMemo();
   renderTax();
+  renderTaxEstimator();
   renderExport();
   renderMermaid();
   renderReview();
@@ -1219,6 +1230,90 @@ function renderTax(){
     ${structures.map(s=>`<div class="ent"><div class="ent-top"><div style="min-width:0"><h4>${esc(s[0])}</h4><div class="ent-meta">${esc(s[1])}</div></div><div class="badges">${s[2].map(b).join('')}</div></div></div>`).join('')}
 
     <div class="disclaimer" style="margin-top:14px"><span>⚠️</span><div><b>Not tax advice and not a recommendation.</b> These are general concepts. The tax-minimizing direction depends on your estate size, state, basis, goals, and the law in effect — determined with your CPA and estate attorney. Estate/gift-tax structures are largely irrevocable; confirm before acting.</div></div>`;
+}
+
+/* ---------- Tax Estimator (CA + federal, 2025 — estimates only, not tax advice) ---------- */
+const TAXC={
+  fed:{ Single:[[0,.10],[11925,.12],[48475,.22],[103350,.24],[197300,.32],[250525,.35],[626350,.37]],
+        MFJ:[[0,.10],[23850,.12],[96950,.22],[206700,.24],[394600,.32],[501050,.35],[751600,.37]] },
+  ltcg:{ Single:[[0,0],[48350,.15],[533400,.20]], MFJ:[[0,0],[96700,.15],[600050,.20]] },
+  ca:{ Single:[[0,.01],[10756,.02],[25499,.04],[40245,.06],[55866,.08],[70606,.093],[360659,.103],[432787,.113],[721314,.123]],
+       MFJ:[[0,.01],[21512,.02],[50998,.04],[80490,.06],[111732,.08],[141212,.093],[721318,.103],[865574,.113],[1442628,.123]] },
+  niit:{ Single:200000, MFJ:250000 }, ssBase:176100, estRate:.40, corpRate:.21
+};
+function progTax(inc,br){ inc=Math.max(0,inc); let t=0; for(let i=0;i<br.length;i++){ const lo=br[i][0], hi=i+1<br.length?br[i+1][0]:Infinity; if(inc>lo) t+=(Math.min(inc,hi)-lo)*br[i][1]; } return t; }
+function margRate(inc,br){ let r=br[0][1]; for(const b of br) if(inc>=b[0]) r=b[1]; return r; }
+function caTax(x){ const f=S.tax.filing||'MFJ'; let t=progTax(x,TAXC.ca[f]); if(x>1000000) t+=(x-1000000)*0.01; return t; } // +1% mental-health surtax
+function ltcgStack(ord,gain,br){ let t=0, lo=ord, hi=ord+gain; for(let i=0;i<br.length;i++){ const bLo=br[i][0], bHi=i+1<br.length?br[i+1][0]:Infinity, seg=Math.max(0,Math.min(hi,bHi)-Math.max(lo,bLo)); if(seg>0) t+=seg*br[i][1]; } return t; }
+function seTaxCalc(net){ const base=Math.max(0,net)*0.9235; return Math.min(base,TAXC.ssBase)*0.124 + base*0.029; }
+function ensureTax(){
+  S.tax=S.tax||{};
+  const d={filing:'MFJ',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,exemption:13990000,dual:true,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000};
+  for(const k in d){ if(S.tax[k]===undefined) S.tax[k]=d[k]; }
+  if(S.tax.estate===undefined){ const P=(S.properties||[]).reduce((a,p)=>a+ +(p.value||0),0), D=(S.properties||[]).reduce((a,p)=>a+ +(p.mortgageBalance||0),0), C=(S.bankAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0), I=(S.brokerageAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0); S.tax.estate=Math.max(0,P+C+I-D); }
+}
+function updTax(k,v){ S.tax[k]=v; save(); computeTax(); }
+function m$(n){ return '$'+Math.round(+n||0).toLocaleString('en-US'); }
+function renderTaxEstimator(){
+  ensureTax(); const t=S.tax;
+  const inp=(k,ph)=>`<input type="number" value="${esc(t[k])}" oninput="updTax('${k}',this.value)" style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%" placeholder="${ph||''}">`;
+  const fld=(lab,k)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label>${inp(k)}</div>`;
+  const chk=(lab,k)=>`<label class="field chk" style="margin-bottom:8px"><input type="checkbox" ${t[k]?'checked':''} onchange="updTax('${k}',this.checked)" style="width:auto"> ${lab}</label>`;
+  const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:15px':''}">—</span></div>`;
+  const card=(title,body)=>`<div class="card pad"><h3 style="font-size:14px;margin-bottom:10px;color:var(--indigo-ink)">${title}</h3>${body}</div>`;
+  document.getElementById('taxEstimator').innerHTML=`
+    <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Rough estimates, not tax advice.</b> 2025 federal + California brackets (CA brackets indexed annually). Ignores AMT, deductions/credits, phase-outs beyond those noted, and many special rules. Confirm every figure with your CPA.</div></div>
+    <div class="card pad" style="margin-bottom:14px"><div class="form-grid">
+      <div class="field" style="margin-bottom:0"><label>Filing status</label><select onchange="updTax('filing',this.value)" style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option ${t.filing==='MFJ'?'selected':''}>MFJ</option><option ${t.filing==='Single'?'selected':''}>Single</option></select></div>
+      <div class="field" style="margin-bottom:0"><label>Other ordinary taxable income ($) — sets your bracket</label>${inp('ordinary')}</div>
+    </div></div>
+    <div class="grid g2">
+      ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('California','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}`)}
+      ${card('Estate tax', `<div class="form-grid">${fld('Taxable estate ($)','estate')}${fld('Exemption / person ($)','exemption')}</div>${chk('Married — use 2× exemption (portability)','dual')}${res('Federal estate tax','r_est_tax',1)}${res('California','r_est_ca')}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Life-insurance proceeds', `${fld('Death benefit ($)','deathBenefit')}${chk('Held in an ILIT (outside your estate)','inILIT')}${res('Income tax','r_ins_inc')}${res('Estate-tax impact','r_ins_est',1)}`)}
+      ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${fld('Net business profit ($)','profit')}${fld('S-corp reasonable salary ($)','salary')}</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
+      ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
+      ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
+      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp')}</div>${res('401(k) elective max','r_ret_401')}${res('IRA max','r_ret_ira')}${res('SIMPLE max','r_ret_simple')}${res('SEP / solo-401k max','r_ret_sep')}<div class="legal-foot">Limits are 2025 (incl. age-50 catch-up). SEP ≈ 25% of comp (≈20% of net SE) up to $70,000; confirm with your CPA.</div>`)}
+    </div>`;
+  computeTax();
+}
+function computeTax(){
+  const t=S.tax, f=t.filing||'MFJ', fedBr=TAXC.fed[f], ltBr=TAXC.ltcg[f];
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  const note=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  const ord=+t.ordinary||0, lt=+t.ltgain||0, st=+t.stgain||0, qd=+t.qdiv||0, od=+t.odiv||0;
+  // cap gains & dividends
+  const fedLT=ltcgStack(ord, lt+qd, ltBr);
+  const fedOrdAddl=progTax(ord+st+od,fedBr)-progTax(ord,fedBr);
+  const fedCG=fedLT+fedOrdAddl;
+  const caCG=caTax(ord+lt+st+qd+od)-caTax(ord);
+  const invest=lt+st+qd+od, magi=ord+invest, niitBase=Math.max(0,Math.min(invest,magi-TAXC.niit[f])), niit=niitBase*0.038;
+  set('r_cg_fed',m$(fedCG)); set('r_cg_ca',m$(caCG)); set('r_cg_niit',m$(niit)); set('r_cg_tot',m$(fedCG+caCG+niit));
+  // estate
+  const exTot=(+t.exemption||0)*(t.dual?2:1), taxable=Math.max(0,(+t.estate||0)-exTot), estTax=taxable*TAXC.estRate;
+  set('r_est_tax',m$(estTax)); set('r_est_ca','$0 (CA has no estate tax)');
+  note('r_est_note', taxable>0?('Taxable estate above exemption: '+m$(taxable)+' × 40%.'):('Estate is at or below the '+m$(exTot)+' exemption — no federal estate tax at current law.'));
+  // life insurance
+  set('r_ins_inc','$0 (generally income-tax-free)');
+  const insInEstate=t.inILIT?0:(+t.deathBenefit||0), insEstTax=( (+t.estate||0)+insInEstate>exTot )?insInEstate*TAXC.estRate:0;
+  set('r_ins_est', t.inILIT?'$0 — ILIT keeps it out of the estate':(insEstTax>0?('+'+m$(insEstTax)+' estate tax (in your estate)'):'$0 — estate under exemption'));
+  // LLC vs S-corp + SE
+  const profit=+t.profit||0, salary=+t.salary||0;
+  const llcSE=seTaxCalc(profit), scPay=Math.min(salary,TAXC.ssBase)*0.124+salary*0.029, save=llcSE-scPay;
+  set('r_llc_se',m$(llcSE)); set('r_sc_pay',m$(scPay)); set('r_sc_save',(save>=0?'+':'')+m$(save));
+  // QBI
+  const qbi=+t.qbi||0, ded=qbi*0.20, mr=margRate(ord+qbi,fedBr), qsaved=ded*mr;
+  set('r_qbi_ded',m$(ded)); set('r_qbi_saved',m$(qsaved));
+  const sstbCap=f==='MFJ'?483900:241950;
+  note('r_qbi_note', (t.sstb && (ord+qbi)>sstbCap)?('Service business above ~'+m$(sstbCap)+' — QBI deduction likely phased out to $0. CPA review.'):'Wage/UBIA limits may apply above the threshold — CPA review.');
+  // DRD
+  const amt=+t.drdAmt||0, pct=t.drdOwn==='<20'?0.50:(t.drdOwn==='20-80'?0.65:1.00), drded=amt*pct, drtax=(amt-drded)*TAXC.corpRate;
+  set('r_drd_pct',Math.round(pct*100)+'%'); set('r_drd_ded',m$(drded)); set('r_drd_tax',m$(drtax));
+  // retirement
+  const age=+t.age||0, comp=+t.seComp||0;
+  set('r_ret_401',m$(23500+(age>=50?7500:0))); set('r_ret_ira',m$(7000+(age>=50?1000:0)));
+  set('r_ret_simple',m$(16500+(age>=50?3500:0))); set('r_ret_sep',m$(Math.min(comp*0.25,70000)));
 }
 
 /* ---------- Export center ---------- */
