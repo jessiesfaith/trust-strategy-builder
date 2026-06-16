@@ -377,7 +377,8 @@
     <div class="section-head">
       <span class="eyebrow">Estimator</span>
       <h2>Tax Estimator</h2>
-      <span class="muted" style="font-size:12.5px">CA + federal, 2025 figures. Rough estimates for planning — not tax advice; confirm with your CPA.</span>
+      <span class="muted" style="font-size:12.5px">Federal + state, 2025/2026. Rough estimates for planning — not tax advice; confirm with your CPA.</span>
+      <button class="btn-soft btn-xs" style="margin-left:auto" onclick="downloadTaxSummary()">⬇ Download tax summary</button>
     </div>
     <div id="taxEstimator"><!-- rendered --></div>
   </section>
@@ -1254,14 +1255,20 @@ function renderTax(){
 }
 
 /* ---------- Tax Estimator (CA + federal, 2025 — estimates only, not tax advice) ---------- */
-const TAXC={
-  fed:{ Single:[[0,.10],[11925,.12],[48475,.22],[103350,.24],[197300,.32],[250525,.35],[626350,.37]],
-        MFJ:[[0,.10],[23850,.12],[96950,.22],[206700,.24],[394600,.32],[501050,.35],[751600,.37]] },
-  ltcg:{ Single:[[0,0],[48350,.15],[533400,.20]], MFJ:[[0,0],[96700,.15],[600050,.20]] },
-  ca:{ Single:[[0,.01],[10756,.02],[25499,.04],[40245,.06],[55866,.08],[70606,.093],[360659,.103],[432787,.113],[721314,.123]],
-       MFJ:[[0,.01],[21512,.02],[50998,.04],[80490,.06],[111732,.08],[141212,.093],[721318,.103],[865574,.113],[1442628,.123]] },
-  niit:{ Single:200000, MFJ:250000 }, ssBase:176100, estRate:.40, corpRate:.21, addlMed:{ Single:200000, MFJ:250000 }
+const TAXC={ niit:{ Single:200000, MFJ:250000 }, estRate:.40, corpRate:.21, addlMed:{ Single:200000, MFJ:250000 } };
+const TAXY={
+  '2025':{
+    fed:{ Single:[[0,.10],[11925,.12],[48475,.22],[103350,.24],[197300,.32],[250525,.35],[626350,.37]],
+          MFJ:[[0,.10],[23850,.12],[96950,.22],[206700,.24],[394600,.32],[501050,.35],[751600,.37]] },
+    ltcg:{ Single:[[0,0],[48350,.15],[533400,.20]], MFJ:[[0,0],[96700,.15],[600050,.20]] },
+    ssBase:176100, exemption:13990000, ret:{k401:23500,k401c:7500,ira:7000,irac:1000,simple:16500,simplec:3500,sepMax:70000} },
+  '2026':{
+    fed:{ Single:[[0,.10],[12400,.12],[50400,.22],[105700,.24],[201775,.32],[256225,.35],[640600,.37]],
+          MFJ:[[0,.10],[24800,.12],[100800,.22],[211100,.24],[403550,.32],[512450,.35],[768700,.37]] },
+    ltcg:{ Single:[[0,0],[49450,.15],[545500,.20]], MFJ:[[0,0],[98900,.15],[615300,.20]] },
+    ssBase:184500, exemption:15000000, ret:{k401:24500,k401c:8000,ira:7500,irac:1100,simple:17000,simplec:4000,sepMax:71000} }
 };
+function curY(){ return TAXY[(S.tax&&S.tax.year)||'2026']; }
 // State income tax (estimates). Most states tax cap gains/dividends as ordinary income.
 const STATE_TAX={
   'California':{ surtax1m:.01,
@@ -1284,14 +1291,17 @@ function progTax(inc,br){ inc=Math.max(0,inc); let t=0; for(let i=0;i<br.length;
 function margRate(inc,br){ let r=br[0][1]; for(const b of br) if(inc>=b[0]) r=b[1]; return r; }
 function stateTax(x){ const st=S.tax.state||'California', f=S.tax.filing||'MFJ'; if(NO_TAX_STATES.includes(st)) return 0; const cfg=STATE_TAX[st]; if(!cfg) return 0; let t = cfg.flat!=null ? Math.max(0,x)*cfg.flat : progTax(x,cfg[f]||cfg.MFJ); if(cfg.surtax1m && x>1000000) t+=(x-1000000)*cfg.surtax1m; return t; }
 function ltcgStack(ord,gain,br){ let t=0, lo=ord, hi=ord+gain; for(let i=0;i<br.length;i++){ const bLo=br[i][0], bHi=i+1<br.length?br[i+1][0]:Infinity, seg=Math.max(0,Math.min(hi,bHi)-Math.max(lo,bLo)); if(seg>0) t+=seg*br[i][1]; } return t; }
-function seTaxCalc(net){ const base=Math.max(0,net)*0.9235; return Math.min(base,TAXC.ssBase)*0.124 + base*0.029; }
+function seTaxCalc(net){ const base=Math.max(0,net)*0.9235; return Math.min(base,curY().ssBase)*0.124 + base*0.029; }
 function ensureTax(){
   S.tax=S.tax||{};
-  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,exemption:13990000,dual:true,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000};
+  if(S.tax.year===undefined) S.tax.year='2026';
+  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,dual:true,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000};
   for(const k in d){ if(S.tax[k]===undefined) S.tax[k]=d[k]; }
+  if(S.tax.exemption===undefined) S.tax.exemption=TAXY[S.tax.year].exemption;
   if(S.tax.estate===undefined){ const P=(S.properties||[]).reduce((a,p)=>a+ +(p.value||0),0), D=(S.properties||[]).reduce((a,p)=>a+ +(p.mortgageBalance||0),0), C=(S.bankAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0), I=(S.brokerageAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0); S.tax.estate=Math.max(0,P+C+I-D); }
 }
 function updTax(k,v){ S.tax[k]=v; save(); computeTax(); }
+function updYear(y){ S.tax.year=y; S.tax.exemption=TAXY[y].exemption; save(); renderTaxEstimator(); } // rebuild so the exemption field reflects the year
 function m$(n){ return '$'+Math.round(+n||0).toLocaleString('en-US'); }
 function renderTaxEstimator(){
   ensureTax(); const t=S.tax;
@@ -1305,9 +1315,10 @@ function renderTaxEstimator(){
   const optsArr=STATE_OPTS.includes(t.state)?STATE_OPTS:[t.state].concat(STATE_OPTS);
   const stateOpts=optsArr.map(s=>`<option ${t.state===s?'selected':''}>${esc(s)}</option>`).join('');
   document.getElementById('taxEstimator').innerHTML=`
-    <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Rough estimates, not tax advice.</b> 2025 federal brackets; state income tax modeled for <b>California</b> &amp; <b>New York</b> (other states treated as $0 — verify). Ignores AMT, deductions/credits, most phase-outs, and many special rules. Confirm every figure with your CPA.</div></div>
-    <div class="card pad" style="margin-bottom:14px"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0 14px">
+    <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Rough estimates, not tax advice.</b> Federal figures for the selected year (<b>2026 estimated</b> per current law). 27 states modeled (others treated as $0 — verify). Ignores AMT, deductions/credits, most phase-outs, and many special rules. Confirm every figure with your CPA.</div></div>
+    <div class="card pad" style="margin-bottom:14px"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0 14px">
       <div class="field" style="margin-bottom:0"><label>Filing status</label><select onchange="updTax('filing',this.value)" ${selSty}><option ${t.filing==='MFJ'?'selected':''}>MFJ</option><option ${t.filing==='Single'?'selected':''}>Single</option></select></div>
+      <div class="field" style="margin-bottom:0"><label>Tax year</label><select onchange="updYear(this.value)" ${selSty}><option ${t.year==='2026'?'selected':''}>2026</option><option ${t.year==='2025'?'selected':''}>2025</option></select></div>
       <div class="field" style="margin-bottom:0"><label>State</label><select onchange="updTax('state',this.value)" ${selSty}>${stateOpts}</select></div>
       <div class="field" style="margin-bottom:0"><label>Other ordinary income ($)</label>${inp('ordinary')}</div>
     </div></div>
@@ -1326,12 +1337,12 @@ function renderTaxEstimator(){
       ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${fld('Net business profit ($)','profit')}${fld('S-corp reasonable salary ($)','salary')}</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
       ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
-      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp')}</div>${res('401(k) elective max','r_ret_401')}${res('IRA max','r_ret_ira')}${res('SIMPLE max','r_ret_simple')}${res('SEP / solo-401k max','r_ret_sep')}<div class="legal-foot">Limits are 2025 (incl. age-50 catch-up). SEP ≈ 25% of comp (≈20% of net SE) up to $70,000; confirm with your CPA.</div>`)}
+      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp')}</div>${res('401(k) elective max','r_ret_401')}${res('IRA max','r_ret_ira')}${res('SIMPLE max','r_ret_simple')}${res('SEP / solo-401k max','r_ret_sep')}<div class="legal-foot">Limits shown for ${esc(t.year)} (incl. age-50 catch-up). SEP ≈ 25% of comp (≈20% of net SE); confirm with your CPA.</div>`)}
     </div>`;
   computeTax();
 }
 function computeTax(){
-  const t=S.tax, f=t.filing||'MFJ', fedBr=TAXC.fed[f], ltBr=TAXC.ltcg[f];
+  const t=S.tax, f=t.filing||'MFJ', Y=curY(), fedBr=Y.fed[f], ltBr=Y.ltcg[f];
   const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   const note=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   const ord=+t.ordinary||0, lt=+t.ltgain||0, st=+t.stgain||0, qd=+t.qdiv||0, od=+t.odiv||0;
@@ -1353,7 +1364,7 @@ function computeTax(){
   // LLC vs S-corp + SE
   const profit=+t.profit||0, salary=+t.salary||0, medThr=TAXC.addlMed[f];
   const llcSE=seTaxCalc(profit)+Math.max(0,(profit*0.9235)-medThr)*0.009;        // +0.9% Additional Medicare
-  const scPay=Math.min(salary,TAXC.ssBase)*0.124+salary*0.029+Math.max(0,salary-medThr)*0.009, save=llcSE-scPay;
+  const scPay=Math.min(salary,Y.ssBase)*0.124+salary*0.029+Math.max(0,salary-medThr)*0.009, save=llcSE-scPay;
   set('r_llc_se',m$(llcSE)); set('r_sc_pay',m$(scPay)); set('r_sc_save',(save>=0?'+':'')+m$(save));
   // QBI
   const qbi=+t.qbi||0, ded=qbi*0.20, mr=margRate(ord+qbi,fedBr), qsaved=ded*mr;
@@ -1364,9 +1375,9 @@ function computeTax(){
   const amt=+t.drdAmt||0, pct=t.drdOwn==='<20'?0.50:(t.drdOwn==='20-80'?0.65:1.00), drded=amt*pct, drtax=(amt-drded)*TAXC.corpRate;
   set('r_drd_pct',Math.round(pct*100)+'%'); set('r_drd_ded',m$(drded)); set('r_drd_tax',m$(drtax));
   // retirement
-  const age=+t.age||0, comp=+t.seComp||0;
-  set('r_ret_401',m$(23500+(age>=50?7500:0))); set('r_ret_ira',m$(7000+(age>=50?1000:0)));
-  set('r_ret_simple',m$(16500+(age>=50?3500:0))); set('r_ret_sep',m$(Math.min(comp*0.25,70000)));
+  const age=+t.age||0, comp=+t.seComp||0, R=Y.ret;
+  set('r_ret_401',m$(R.k401+(age>=50?R.k401c:0))); set('r_ret_ira',m$(R.ira+(age>=50?R.irac:0)));
+  set('r_ret_simple',m$(R.simple+(age>=50?R.simplec:0))); set('r_ret_sep',m$(Math.min(comp*0.25,R.sepMax)));
   // ---- Summary: single annual total + estate before/after structures ----
   const ordTax=progTax(ord,fedBr)+stateTax(ord);
   const annual=ordTax + fedCG+stCG+niit + llcSE - qsaved;
@@ -1379,6 +1390,26 @@ function computeTax(){
   set('r_total_after', m$(afterTax));
   note('r_total_saved', removed>0?('saves ≈ '+m$(estSaved)+' (removes ~'+m$(removed)+')'):'add FLP / ILIT / QPRT to project');
 }
+function buildTaxSummaryMD(){
+  ensureTax(); computeTax(); const t=S.tax, g=id=>document.getElementById(id)?document.getElementById(id).textContent:'—';
+  let s='# Tax Estimate Summary\n\n_Planning estimate only — not tax advice. Confirm with your CPA._\n\n';
+  s+=`**Filing:** ${t.filing}  ·  **State:** ${t.state}  ·  **Tax year:** ${t.year}\n\n`;
+  s+='## Headline\n';
+  s+=`- Estimated annual income tax: **${g('r_total_annual')}**\n`;
+  s+=`- Estate tax now (at death): **${g('r_total_estate')}**\n`;
+  s+=`- Estate tax with added structures: **${g('r_total_after')}** — ${g('r_total_saved')}\n\n`;
+  s+='## Capital gains & dividends\n'+`- Federal ${g('r_cg_fed')} · State ${g('r_cg_ca')} · NIIT ${g('r_cg_niit')} · **Total ${g('r_cg_tot')}**\n\n`;
+  s+='## Estate\n'+`- Federal estate tax ${g('r_est_tax')} · ${g('r_est_ca')}\n\n`;
+  s+='## Life insurance\n'+`- Income tax ${g('r_ins_inc')} · Estate impact ${g('r_ins_est')}\n\n`;
+  s+='## LLC vs S-corp & SE tax\n'+`- LLC self-employment tax ${g('r_llc_se')} · S-corp payroll ${g('r_sc_pay')} · **Est. savings ${g('r_sc_save')}**\n\n`;
+  s+='## Business income — QBI (§199A)\n'+`- 20% deduction ${g('r_qbi_ded')} · federal tax saved ${g('r_qbi_saved')}\n\n`;
+  s+='## Corporate DRD\n'+`- ${g('r_drd_pct')} deductible ${g('r_drd_ded')} · taxable @21% ${g('r_drd_tax')}\n\n`;
+  s+='## Retirement contribution limits\n'+`- 401(k) ${g('r_ret_401')} · IRA ${g('r_ret_ira')} · SIMPLE ${g('r_ret_simple')} · SEP/solo-401k ${g('r_ret_sep')}\n\n`;
+  if((S.customStructures||[]).length){ s+='## Structures considered\n'; (S.customStructures||[]).forEach(cs=>{ const x=structByKey(cs.k); if(x){ const a=structAvail(x,t.state); s+=`- **${x.name}** (${x.full}) — ${a.lvl==='available'?'available':a.lvl==='na'?'not typical in '+t.state:'verify'} — ${structImpact(x)}\n`; } }); s+='\n'; }
+  s+='---\n_Estimates ignore AMT, deductions/credits, most phase-outs, and special rules. Confirm with your CPA & attorney._\n';
+  return s;
+}
+function downloadTaxSummary(){ const blob=new Blob([buildTaxSummaryMD()],{type:'text/markdown'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tax-estimate-summary.md'; a.click(); URL.revokeObjectURL(a.href); toast('Tax summary downloaded'); }
 
 /* ---------- Export center ---------- */
 function renderExport(){
@@ -1388,13 +1419,14 @@ function renderExport(){
     ['🛡️','Trustee Protection Packet','PDF — export coming in full version','pdf'],
     ['🗂️','Asset Checklist','CSV — export coming in full version','csv'],
     ['🏦','Bank Account Checklist','CSV — export coming in full version','csv'],
-    ['📝','Markdown Strategy Memo','Download now (.md)','md']
+    ['📝','Markdown Strategy Memo','Download now (.md)','md'],
+    ['🧮','Tax Estimate Summary','Download now (.md)','tax']
   ];
   document.getElementById('exportGrid').innerHTML = items.map(i=>`
     <div class="exp">
       <div class="ic">${i[0]}</div>
       <div class="meta"><div class="t">${esc(i[1])}</div><div class="d">${esc(i[2])}</div></div>
-      ${i[3]==='md'?`<button class="btn-primary btn-xs" onclick="downloadMemo()">Download</button>`:`<button class="btn-ghost btn-xs" onclick="toast('Export coming in full version')">Placeholder</button>`}
+      ${i[3]==='md'?`<button class="btn-primary btn-xs" onclick="downloadMemo()">Download</button>`:i[3]==='tax'?`<button class="btn-primary btn-xs" onclick="downloadTaxSummary()">Download</button>`:`<button class="btn-ghost btn-xs" onclick="toast('Export coming in full version')">Placeholder</button>`}
     </div>`).join('');
   document.getElementById('mermaidCode').textContent = buildMindmap();
 }
