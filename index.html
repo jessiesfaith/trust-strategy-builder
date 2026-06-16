@@ -27,10 +27,10 @@
   }
   a{color:var(--indigo)}
   .layout{display:flex;align-items:flex-start;gap:0;max-width:none;margin:0}
-  .wrap{flex:1;min-width:0;max-width:1200px;padding:0 18px 90px}
+  .wrap{flex:1;min-width:0;max-width:1480px;padding:0 18px 90px}
   h1,h2,h3,h4{margin:0;font-weight:680;letter-spacing:-.01em}
-  h2{font-size:21px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;letter-spacing:0}
-  h3{font-size:15px}
+  h2{font-size:24px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;letter-spacing:0}
+  h3{font-size:17px}
   p{margin:.35em 0}
   small{color:var(--muted)}
   .muted{color:var(--muted)}
@@ -38,7 +38,7 @@
   /* Preview banner */
   .preview-banner{
     background:linear-gradient(90deg,#00c805 0%,#006d04 55%,#c89a2d 100%); color:#001a00; text-align:center;
-    font-size:13px; padding:8px 14px; position:sticky; top:0; z-index:40;
+    font-size:14.5px; padding:8px 14px; position:sticky; top:0; z-index:40;
   }
   .preview-banner strong{font-weight:700}
 
@@ -47,14 +47,14 @@
     background:var(--panel); border-bottom:1px solid var(--line);
     position:sticky; top:33px; z-index:30;
   }
-  .header-inner{max-width:1180px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .header-inner{max-width:1460px;margin:0 auto;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
   .brand{display:flex;align-items:center;gap:10px}
-  .logo{width:34px;height:34px;border-radius:9px;background:var(--indigo);display:grid;place-items:center;color:var(--accent-ink);font-weight:800;font-size:15px}
-  .brand .name{font-size:22px;font-weight:600;letter-spacing:0;font-family:'Cormorant Garamond',Georgia,serif}
-  .brand .sub{font-size:11px;color:var(--muted);margin-top:-2px}
+  .logo{width:34px;height:34px;border-radius:9px;background:var(--indigo);display:grid;place-items:center;color:var(--accent-ink);font-weight:800;font-size:17px}
+  .brand .name{font-size:25px;font-weight:600;letter-spacing:0;font-family:'Cormorant Garamond',Georgia,serif}
+  .brand .sub{font-size:12.5px;color:var(--muted);margin-top:-2px}
   .header-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
   .toptabs{flex:none;width:178px;position:sticky;top:14px;align-self:flex-start;display:flex;flex-direction:column;gap:4px;padding:14px 10px;border-right:1px solid var(--line);max-height:calc(100vh - 24px);overflow-y:auto}
-  .toptab{display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;font-size:12.5px;font-weight:600;background:transparent;color:var(--muted);border:1px solid transparent;cursor:pointer;white-space:nowrap}
+  .toptab{display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;font-size:14px;font-weight:600;background:transparent;color:var(--muted);border:1px solid transparent;cursor:pointer;white-space:nowrap}
   @media(max-width:760px){.layout{flex-direction:column}.toptabs{width:auto;position:static;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);max-height:none;padding:8px 18px}.toptab{width:auto}}
   .toptab:hover{color:var(--ink);background:var(--panel2)}
   .toptab.active{background:var(--indigo-soft);color:var(--indigo-ink);border-color:var(--indigo)}
@@ -62,7 +62,7 @@
   .toptab.add-trust:hover{border-color:var(--indigo);background:var(--indigo-soft);color:var(--indigo-ink)}
 
   /* Buttons */
-  button{font-family:inherit;cursor:pointer;border:0;border-radius:10px;font-size:13px;font-weight:600;padding:8px 12px;transition:.12s;display:inline-flex;align-items:center;gap:6px}
+  button{font-family:inherit;cursor:pointer;border:0;border-radius:10px;font-size:14.5px;font-weight:600;padding:8px 12px;transition:.12s;display:inline-flex;align-items:center;gap:6px}
   button:active{transform:translateY(1px)}
   .btn-primary{background:var(--indigo);color:var(--accent-ink)}
   .btn-primary:hover{background:#00e006}
@@ -72,13 +72,13 @@
   .btn-soft:hover{background:rgba(0,200,5,.2)}
   .btn-danger{background:var(--panel2);color:var(--red);border:1px solid var(--red-line)}
   .btn-danger:hover{background:var(--red-soft)}
-  .btn-xs{padding:5px 9px;font-size:12px;border-radius:8px}
+  .btn-xs{padding:5px 9px;font-size:13.5px;border-radius:8px}
   .btn-row{display:flex;gap:8px;flex-wrap:wrap}
 
   /* Cards / sections */
   section.block{margin-top:22px}
   .section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-  .section-head .eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--indigo);font-weight:700}
+  .section-head .eyebrow{font-size:12.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--indigo);font-weight:700}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
   .card.pad{padding:16px}
   .grid{display:grid;gap:14px}
@@ -88,17 +88,17 @@
   @media(max-width:620px){.g3{grid-template-columns:1fr}.header-actions{width:100%}}
 
   .essential{padding:15px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
-  .essential h3{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:9px}
-  .essential h3 .num{width:22px;height:22px;border-radius:6px;background:var(--indigo-soft);color:var(--indigo-ink);display:grid;place-items:center;font-size:12px;font-weight:800}
-  .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:4px 0;border-bottom:1px dashed var(--line)}
+  .essential h3{display:flex;align-items:center;gap:8px;font-size:16px;margin-bottom:9px}
+  .essential h3 .num{width:22px;height:22px;border-radius:6px;background:var(--indigo-soft);color:var(--indigo-ink);display:grid;place-items:center;font-size:13.5px;font-weight:800}
+  .kv{display:flex;justify-content:space-between;gap:10px;font-size:14.5px;padding:4px 0;border-bottom:1px dashed var(--line)}
   .kv:last-child{border-bottom:0}
   .kv .k{color:var(--muted)}
   .kv .v{font-weight:600;text-align:right}
-  ul.lite{margin:6px 0 0;padding-left:18px;font-size:13px}
+  ul.lite{margin:6px 0 0;padding-left:18px;font-size:14.5px}
   ul.lite li{margin:2px 0}
 
   /* Badges */
-  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;line-height:1;border:1px solid transparent;white-space:nowrap}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:700;padding:4px 9px;border-radius:999px;line-height:1;border:1px solid transparent;white-space:nowrap}
   .b-amber{background:var(--amber-soft);color:var(--amber);border-color:var(--amber-line)}
   .b-green{background:var(--green-soft);color:var(--green);border-color:var(--green-line)}
   .b-blue{background:var(--blue-soft);color:var(--blue)}
@@ -108,12 +108,12 @@
   .badges{display:flex;gap:7px;flex-wrap:wrap}
 
   /* Disclaimer */
-  .disclaimer{font-size:12px;color:var(--amber);background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:10px;padding:9px 12px;display:flex;gap:8px;align-items:flex-start}
+  .disclaimer{font-size:13.5px;color:var(--amber);background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:10px;padding:9px 12px;display:flex;gap:8px;align-items:flex-start}
   .disclaimer.tight{margin-top:10px}
-  .legal-foot{font-size:11.5px;color:var(--muted);margin-top:8px}
+  .legal-foot{font-size:13px;color:var(--muted);margin-top:8px}
 
   /* Snapshot */
-  .snap{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--panel);font-size:13px}
+  .snap{display:flex;align-items:center;gap:10px;padding:11px 13px;border:1px solid var(--line);border-radius:11px;background:var(--panel);font-size:14.5px}
   .snap .dot{width:9px;height:9px;border-radius:50%;flex:none}
   .snap b{font-weight:660}
 
@@ -124,34 +124,34 @@
   .asset-card .sub.scroll::-webkit-scrollbar{width:6px}
   .asset-card .sub.scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
   .asset-card .top{display:flex;align-items:center;justify-content:space-between}
-  .asset-card .big{font-size:22px;font-weight:780;letter-spacing:-.02em}
-  .asset-card .icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:15px;background:var(--indigo-soft)}
+  .asset-card .big{font-size:25px;font-weight:780;letter-spacing:-.02em}
+  .asset-card .icon{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-size:17px;background:var(--indigo-soft)}
 
   /* Accordions */
   .accordion{border:1px solid var(--line);border-radius:12px;background:var(--panel);margin-bottom:10px;overflow:hidden}
   .acc-head{display:flex;align-items:center;gap:12px;padding:13px 15px;cursor:pointer;user-select:none}
   .acc-head:hover{background:var(--panel2)}
-  .acc-head .chev{margin-left:auto;transition:.18s;color:var(--muted);font-size:13px}
+  .acc-head .chev{margin-left:auto;transition:.18s;color:var(--muted);font-size:14.5px}
   .accordion.open .chev{transform:rotate(90deg)}
-  .acc-title{font-weight:680;font-size:14px}
-  .acc-summary{font-size:12px;color:var(--muted)}
+  .acc-title{font-weight:680;font-size:16px}
+  .acc-summary{font-size:13.5px;color:var(--muted)}
   .acc-body{display:none;padding:0 15px 16px;border-top:1px solid var(--line)}
   .accordion.open .acc-body{display:block}
 
   /* Entity rows */
   .ent{border:1px solid var(--line);border-radius:11px;padding:12px;margin-top:10px;background:var(--panel2)}
   .ent .ent-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
-  .ent h4{font-size:14px}
-  .ent .ent-meta{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .ent h4{font-size:16px}
+  .ent .ent-meta{font-size:14px;color:var(--muted);margin-top:3px}
   .ent .ent-flags{margin-top:8px}
   .ent .ent-actions{display:flex;gap:6px;flex-wrap:wrap}
-  .empty{padding:16px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:11px;background:var(--panel2)}
+  .empty{padding:16px;text-align:center;color:var(--muted);font-size:14.5px;border:1px dashed var(--line);border-radius:11px;background:var(--panel2)}
 
   /* Forms inside body */
   .field{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
-  .field label{font-size:12px;font-weight:600;color:var(--muted)}
+  .field label{font-size:13.5px;font-weight:600;color:var(--muted)}
   .field input,.field select,.field textarea{
-    font-family:inherit;font-size:13px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink);width:100%
+    font-family:inherit;font-size:14.5px;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink);width:100%
   }
   .field textarea{min-height:70px;resize:vertical}
   .field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--indigo-soft);border-color:var(--indigo)}
@@ -163,7 +163,7 @@
 
   /* Mind map */
   .mm-tabs{display:flex;gap:6px;margin-bottom:10px}
-  .mm-tab{padding:7px 12px;border-radius:9px;font-size:13px;font-weight:600;background:var(--panel2);border:1px solid var(--line);cursor:pointer}
+  .mm-tab{padding:7px 12px;border-radius:9px;font-size:14.5px;font-weight:600;background:var(--panel2);border:1px solid var(--line);cursor:pointer}
   .mm-tab.active{background:var(--indigo);color:var(--accent-ink);border-color:var(--indigo)}
   .mm-canvas{border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:14px;overflow:auto;min-height:200px}
   .mm-canvas svg{max-width:100%;height:auto;max-height:66vh;display:block;margin:0 auto}
@@ -175,63 +175,63 @@
   .mm-layout{display:flex;gap:14px;align-items:flex-start}
   .mm-layout .mm-canvas{flex:1;min-width:0}
   .mm-detail{width:262px;flex:none;border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:15px}
-  .mm-detail .eyb{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
-  .mm-detail h4{font-size:16px;margin:5px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600}
-  .mm-detail p{font-size:12.5px;color:var(--ink);line-height:1.5}
+  .mm-detail .eyb{font-size:12.5px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:700}
+  .mm-detail h4{font-size:18px;margin:5px 0 8px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600}
+  .mm-detail p{font-size:14px;color:var(--ink);line-height:1.5}
   .mm-detail .stat{display:flex;gap:10px;margin:10px 0}
   .mm-detail .stat .b{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;text-align:center}
-  .mm-detail .stat .b b{font-size:20px;font-family:'Cormorant Garamond',Georgia,serif;display:block}
-  .mm-detail .stat .b span{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-  .mm-status-legend{display:flex;gap:16px;flex-wrap:wrap;margin:2px 0 12px;font-size:12px}
+  .mm-detail .stat .b b{font-size:23px;font-family:'Cormorant Garamond',Georgia,serif;display:block}
+  .mm-detail .stat .b span{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .mm-status-legend{display:flex;gap:16px;flex-wrap:wrap;margin:2px 0 12px;font-size:13.5px}
   .mm-status-legend .ch{display:flex;align-items:center;gap:6px;color:var(--muted);font-weight:600}
   .mm-status-legend .ch i{width:11px;height:11px;border-radius:50%;display:inline-block}
   @media(max-width:820px){.mm-layout{flex-direction:column}.mm-detail{width:auto}}
   .mm-canvas svg text,.mm-full-canvas svg text{pointer-events:none}
   .mm-full-canvas svg circle[data-i]{cursor:pointer}
-  .mm-full-detail{padding:11px 18px;border-top:1px solid var(--line);background:var(--panel);font-size:13px;min-height:22px}
+  .mm-full-detail{padding:11px 18px;border-top:1px solid var(--line);background:var(--panel);font-size:14.5px;min-height:22px}
   /* Full-screen diagram */
   .mm-full{position:fixed;inset:0;background:var(--bg);z-index:95;display:none;flex-direction:column}
   .mm-full.open{display:flex}
   .mm-full-bar{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap;background:var(--panel)}
-  .mm-full-bar .ttl{font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:600}
+  .mm-full-bar .ttl{font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;font-weight:600}
   .mm-full-canvas{flex:1;overflow:auto;padding:24px;display:flex;align-items:flex-start;justify-content:center}
   .mm-full-canvas svg{width:min(1500px,96%);height:auto;transform-origin:top center;margin:0 auto}
   .mm-zoom{display:flex;align-items:center;gap:4px}
   /* Native mind-map tree (readable bubble/dot layout) */
   .mindtree{display:flex;flex-direction:column;gap:14px}
-  .mt-root{align-self:flex-start;background:var(--indigo);color:var(--accent-ink);font-weight:600;padding:6px 18px;border-radius:999px;font-size:16px;font-family:'Cormorant Garamond',Georgia,serif}
+  .mt-root{align-self:flex-start;background:var(--indigo);color:var(--accent-ink);font-weight:600;padding:6px 18px;border-radius:999px;font-size:18px;font-family:'Cormorant Garamond',Georgia,serif}
   .mt-cols{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
   .mt-branch{flex:1 1 210px;min-width:200px;max-width:300px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 13px;display:flex;flex-direction:column;gap:5px}
   .mt-branch.active{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}
   .mt-branch.option{border-style:dashed;border-color:var(--amber)}
-  .mt-head{font-weight:700;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:8px;margin-bottom:3px}
+  .mt-head{font-weight:700;font-size:14.5px;color:var(--ink);display:flex;align-items:center;gap:8px;margin-bottom:3px}
   .mt-head .d{width:10px;height:10px;border-radius:50%;background:var(--indigo);flex:none}
   .mt-branch.active .mt-head .d{background:var(--green)}
   .mt-branch.option .mt-head .d{background:var(--amber)}
-  .mt-node{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);padding:3px 0;line-height:1.35}
+  .mt-node{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);padding:3px 0;line-height:1.35}
   .mt-node::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--muted);flex:none}
-  .mt-node.sub{margin-left:16px;font-size:12px;color:var(--muted)}
+  .mt-node.sub{margin-left:16px;font-size:13.5px;color:var(--muted)}
   .mt-node.sub::before{width:5px;height:5px;background:var(--line)}
   .mm-full-canvas .mindtree{transform-origin:top center;width:100%}
   .mm-full-canvas .mt-branch{flex-basis:260px;min-width:240px;max-width:360px;padding:16px}
-  .mm-full-canvas .mt-head{font-size:15px}
-  .mm-full-canvas .mt-node{font-size:14px}
-  .mm-full-canvas .mt-root{font-size:20px}
+  .mm-full-canvas .mt-head{font-size:17px}
+  .mm-full-canvas .mt-node{font-size:16px}
+  .mm-full-canvas .mt-root{font-size:23px}
 
   /* Report memo */
   .memo{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
-  .memo h3{font-size:15px;margin:16px 0 6px;color:var(--indigo-ink)}
+  .memo h3{font-size:17px;margin:16px 0 6px;color:var(--indigo-ink)}
   .memo h3:first-child{margin-top:0}
-  .memo p,.memo li{font-size:13px}
+  .memo p,.memo li{font-size:14.5px}
   .memo ul{margin:4px 0 4px;padding-left:20px}
-  .memo .lead{font-size:13px;color:var(--ink);background:var(--indigo-soft);padding:11px 13px;border-radius:10px}
+  .memo .lead{font-size:14.5px;color:var(--ink);background:var(--indigo-soft);padding:11px 13px;border-radius:10px}
 
   /* Export center */
   .exp{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
-  .exp .ic{width:32px;height:32px;border-radius:8px;background:var(--indigo-soft);display:grid;place-items:center;font-size:15px;flex:none}
+  .exp .ic{width:32px;height:32px;border-radius:8px;background:var(--indigo-soft);display:grid;place-items:center;font-size:17px;flex:none}
   .exp .meta{flex:1;min-width:0}
-  .exp .meta .t{font-size:13px;font-weight:660}
-  .exp .meta .d{font-size:11.5px;color:var(--muted)}
+  .exp .meta .t{font-size:14.5px;font-weight:660}
+  .exp .meta .d{font-size:13px;color:var(--muted)}
 
   /* Review panel */
   .review{position:fixed;right:0;top:0;height:100vh;width:340px;background:var(--panel);border-left:1px solid var(--line);box-shadow:-8px 0 30px rgba(0,0,0,.45);transform:translateX(100%);transition:.25s;z-index:60;display:flex;flex-direction:column}
@@ -239,7 +239,7 @@
   .review-head{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
   .review-body{padding:14px 16px;overflow:auto;flex:1}
   .review-toggle{position:fixed;right:18px;bottom:18px;z-index:55;box-shadow:var(--shadow)}
-  .chkrow{display:flex;gap:9px;align-items:flex-start;font-size:13px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .chkrow{display:flex;gap:9px;align-items:flex-start;font-size:14.5px;padding:7px 0;border-bottom:1px dashed var(--line)}
   .chkrow input{margin-top:2px}
   .progress{height:7px;background:var(--panel2);border-radius:99px;overflow:hidden;margin:8px 0 14px}
   .progress > div{height:100%;background:var(--green);width:0;transition:.3s}
@@ -250,26 +250,26 @@
   .modal{background:var(--panel);border-radius:16px;max-width:640px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.55);animation:pop .15s}
   @keyframes pop{from{transform:translateY(8px);opacity:.6}to{transform:none;opacity:1}}
   .modal-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
-  .modal-head h3{font-size:16px}
+  .modal-head h3{font-size:18px}
   .modal-body{padding:18px 20px;max-height:62vh;overflow:auto}
   .modal-foot{padding:14px 20px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:8px;background:var(--panel2);border-radius:0 0 16px 16px}
-  .modal.confirm .modal-body{font-size:13.5px;color:var(--ink)}
+  .modal.confirm .modal-body{font-size:15px;color:var(--ink)}
   .modal-x{margin-left:auto;background:transparent;color:var(--muted);padding:4px 8px}
 
-  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c1c1c;color:var(--ink);border:1px solid var(--indigo);padding:10px 16px;border-radius:10px;font-size:13px;z-index:99;opacity:0;transition:.2s;pointer-events:none}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c1c1c;color:var(--ink);border:1px solid var(--indigo);padding:10px 16px;border-radius:10px;font-size:14.5px;z-index:99;opacity:0;transition:.2s;pointer-events:none}
   .toast.show{opacity:1}
-  .pill-count{font-size:11px;background:var(--indigo-soft);color:var(--indigo-ink);padding:2px 8px;border-radius:99px;font-weight:700}
+  .pill-count{font-size:12.5px;background:var(--indigo-soft);color:var(--indigo-ink);padding:2px 8px;border-radius:99px;font-weight:700}
   hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
-  code.inline{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:12px}
-  pre.code{background:#000;color:#e8e6df;padding:14px;border-radius:11px;overflow:auto;font-size:12px;line-height:1.5;max-height:320px;border:1px solid var(--line)}
+  code.inline{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:13.5px}
+  pre.code{background:#000;color:#e8e6df;padding:14px;border-radius:11px;overflow:auto;font-size:13.5px;line-height:1.5;max-height:320px;border:1px solid var(--line)}
   /* Private login gate */
   .login-gate{position:fixed;inset:0;z-index:1000;background:#0a0a0a;display:flex;align-items:center;justify-content:center;padding:20px}
   .login-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:30px 28px;max-width:360px;width:100%;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.6)}
-  .login-card .login-logo{width:46px;height:46px;border-radius:12px;background:var(--indigo);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-size:18px;margin:0 auto 14px}
-  .login-card h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:600}
-  .login-card input{width:100%;margin-top:10px;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink)}
+  .login-card .login-logo{width:46px;height:46px;border-radius:12px;background:var(--indigo);color:var(--accent-ink);display:grid;place-items:center;font-weight:800;font-size:20px;margin:0 auto 14px}
+  .login-card h2{font-family:'Cormorant Garamond',Georgia,serif;font-size:27px;font-weight:600}
+  .login-card input{width:100%;margin-top:10px;font-family:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--ink)}
   .login-card input:focus{outline:2px solid var(--indigo-soft);border-color:var(--indigo)}
-  .lg-err{color:var(--red);font-size:12px;min-height:16px;margin-top:8px}
+  .lg-err{color:var(--red);font-size:13.5px;min-height:16px;margin-top:8px}
 </style>
 </head>
 <body>
@@ -278,12 +278,12 @@
   <form class="login-card" onsubmit="login(event)">
     <div class="login-logo">TS</div>
     <h2>Trust Strategy Builder</h2>
-    <p class="muted" style="font-size:13px;margin-top:2px">Private preview — please sign in.</p>
+    <p class="muted" style="font-size:14.5px;margin-top:2px">Private preview — please sign in.</p>
     <input id="lg_user" type="text" placeholder="Username" autocomplete="username">
     <input id="lg_pass" type="password" placeholder="Password" autocomplete="current-password">
     <div class="lg-err" id="lg_err"></div>
     <button type="submit" class="btn-primary" style="width:100%">Sign in</button>
-    <div class="muted" style="font-size:11px;margin-top:12px">Private demo — access limited.</div>
+    <div class="muted" style="font-size:12.5px;margin-top:12px">Private demo — access limited.</div>
   </form>
 </div>
 <script>if(localStorage.getItem('tsb_auth')==='1'){var _g=document.getElementById('loginGate');if(_g)_g.style.display='none';}</script>
@@ -329,7 +329,7 @@
     <div class="section-head">
       <span class="eyebrow">Always visible</span>
       <h2>Estate Formation Essentials</h2>
-      <span class="muted" style="font-size:12.5px">The core items needed to understand this planning scenario.</span>
+      <span class="muted" style="font-size:14px">The core items needed to understand this planning scenario.</span>
     </div>
     <div class="grid g3" id="essentialsGrid"><!-- rendered --></div>
   </section>
@@ -339,7 +339,7 @@
     <div class="section-head">
       <span class="eyebrow">Planning signals</span>
       <h2>Strategy Snapshot</h2>
-      <span class="muted" style="font-size:12.5px">Possible items to discuss — not recommendations.</span>
+      <span class="muted" style="font-size:14px">Possible items to discuss — not recommendations.</span>
     </div>
     <div class="grid g3" id="snapshotGrid"><!-- rendered --></div>
     <div class="legal-foot">Badges flag <em>possible</em> review items based on your inputs. Nothing here is a final or recommended structure.</div>
@@ -364,7 +364,7 @@
     <div class="section-head">
       <span class="eyebrow">Live diagram</span>
       <h2>Estate Map</h2>
-      <span class="muted" style="font-size:12.5px">Updates automatically as you add or remove people, assets, LLCs, and sub-trusts.</span>
+      <span class="muted" style="font-size:14px">Updates automatically as you add or remove people, assets, LLCs, and sub-trusts.</span>
     </div>
     <div class="card pad">
       <div class="mm-tabs">
@@ -384,8 +384,8 @@
         <div class="mm-canvas" id="mmCanvas"><div class="muted">Rendering diagram…</div></div>
         <aside class="mm-detail" id="mmDetail"></aside>
       </div>
-      <div id="advLegend" style="margin-top:12px;font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:11px">
-        <div style="font-weight:700;color:var(--ink);margin-bottom:6px;font-size:12.5px">Structure glossary <span class="muted" style="font-weight:400">— green = active in this plan · amber-dashed “Potential Options” box = alternatives to discuss with your attorney &amp; CPA. Not advice.</span></div>
+      <div id="advLegend" style="margin-top:12px;font-size:13.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:11px">
+        <div style="font-weight:700;color:var(--ink);margin-bottom:6px;font-size:14px">Structure glossary <span class="muted" style="font-weight:400">— green = active in this plan · amber-dashed “Potential Options” box = alternatives to discuss with your attorney &amp; CPA. Not advice.</span></div>
         <div class="grid g3" style="gap:6px 16px">
           <div><b style="color:var(--ink)">Pour-Over Will</b> — catches any asset left out of the trust at death and routes it into the Revocable Living Trust.</div>
           <div><b style="color:var(--ink)">ILIT</b> — Irrevocable Life Insurance Trust; holds a life-insurance policy so proceeds may sit outside the taxable estate.</div>
@@ -405,7 +405,7 @@
     <div class="section-head">
       <span class="eyebrow">Discussion framework</span>
       <h2>Tax Considerations</h2>
-      <span class="muted" style="font-size:12.5px">Which tax to minimize is the real question — concepts to raise with your CPA &amp; attorney, not advice.</span>
+      <span class="muted" style="font-size:14px">Which tax to minimize is the real question — concepts to raise with your CPA &amp; attorney, not advice.</span>
     </div>
     <div class="card pad" id="taxConsider"><!-- rendered --></div>
   </section>
@@ -415,7 +415,7 @@
     <div class="section-head">
       <span class="eyebrow">Estimator</span>
       <h2>Tax Estimator</h2>
-      <span class="muted" style="font-size:12.5px">Federal + state, 2025/2026. Rough estimates for planning — not tax advice; confirm with your CPA.</span>
+      <span class="muted" style="font-size:14px">Federal + state, 2025/2026. Rough estimates for planning — not tax advice; confirm with your CPA.</span>
       <button class="btn-soft btn-xs" style="margin-left:auto" onclick="downloadTaxSummary()">⬇ Download tax summary</button>
     </div>
     <div id="taxEstimator"><!-- rendered --></div>
@@ -426,7 +426,7 @@
     <div class="section-head">
       <span class="eyebrow">Detailed intake</span>
       <h2>Planning Detail Sections</h2>
-      <span class="muted" style="font-size:12.5px">Collapsed by default — open what you need.</span>
+      <span class="muted" style="font-size:14px">Collapsed by default — open what you need.</span>
     </div>
     <div id="accordions"><!-- rendered --></div>
   </section>
@@ -445,12 +445,12 @@
     <div class="section-head">
       <span class="eyebrow">Output</span>
       <h2>Export Center</h2>
-      <span class="muted" style="font-size:12.5px">PDF/CSV are placeholders in preview. Mermaid code and the Markdown memo download for real.</span>
+      <span class="muted" style="font-size:14px">PDF/CSV are placeholders in preview. Mermaid code and the Markdown memo download for real.</span>
     </div>
     <div class="grid g2" id="exportGrid"><!-- rendered --></div>
     <div class="card pad" style="margin-top:14px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-        <strong style="font-size:14px">Mermaid Mind Map Code</strong>
+        <strong style="font-size:16px">Mermaid Mind Map Code</strong>
         <button class="btn-soft btn-xs" style="margin-left:auto" onclick="copyMermaid()">Copy code</button>
       </div>
       <pre class="code" id="mermaidCode"></pre>
@@ -472,14 +472,14 @@
     <button class="modal-x" style="margin-left:auto" onclick="toggleReview()">✕</button>
   </div>
   <div class="review-body">
-    <div class="muted" style="font-size:12px;margin-bottom:4px">Use this while reviewing the prototype.</div>
+    <div class="muted" style="font-size:13.5px;margin-bottom:4px">Use this while reviewing the prototype.</div>
     <div class="progress"><div id="reviewProgress"></div></div>
     <div id="reviewChecklist"></div>
     <hr class="soft"/>
-    <label style="font-size:12px;font-weight:600;color:var(--muted)">Review Notes</label>
+    <label style="font-size:13.5px;font-weight:600;color:var(--muted)">Review Notes</label>
     <textarea id="reviewNotes" placeholder="Type notes while reviewing… (saved locally on this device only)"
-      style="width:100%;min-height:140px;margin-top:6px;font-family:inherit;font-size:13px;padding:10px;border:1px solid var(--line);border-radius:10px;resize:vertical;background:var(--panel2);color:var(--ink)"></textarea>
-    <div class="muted" style="font-size:11px;margin-top:6px">Notes and checkboxes are stored only in this browser.</div>
+      style="width:100%;min-height:140px;margin-top:6px;font-family:inherit;font-size:14.5px;padding:10px;border:1px solid var(--line);border-radius:10px;resize:vertical;background:var(--panel2);color:var(--ink)"></textarea>
+    <div class="muted" style="font-size:12.5px;margin-top:6px">Notes and checkboxes are stored only in this browser.</div>
   </div>
 </aside>
 
@@ -911,10 +911,10 @@ function renderTrustPanel(key){
   const a=structAvail(tr,S.profile.state||''), ac=(MMSTATUS[a.status]||{c:'#9db4e8'}).c;
   S.trustNotes=S.trustNotes||{};
   const tag=a.lvl==='available'?'Available':(a.lvl==='na'?('Not typical in '+(S.profile.state||'your state')):'Verify');
-  const h3='style="font-size:14px;margin-bottom:8px;color:var(--indigo-ink)"';
+  const h3='style="font-size:16px;margin-bottom:8px;color:var(--indigo-ink)"';
   panel.innerHTML=`
     <section class="block">
-      <div class="section-head"><span class="eyebrow">Trust / entity</span><h2>${esc(tr.full)}</h2><span class="muted" style="font-size:12.5px">${esc(tr.name)}</span>
+      <div class="section-head"><span class="eyebrow">Trust / entity</span><h2>${esc(tr.full)}</h2><span class="muted" style="font-size:14px">${esc(tr.name)}</span>
         <div style="margin-left:auto;display:flex;gap:6px">
           ${tr.custom?`<button class="btn-ghost btn-xs" onclick="renameTrust('${tr.k}')">Rename</button><button class="btn-ghost btn-xs" onclick="deleteTrust('${tr.k}')">Delete</button>`:''}
           <button class="btn-ghost btn-xs" onclick="switchTab('overview')">← Back to overview</button></div></div>
@@ -923,15 +923,15 @@ function renderTrustPanel(key){
         <span class="badge b-amber">Attorney review</span><span class="badge b-amber">CPA review</span>
       </div>
       <div class="grid g2">
-        <div class="card pad"><h3 ${h3}>What it is</h3><p style="font-size:13px">${esc(tr.info.what)}</p>${tr.info.when?`<h3 ${h3} style="margin-top:12px;color:var(--indigo-ink)">When it’s used</h3><p style="font-size:13px">${esc(tr.info.when)}</p>`:''}</div>
-        <div class="card pad"><h3 ${h3}>Tax / cost impact <span class="muted" style="font-weight:400;font-size:11px">(from your Overview values + statutory limits)</span></h3><p style="font-size:13px">${esc(structImpact(tr))}</p><p style="font-size:13px;margin-top:8px">${esc(trustStatLine(tr.k))}</p><div class="legal-foot" style="margin-top:8px"><b>Availability:</b> ${esc(a.note)}</div></div>
+        <div class="card pad"><h3 ${h3}>What it is</h3><p style="font-size:14.5px">${esc(tr.info.what)}</p>${tr.info.when?`<h3 ${h3} style="margin-top:12px;color:var(--indigo-ink)">When it’s used</h3><p style="font-size:14.5px">${esc(tr.info.when)}</p>`:''}</div>
+        <div class="card pad"><h3 ${h3}>Tax / cost impact <span class="muted" style="font-weight:400;font-size:12.5px">(from your Overview values + statutory limits)</span></h3><p style="font-size:14.5px">${esc(structImpact(tr))}</p><p style="font-size:14.5px;margin-top:8px">${esc(trustStatLine(tr.k))}</p><div class="legal-foot" style="margin-top:8px"><b>Availability:</b> ${esc(a.note)}</div></div>
       </div>
       ${tr.info.cons&&tr.info.cons.length?`<div class="card pad" style="margin-top:14px"><h3 ${h3}>Key decisions &amp; questions for your attorney / CPA</h3><ul class="lite">${tr.info.cons.map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div>`:''}
       <div class="card pad" style="margin-top:14px"><h3 ${h3}>Your notes &amp; build ideas for this trust</h3>
-        <textarea oninput="updTrustNote('${tr.k}',this.value)" placeholder="What to add for ${esc(tr.name)} — intake fields, funding steps, calculators…" style="width:100%;min-height:120px;font-family:inherit;font-size:13px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);resize:vertical">${esc(S.trustNotes[tr.k]||'')}</textarea>
+        <textarea oninput="updTrustNote('${tr.k}',this.value)" placeholder="What to add for ${esc(tr.name)} — intake fields, funding steps, calculators…" style="width:100%;min-height:120px;font-family:inherit;font-size:14.5px;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--ink);resize:vertical">${esc(S.trustNotes[tr.k]||'')}</textarea>
         <div class="legal-foot" style="margin-top:6px">Scaffold tab — we’ll flesh out per-trust intake, funding checklist, and calculators here as you build.</div>
       </div>
-      ${CODE_REFS[tr.k]?`<div class="card pad" style="margin-top:14px"><h3 ${h3}>Probate &amp; statutory references</h3>${CODE_REFS[tr.k].map(r=>`<div style="border-bottom:1px dashed var(--line);padding:7px 0"><div style="font-weight:700;font-size:12.5px;color:var(--ink)">${esc(r.c)}</div><div class="muted" style="font-size:12px">${esc(r.s)}</div></div>`).join('')}<div class="legal-foot" style="margin-top:8px">⚠️ Plain-language summaries for orientation only — these are not the statutes and not legal advice. Read the official California Probate / Corporations Code (leginfo.ca.gov) and the Internal Revenue Code, and confirm with your attorney. Section numbers and dollar limits change.</div></div>`:''}
+      ${CODE_REFS[tr.k]?`<div class="card pad" style="margin-top:14px"><h3 ${h3}>Probate &amp; statutory references</h3>${CODE_REFS[tr.k].map(r=>`<div style="border-bottom:1px dashed var(--line);padding:7px 0"><div style="font-weight:700;font-size:14px;color:var(--ink)">${esc(r.c)}</div><div class="muted" style="font-size:13.5px">${esc(r.s)}</div></div>`).join('')}<div class="legal-foot" style="margin-top:8px">⚠️ Plain-language summaries for orientation only — these are not the statutes and not legal advice. Read the official California Probate / Corporations Code (leginfo.ca.gov) and the Internal Revenue Code, and confirm with your attorney. Section numbers and dollar limits change.</div></div>`:''}
       <div class="disclaimer" style="margin-top:14px"><span>⚠️</span><div>Planning / organization only — not legal or tax advice. Confirm with your attorney &amp; CPA.</div></div>
     </section>`;
 }
@@ -1096,8 +1096,8 @@ function renderAssets(){
         <div class="icon">${c.ic}</div>
         <div class="big">${c.n}</div>
       </div>
-      <div style="min-width:0"><div style="font-weight:680;font-size:14px">${esc(c.t)}</div>
-      <div class="muted sub${c.scroll?' scroll':''}" style="font-size:12px${c.scroll?'':';white-space:nowrap;overflow:hidden;text-overflow:ellipsis'}">${esc(c.sub)}</div></div>
+      <div style="min-width:0"><div style="font-weight:680;font-size:16px">${esc(c.t)}</div>
+      <div class="muted sub${c.scroll?' scroll':''}" style="font-size:13.5px${c.scroll?'':';white-space:nowrap;overflow:hidden;text-overflow:ellipsis'}">${esc(c.sub)}</div></div>
       <div class="btn-row">
         <button class="btn-soft btn-xs" onclick="openEntityForm('${c.type}')">+ Add</button>
         <button class="btn-ghost btn-xs" onclick="openAccordionFor('${c.type}')">View details</button>
@@ -1234,10 +1234,10 @@ function trusteeBody(){
   return `
     <div class="disclaimer" style="margin:12px 0"><span>🛡️</span><div>${F.trusteeProtection?'A family member is named as successor trustee/executor — a <b>Trustee Protection Packet</b> is recommended for discussion.':'Protection planning helps whoever administers the estate.'} Attorney review required for all authority, compensation, and indemnification language.</div></div>
     <div class="grid g2">
-      <div class="card pad"><h3 style="font-size:14px;margin-bottom:6px">Documents to collect</h3><ul class="lite">${collect.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
-      <div class="card pad"><h3 style="font-size:14px;margin-bottom:6px">Safeguards</h3><ul class="lite">${safeguards.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+      <div class="card pad"><h3 style="font-size:16px;margin-bottom:6px">Documents to collect</h3><ul class="lite">${collect.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+      <div class="card pad"><h3 style="font-size:16px;margin-bottom:6px">Safeguards</h3><ul class="lite">${safeguards.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
     </div>
-    <h3 style="font-size:14px;margin:16px 0 6px">Timeline checklist</h3>
+    <h3 style="font-size:16px;margin:16px 0 6px">Timeline checklist</h3>
     ${timeline.map(t=>`<div class="kv"><span class="k" style="font-weight:700;color:var(--indigo-ink);min-width:120px">${esc(t[0])}</span><span class="v" style="font-weight:500;text-align:left">${esc(t[1])}</span></div>`).join('')}
     <div class="legal-foot">⚠️ Do not make distributions, sign deeds, or move entity funds without attorney/CPA confirmation. Pay valid claims, debts, and taxes before final distribution.</div>`;
 }
@@ -1246,7 +1246,7 @@ function questionsBody(){
   const Q=buildQuestions();
   const block=(title,arr,badge)=>`
     <div class="card pad" style="margin-top:10px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><h3 style="font-size:14px">${esc(title)}</h3><span class="badge ${badge[0]}">${esc(badge[1])}</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><h3 style="font-size:16px">${esc(title)}</h3><span class="badge ${badge[0]}">${esc(badge[1])}</span></div>
       <ul class="lite">${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>
     </div>`;
   return `
@@ -1262,7 +1262,7 @@ function intakeBody(){
   return `
     <div class="grid g2">
       <div class="card pad">
-        <h3 style="font-size:14px;margin-bottom:8px">Trust Planning Intake (attorney-ready)</h3>
+        <h3 style="font-size:16px;margin-bottom:8px">Trust Planning Intake (attorney-ready)</h3>
         <div class="kv"><span class="k">Grantor(s)</span><span class="v">${esc([S.profile.grantor,S.profile.spouse].filter(Boolean).join(' & ')||'—')}</span></div>
         <div class="kv"><span class="k">Trustee(s)</span><span class="v">${esc(trustList.filter(p=>/trustee/i.test(p.role||'')&&!/successor/i.test(p.role||'')).map(p=>p.name).join(', ')||'—')}</span></div>
         <div class="kv"><span class="k">Successor trustee(s)</span><span class="v">${esc(trustList.filter(p=>/successor/i.test(p.role||'')).map(p=>p.name).join(', ')||'—')}</span></div>
@@ -1276,7 +1276,7 @@ function intakeBody(){
         <div class="legal-foot">Bring this to your estate attorney. It is an organizer, not a legal document.</div>
       </div>
       <div class="card pad">
-        <h3 style="font-size:14px;margin-bottom:8px">Entity Formation Intake (LLC)</h3>
+        <h3 style="font-size:16px;margin-bottom:8px">Entity Formation Intake (LLC)</h3>
         ${[['desiredName','Desired LLC name'],['altNames','Alternate names'],['formationState','State of formation'],['purpose','Purpose'],['memberOwner','Member owner (individual/trust)'],['management','Management'],['bookkeeping','Bookkeeping method'],['taxClass','Tax classification'],['annualFee','Annual fee / franchise tax']]
           .map(([k,l])=>`<div class="field" style="margin-bottom:7px"><label>${esc(l)}</label><input value="${esc(e[k]||'')}" oninput="updEntityIntake('${k}',this.value)"></div>`).join('')}
         <div class="legal-foot">EIN, operating agreement, registered agent, deed transfer, county recording, and lender consent are attorney/CPA-review items.</div>
@@ -1403,40 +1403,40 @@ function renderTax(){
   document.getElementById('taxConsider').innerHTML = `
     <p class="lead">The real question isn't "minimize taxes" — it's <b>which tax</b>: estate tax, capital-gains tax, or income tax. The direction that lowers one can raise another. Use this to frame the conversation with your CPA and attorney; it is not tax advice or a recommendation.</p>
 
-    <h3 style="font-size:14px;margin:14px 0 8px;color:var(--indigo-ink)">1 · The fork that drives everything: estate size vs. the federal exemption</h3>
+    <h3 style="font-size:16px;margin:14px 0 8px;color:var(--indigo-ink)">1 · The fork that drives everything: estate size vs. the federal exemption</h3>
     <div class="grid g2" style="align-items:start">
       <div class="card pad" style="background:var(--panel2)">
         <div class="kv"><span class="k">Real estate (entered)</span><span class="v">$${num(grossRE)}</span></div>
         <div class="kv"><span class="k">Cash / bank</span><span class="v">$${num(cash)}</span></div>
         <div class="kv"><span class="k">Brokerage / retirement</span><span class="v">$${num(invest)}</span></div>
         <div class="kv"><span class="k">Less mortgages</span><span class="v">– $${num(debt)}</span></div>
-        <div class="kv" style="border-top:1px solid var(--line);margin-top:2px;padding-top:6px"><span class="k" style="font-weight:700;color:var(--ink)">Rough net estate</span><span class="v" style="font-size:15px">$${num(net)}</span></div>
+        <div class="kv" style="border-top:1px solid var(--line);margin-top:2px;padding-top:6px"><span class="k" style="font-weight:700;color:var(--ink)">Rough net estate</span><span class="v" style="font-size:17px">$${num(net)}</span></div>
         <div class="legal-foot">Rough gross figure from entered assets only — excludes life insurance, business value, prior gifts, deductions, and state estate/inheritance tax. Your CPA computes the actual taxable estate.</div>
       </div>
       <div class="snap" style="align-items:flex-start;flex-direction:column;gap:8px;border-color:${below?'var(--green-line)':'var(--amber-line)'};background:${below?'var(--green-soft)':'var(--amber-soft)'}">
         <div class="badges"><span class="badge ${below?'b-green':'b-amber'}">${below?'Likely below exemption':'May approach / exceed exemption'}</span><span class="badge b-gray">${married?'married — illustrative ~$26M':'single — illustrative ~$13M'}</span></div>
-        <div style="font-size:12.5px">${below
+        <div style="font-size:14px">${below
           ? `Below the illustrative federal exemption, there is usually <b>no federal estate tax to minimize</b>. The biggest lever becomes <b>preserving the capital-gains step-up</b> — keep appreciated assets in the estate via the revocable trust — plus retirement-account beneficiary planning. The advanced irrevocable structures can <b>forfeit</b> that step-up, so they often aren't the tax-minimizing move here.`
           : `Approaching or above the exemption is where the advanced gifting / irrevocable structures (IDGT, FLP, SLAT, ILIT, CLAT) earn their keep — moving assets and <b>future appreciation</b> out of the taxable estate.`}</div>
         <div class="legal-foot">Illustrative exemption only (~$13M/person, doubled if married) — it changes with law. Confirm the current figure and your situation with your CPA.</div>
       </div>
     </div>
 
-    <h3 style="font-size:14px;margin:18px 0 8px;color:var(--indigo-ink)">2 · The central tradeoff: step-up vs. gifting out</h3>
+    <h3 style="font-size:16px;margin:18px 0 8px;color:var(--indigo-ink)">2 · The central tradeoff: step-up vs. gifting out</h3>
     <div class="grid g2">
       <div class="card pad"><div class="badges" style="margin-bottom:6px">${b('stepup')}</div>
-        <div style="font-weight:680;font-size:13.5px">Keep assets in your estate</div>
-        <div class="muted" style="font-size:12.5px;margin:4px 0">Revocable trust + pour-over will.</div>
-        <div style="font-size:12.5px"><b style="color:var(--good)">Wins:</b> step-up in basis at death wipes out capital gains on appreciated property/stock.<br><b style="color:var(--bad)">Loses:</b> no reduction of a taxable estate.</div>
+        <div style="font-weight:680;font-size:15px">Keep assets in your estate</div>
+        <div class="muted" style="font-size:14px;margin:4px 0">Revocable trust + pour-over will.</div>
+        <div style="font-size:14px"><b style="color:var(--good)">Wins:</b> step-up in basis at death wipes out capital gains on appreciated property/stock.<br><b style="color:var(--bad)">Loses:</b> no reduction of a taxable estate.</div>
       </div>
       <div class="card pad"><div class="badges" style="margin-bottom:6px">${b('estate')}</div>
-        <div style="font-weight:680;font-size:13.5px">Gift assets out</div>
-        <div class="muted" style="font-size:12.5px;margin:4px 0">IDGT, FLP, living irrevocable trust.</div>
-        <div style="font-size:12.5px"><b style="color:var(--good)">Wins:</b> removes the asset + future growth from a taxable estate.<br><b style="color:var(--bad)">Loses:</b> generally carryover basis — heirs keep your low basis, more capital-gains tax on sale.</div>
+        <div style="font-weight:680;font-size:15px">Gift assets out</div>
+        <div class="muted" style="font-size:14px;margin:4px 0">IDGT, FLP, living irrevocable trust.</div>
+        <div style="font-size:14px"><b style="color:var(--good)">Wins:</b> removes the asset + future growth from a taxable estate.<br><b style="color:var(--bad)">Loses:</b> generally carryover basis — heirs keep your low basis, more capital-gains tax on sale.</div>
       </div>
     </div>
 
-    <h3 style="font-size:14px;margin:18px 0 8px;color:var(--indigo-ink)">3 · Which structure pulls which tax lever</h3>
+    <h3 style="font-size:16px;margin:18px 0 8px;color:var(--indigo-ink)">3 · Which structure pulls which tax lever</h3>
     ${structures.map(s=>`<div class="ent"><div class="ent-top"><div style="min-width:0"><h4>${esc(s[0])}</h4><div class="ent-meta">${esc(s[1])}</div></div><div class="badges">${s[2].map(b).join('')}</div></div></div>`).join('')}
 
     <div class="disclaimer" style="margin-top:14px"><span>⚠️</span><div><b>Not tax advice and not a recommendation.</b> These are general concepts. The tax-minimizing direction depends on your estate size, state, basis, goals, and the law in effect — determined with your CPA and estate attorney. Estate/gift-tax structures are largely irrevocable; confirm before acting.</div></div>`;
@@ -1493,12 +1493,12 @@ function updYear(y){ S.tax.year=y; S.tax.exemption=TAXY[y].exemption; save(); re
 function m$(n){ return '$'+Math.round(+n||0).toLocaleString('en-US'); }
 function renderTaxEstimator(){
   ensureTax(); const t=S.tax;
-  const inp=(k,ph)=>`<input type="number" value="${esc(t[k])}" oninput="updTax('${k}',this.value)" style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%" placeholder="${ph||''}">`;
+  const inp=(k,ph)=>`<input type="number" value="${esc(t[k])}" oninput="updTax('${k}',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%" placeholder="${ph||''}">`;
   const fld=(lab,k)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label>${inp(k)}</div>`;
   const chk=(lab,k)=>`<label class="field chk" style="margin-bottom:8px"><input type="checkbox" ${t[k]?'checked':''} onchange="updTax('${k}',this.checked)" style="width:auto"> ${lab}</label>`;
-  const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:15px':''}">—</span></div>`;
-  const card=(title,body)=>`<div class="card pad"><h3 style="font-size:14px;margin-bottom:10px;color:var(--indigo-ink)">${title}</h3>${body}</div>`;
-  const selSty='style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"';
+  const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:17px':''}">—</span></div>`;
+  const card=(title,body)=>`<div class="card pad"><h3 style="font-size:16px;margin-bottom:10px;color:var(--indigo-ink)">${title}</h3>${body}</div>`;
+  const selSty='style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"';
   const STATE_OPTS=Array.from(new Set([...Object.keys(STATE_TAX),...NO_TAX_STATES])).sort().concat('Other');
   const optsArr=STATE_OPTS.includes(t.state)?STATE_OPTS:[t.state].concat(STATE_OPTS);
   const stateOpts=optsArr.map(s=>`<option ${t.state===s?'selected':''}>${esc(s)}</option>`).join('');
@@ -1512,9 +1512,9 @@ function renderTaxEstimator(){
     </div></div>
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
       <div class="grid g3">
-        <div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em">Est. annual income tax</div><div id="r_total_annual" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:11px">ordinary + investment + SE − QBI</div></div>
-        <div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em">Estate tax now (at death)</div><div id="r_total_estate" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:11px">federal; state flagged separately</div></div>
-        <div><div class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:11px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Est. annual income tax</div><div id="r_total_annual" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12.5px">ordinary + investment + SE − QBI</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate tax now (at death)</div><div id="r_total_estate" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12.5px">federal; state flagged separately</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12.5px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
       </div>
       <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts only ILIT, FLP (~30% discount) and QPRT removals — illustrative, attorney/CPA review.</div>
     </div>
@@ -1524,7 +1524,7 @@ function renderTaxEstimator(){
       ${card('Life-insurance proceeds', `${fld('Death benefit ($)','deathBenefit')}${chk('Held in an ILIT (outside your estate)','inILIT')}${res('Income tax','r_ins_inc')}${res('Estate-tax impact','r_ins_est',1)}`)}
       ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${fld('Net business profit ($)','profit')}${fld('S-corp reasonable salary ($)','salary')}</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
       ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
-      ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
+      ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
       ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp')}</div>${res('401(k) elective max','r_ret_401')}${res('IRA max','r_ret_ira')}${res('SIMPLE max','r_ret_simple')}${res('SEP / solo-401k max','r_ret_sep')}<div class="legal-foot">Limits shown for ${esc(t.year)} (incl. age-50 catch-up). SEP ≈ 25% of comp (≈20% of net SE); confirm with your CPA.</div>`)}
     </div>`;
   computeTax();
@@ -1958,7 +1958,7 @@ function mmOverview(){
   return `<div class="eyb">Tap a dot</div><h4>Your map at a glance</h4>
     <p>${mmMeta.length} items across ${areas} areas. Click any dot to see what it is and what to review with your professionals.</p>
     <div class="stat">${box(c.inplace,'#00c805','In place')}${box(c.review,'#d2a23a','Review')}${box(c.proposed,'#a78bfa','Proposed')}</div>
-    ${c.action?`<p style="color:#ef5d5d;font-size:12px">⚑ ${c.action} item${c.action>1?'s':''} flagged as an action / gap.</p>`:''}
+    ${c.action?`<p style="color:#ef5d5d;font-size:13.5px">⚑ ${c.action} item${c.action>1?'s':''} flagged as an action / gap.</p>`:''}
     <div class="legal-foot">Status reflects your inputs — for discussion with your attorney &amp; CPA, not advice.</div>`;
 }
 function renderMMDetail(idx){
@@ -2220,10 +2220,10 @@ function openStructurePalette(){
     STRUCTURES.map(s=>{ const a=structAvail(s,state); const c=MMSTATUS[a.status].c; const added=have.has(s.k);
       const tag=a.lvl==='available'?'Available':(a.lvl==='na'?'Not typical here':'Verify');
       return `<div class="ent" style="margin-top:8px"><div class="ent-top"><div style="min-width:0">
-        <h4>${esc(s.name)} <span class="muted" style="font-weight:400;font-size:12px">${esc(s.full)}</span></h4>
+        <h4>${esc(s.name)} <span class="muted" style="font-weight:400;font-size:13.5px">${esc(s.full)}</span></h4>
         <div class="ent-meta">${esc(s.blurb)}</div>
-        <div class="ent-flags badges"><span class="badge" style="background:${c}22;color:${c};border:1px solid ${c}66">${tag}</span> <span class="muted" style="font-size:11.5px">${esc(a.note)}</span></div>
-        <div class="muted" style="font-size:11.5px;margin-top:5px"><b style="color:var(--green)">Tax impact:</b> ${esc(structImpact(s))}</div>
+        <div class="ent-flags badges"><span class="badge" style="background:${c}22;color:${c};border:1px solid ${c}66">${tag}</span> <span class="muted" style="font-size:13px">${esc(a.note)}</span></div>
+        <div class="muted" style="font-size:13px;margin-top:5px"><b style="color:var(--green)">Tax impact:</b> ${esc(structImpact(s))}</div>
       </div><div class="ent-actions"><button class="btn-${added?'danger':'primary'} btn-xs" onclick="toggleStructure('${s.k}')">${added?'Remove':'Add to map'}</button></div></div></div>`;
     }).join('');
   openModal('Add a structure to the map', body, [{label:'Done',cls:'btn-primary',fn:closeModal}]);
