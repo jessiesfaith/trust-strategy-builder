@@ -1954,10 +1954,11 @@ function renderTaxEstimator(){
       <div class="field" style="margin-bottom:0"><label>Other ordinary income ($)</label>${inp('ordinary')}</div>
     </div></div>
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
-      <div class="grid g3">
-        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Est. annual income tax</div><div id="r_total_annual" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12.5px"><b>per year, during life</b> — not a death-time tax (ordinary + investment + SE − QBI − retirement)</div></div>
-        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate tax now (at death)</div><div id="r_total_estate" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12.5px">federal; state flagged separately</div></div>
-        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12.5px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px">
+        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Est. annual income tax</div><div id="r_total_annual" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px"><b>per year, during life</b> — not at death (ordinary + investment + SE − QBI − retirement)</div></div>
+        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Total tax at death</div><div id="r_total_estate" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">estate tax + cap-gains + real-estate cap-gains</div></div>
+        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
+        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate remaining for heirs</div><div id="r_total_remaining" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">estate − all taxes to the left</div></div>
       </div>
       <div class="legal-foot" id="r_annual_note"></div>
       <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts only ILIT, FLP (~30% discount) and QPRT removals — illustrative, attorney/CPA review.</div>
@@ -2048,7 +2049,9 @@ function computeTax(){
   const annual=ordTax + investTax + llcSE - qsaved - retSaved;
   set('r_total_annual', m$(annual));
   note('r_annual_note', 'Math: ordinary-income tax '+m$(ordTax)+' + investment (cap-gains & dividends) '+m$(investTax)+' + self-employment '+m$(llcSE)+' − QBI saving '+m$(qsaved)+(retSaved>0?(' − retirement saving '+m$(retSaved)):'')+' = '+m$(annual)+'. (Real-estate capital gains are NOT in this annual figure — they sit in the Real estate card as a one-time, at-sale tax.)');
-  set('r_total_estate', m$(estTax));
+  const deathTax=estTax+investTax+reCapTax;                                  // total tax at death: estate tax + entered cap-gains + real-estate cap-gains
+  set('r_total_estate', m$(deathTax));
+  set('r_total_remaining', m$(Math.max(0,(+t.estate||0)-deathTax)));         // estate remaining for heirs after all those taxes
   const flpVal=(S.properties||[]).filter(p=>/rental|commercial|vacation/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
   const resVal=(S.properties||[]).filter(p=>/personal residence/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
   let removed=0; (S.customStructures||[]).forEach(cs=>{ if(cs.k==='ilit') removed+= +t.deathBenefit||0; else if(cs.k==='flp') removed+=0.30*flpVal; else if(cs.k==='qprt') removed+=resVal; });

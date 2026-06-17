@@ -4,6 +4,14 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Headline: total tax at death + estate remaining for heirs
+
+- **The headline "Estate tax now (at death)" became "Total tax at death"** and now adds capital-gains
+  tax + real-estate capital-gains tax to the federal estate tax (estate tax + cap-gains + RE cap-gains).
+- **Added a 4th headline metric, "Estate remaining for heirs"** = estate − total tax at death. It
+  reconciles exactly with the Estate tax card's "Net to heirs after all taxes" and the Distribution
+  tab's base (all from `netAfterAllTaxes()`). Headline grid is now 4 columns.
+
 ## 2026-06-17 — Show the math in notes (retirement, RE cap gains, annual income tax)
 
 - **Retirement contributions note** now spells out each limit's composition (e.g. "401(k) $24,500 base
