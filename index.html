@@ -1070,6 +1070,8 @@ function deriveFlags(){
 
 /* ---------- Renderers ---------- */
 function render(){
+  // keep properties in natural numeric order by name (1,2,…,10,…,17 — not 1,10,11,2,…)
+  if(Array.isArray(S.properties)) S.properties.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),undefined,{numeric:true,sensitivity:'base'}));
   renderEssentials();
   renderSnapshot();
   renderAssets();

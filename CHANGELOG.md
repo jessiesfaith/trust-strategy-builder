@@ -4,6 +4,13 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Sort properties in natural numeric order
+
+- **Properties now sort by their leading number** (1, 2, 3 … 10 … 17 — not the lexicographic
+  1, 10, 11, 2, …). `render()` sorts `S.properties` by name with `localeCompare(..., {numeric:true})`,
+  so every property list (Asset Summary, Planning Detail, memo, mind map) shows them in order.
+  Unnumbered names (e.g. a personal residence) fall in A–Z order after the numbered ones.
+
 ## 2026-06-17 — Collapse Strategy Snapshot & Asset Summary; collapsible Tax-Considerations subsections
 
 - **Strategy Snapshot and Asset Summary are now collapsible, collapsed by default** (same idiom as the
