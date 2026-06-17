@@ -4,6 +4,18 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Collapsible report sections
+
+- **Collapse/expand for the Attorney-Ready Planning Memo and Planning Detail Sections.**
+  Both section headers are now clickable toggles (mouse + Enter/Space) that collapse and expand
+  their bodies, using the existing accordion visual idiom (rotating `▶` chevron, `cursor:pointer`,
+  hover). Both default to **expanded**, so first load is unchanged. Shared implementation:
+  generic `toggleSection(secId)` + reusable `.section-head.collapsible` / `.collapse-chev` /
+  `.block.collapsed > .collapse-body` CSS (replaces the earlier memo-specific `toggleMemo`).
+  Accessible: `role="button"`, `tabindex="0"`, `aria-expanded`/`aria-controls`, and a hint that
+  flips between "Click to collapse" / "Click to expand". Inner accordions still open independently
+  when Planning Detail Sections is expanded.
+
 ## 2026-06-16 — UI/layout pass + new tabs (all LIVE)
 
 Six changes shipped this day, all in `index.html`, each pushed to `main` (Vercel auto-deploy).

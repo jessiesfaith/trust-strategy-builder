@@ -225,6 +225,11 @@
   .memo p,.memo li{font-size:14.5px}
   .memo ul{margin:4px 0 4px;padding-left:20px}
   .memo .lead{font-size:14.5px;color:var(--ink);background:var(--indigo-soft);padding:11px 13px;border-radius:10px}
+  /* Collapsible section heads */
+  .section-head.collapsible{cursor:pointer;user-select:none}
+  .collapse-chev{margin-left:auto;color:var(--muted);font-size:14.5px;transition:transform .18s;transform:rotate(90deg)}
+  .block.collapsed .collapse-chev{transform:rotate(0deg)}
+  .block.collapsed > .collapse-body{display:none}
 
   /* Export center */
   .exp{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
@@ -424,21 +429,25 @@
 
   <!-- DETAILED ACCORDIONS -->
   <section class="block" id="details">
-    <div class="section-head">
+    <div class="section-head collapsible" onclick="toggleSection('details')" role="button" tabindex="0" aria-expanded="true" aria-controls="accordions" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('details')}">
       <span class="eyebrow">Detailed intake</span>
       <h2>Planning Detail Sections</h2>
-      <span class="muted" style="font-size:14px">Collapsed by default — open what you need.</span>
+      <span class="muted" style="font-size:14px">Open what you need.</span>
+      <span class="muted collapse-hint" style="font-size:14px">Click to collapse</span>
+      <span class="collapse-chev">▶</span>
     </div>
-    <div id="accordions"><!-- rendered --></div>
+    <div id="accordions" class="collapse-body"><!-- rendered --></div>
   </section>
 
   <!-- ATTORNEY-READY REPORT -->
   <section class="block" id="report">
-    <div class="section-head">
+    <div class="section-head collapsible" onclick="toggleSection('report')" role="button" tabindex="0" aria-expanded="true" aria-controls="memo" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('report')}">
       <span class="eyebrow">Attorney-prep</span>
       <h2>Attorney-Ready Planning Memo (Preview)</h2>
+      <span class="muted collapse-hint" style="font-size:14px">Click to collapse</span>
+      <span class="collapse-chev">▶</span>
     </div>
-    <div class="memo" id="memo"><!-- rendered --></div>
+    <div class="memo collapse-body" id="memo"><!-- rendered --></div>
   </section>
 
   <!-- EXPORT CENTER -->
@@ -2106,6 +2115,14 @@ function clearProfile(){
 function updEntityIntake(k,v){ S.entityIntake=S.entityIntake||{}; S.entityIntake[k]=v; save(); }
 
 /* ---------- Accordion control ---------- */
+function toggleSection(secId){
+  const sec=document.getElementById(secId);
+  const collapsed=sec.classList.toggle('collapsed');
+  const head=sec.querySelector('.section-head');
+  if(head) head.setAttribute('aria-expanded', collapsed?'false':'true');
+  const hint=sec.querySelector('.collapse-hint');
+  if(hint) hint.textContent=collapsed?'Click to expand':'Click to collapse';
+}
 function toggleAcc(id){ openAcc[id]=!openAcc[id]; const el=document.getElementById('acc-'+id); if(el) el.classList.toggle('open',!!openAcc[id]); }
 function openAccordionFor(type){
   const map={properties:'properties',bankAccounts:'cash',brokerageAccounts:'brokerage',llcs:'llcs',subTrusts:'subTrusts',people:'people'};
