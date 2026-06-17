@@ -4,6 +4,39 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Real-estate cap gain managed in one place; Strategy model fixes
+
+- **Moved the real-estate capital gain out of the "Capital gains & dividends" card.** It was confusing
+  to have real estate in both that card (as a "Real-estate gain"/"Total long-term gain" line) and the
+  Real estate card. Now the Capital gains card taxes only the gains you enter; the **Real estate card**
+  owns the real-estate gain and its cap-gains tax (value − basis, "$0 if held to death via step-up").
+  Side benefit: the headline **"Est. annual income tax" no longer balloons** by folding in a one-time
+  real-estate gain (it was ~$9.4M with the sample; now reflects recurring income only).
+- **Strategy Outcome — model corrected** (adversarial-review findings). Made the estate/gains/property
+  model internally consistent: ILIT now produces a *real* estate-tax benefit (the death benefit is in
+  the taxable estate unless an ILIT holds it — previously it subtracted a phantom amount); IDGT removes
+  the gifted asset's **value** from the estate while charging carryover capital-gains on its **gain**
+  (the two sides now agree); combining IDGT with FLP/QPRT no longer double-removes the same assets; and
+  property-tax reassessment is now decided **per asset** (only the structure that holds a given property
+  avoids its reassessment). Estate value row labeled "incl. life insurance" for clarity.
+
+## 2026-06-17 — Strategy Outcome tab; estate breakdown; removed Preview banner
+
+- **Removed the "Preview Mode" top strip** (the "● Preview Mode" pill stays in the header).
+- **Estate tax card** now spells out the breakdown: "Amount above exemption (taxed)" → "Federal estate
+  tax (40%)" → "Estate after federal estate tax" (previously the above-exemption piece was only in the
+  footnote).
+- **New "Strategy" tab — Strategy Outcome.** Toggle which structures are in place (revocable trust,
+  ILIT, FLP, QPRT, IDGT) and see a **No-planning vs Your-setup** comparison of estate value, federal
+  estate tax, capital-gains tax (heirs), annual property tax after death, and **net to heirs**, with a
+  one-line summary of the net effect. Captures the central tradeoff: gifting assets out cuts estate tax
+  but forfeits the step-up (carryover basis → capital-gains tax) and an FLP/IDGT holding property avoids
+  the death reassessment. Includes a "how the capital gain can be reduced" explainer and a **charitable
+  break-even calculator** (CLAT / donate-to-your-own-NFP): given annual contribution, investment return,
+  deduction rate, and horizon, it shows net cost of giving, foundation value, cumulative tax saved, and
+  the **break-even year**. Figures flow from the Tax Estimator inputs (estate, exemption, death benefit,
+  property values/basis/assessed, property-tax rate) so the tabs stay consistent.
+
 ## 2026-06-17 — Per-property current property tax in Planning Detail
 
 - **Each property in the Planning Detail list now shows its current annual property tax** ("property
