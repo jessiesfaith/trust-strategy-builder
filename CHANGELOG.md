@@ -4,6 +4,13 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Per-property current property tax in Planning Detail
+
+- **Each property in the Planning Detail list now shows its current annual property tax** ("property
+  tax ~$X/yr") on the row's meta line, computed as assessed value × the Tax Estimator's property-tax
+  rate (assessed ← entered assessed value, else cost basis, else market value). `render()` now calls
+  `ensureTax()` up front so the rate is initialized before the accordion list renders.
+
 ## 2026-06-17 — Sort properties in natural numeric order
 
 - **Properties now sort by their leading number** (1, 2, 3 … 10 … 17 — not the lexicographic

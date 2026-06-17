@@ -680,7 +680,7 @@ const ENTITY = {
       {k:'notes',l:'Notes',t:'textarea',full:true}
     ],
     title:e=>e.name||'Unnamed property',
-    meta:e=>{ const v=+(e.value||0),b=+(e.basis||0),g=b>0?Math.max(0,v-b):0; return [e.type,e.state,e.value?('$'+num(e.value)):'',b>0?('cap gain $'+num(g)):''].filter(Boolean).join(' · '); },
+    meta:e=>{ const v=+(e.value||0),b=+(e.basis||0),g=b>0?Math.max(0,v-b):0; const a=(+(e.assessed||0))||b||v; const rate=Math.max(0,+((S.tax&&S.tax.propTaxRate)||0))/100; const pt=a*rate; return [e.type,e.state,e.value?('$'+num(e.value)):'',b>0?('cap gain $'+num(g)):'',pt?('property tax ~$'+num(Math.round(pt))+'/yr'):''].filter(Boolean).join(' · '); },
     flags:e=>propertyFlags(e)
   },
   bankAccounts:{
@@ -1070,6 +1070,7 @@ function deriveFlags(){
 
 /* ---------- Renderers ---------- */
 function render(){
+  ensureTax();   // initialize S.tax (incl. property-tax rate) before any list that uses it renders
   // keep properties in natural numeric order by name (1,2,…,10,…,17 — not 1,10,11,2,…)
   if(Array.isArray(S.properties)) S.properties.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),undefined,{numeric:true,sensitivity:'base'}));
   renderEssentials();
