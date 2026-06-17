@@ -4,6 +4,25 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Net-to-heirs after all taxes; Distribution starts from the true net
+
+- **Estate tax card now shows the full math chain:** Estate → − federal estate tax = "Estate after
+  federal estate tax", then **− capital-gains tax − real-estate capital-gains tax = "Net to heirs after
+  all taxes"** (with a note spelling out each subtraction and the step-up caveat).
+- **Distribution tab now starts from that "Net after all taxes"** (not just estate − estate tax), so
+  reserves and beneficiary allocations come out of the true amount available to heirs. A breakdown note
+  shows `estate − estate tax − cap-gains − real-estate cap-gains`. Single source of truth:
+  `netAfterAllTaxes()`, used by both the Tax Estimator card and the Distribution tab, so the two always
+  agree (verified: both = $22,549,127 for a $36.05M / $5M-LT-gain / $10M-RE-gain example). Removed the
+  now-unused `estateAfterTax()` helper.
+
+## 2026-06-17 — Collapsible amber disclaimer bars
+
+- **The amber "⚠️" warning/disclaimer bars now start compact** ("Disclaimer — tap to read", ~40px) and
+  expand on click. Implemented generically: `.disclaimer:not(.open)` hides the body and shows a label
+  via `::after`, and a single delegated click handler toggles `.open` — so it covers every disclaimer,
+  including the ones rendered dynamically on the Tax Estimator / Distribution / Strategy tabs.
+
 ## 2026-06-17 — Real-estate cap gain managed in one place; Strategy model fixes
 
 - **Moved the real-estate capital gain out of the "Capital gains & dividends" card.** It was confusing

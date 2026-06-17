@@ -109,6 +109,10 @@
 
   /* Disclaimer */
   .disclaimer{font-size:13.5px;color:var(--amber);background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:10px;padding:9px 12px;display:flex;gap:8px;align-items:flex-start}
+  /* Collapsible amber warning bars — compact by default, tap to read */
+  .disclaimer{cursor:pointer;user-select:none}
+  .disclaimer:not(.open) > :not(:first-child){display:none}
+  .disclaimer:not(.open)::after{content:'Disclaimer — tap to read';font-size:13.5px;opacity:.92}
   .disclaimer.tight{margin-top:10px}
   .legal-foot{font-size:13px;color:var(--muted);margin-top:8px}
 
@@ -1585,7 +1589,6 @@ function ensureDist(){
   if(r.taxDebt===undefined) r.taxDebt='';
 }
 /* Estate value after federal estate tax — same inputs as the Tax Estimator, so the two tabs agree */
-function estateAfterTax(){ ensureTax(); const t=S.tax; const exTot=(+t.exemption||0)*(t.dual?2:1); const estate=+t.estate||0; const estTax=Math.max(0,estate-exTot)*TAXC.estRate; return {estate,estTax,afterTax:Math.max(0,estate-estTax)}; }
 /* Beneficiary CRUD */
 function addBene(){ ensureDist(); S.beneficiaries.push({id:uid(),name:'',relation:'Child',pct:'',method:'Outright at death',stagger:'25, 30, 35',milestone:'',notes:''}); save(); renderDistribution(); }
 function removeBene(id){ S.beneficiaries=(S.beneficiaries||[]).filter(b=>b.id!==id); save(); renderDistribution(); }
@@ -1650,10 +1653,11 @@ function renderDistribution(){
     <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Figures flow from your Tax Estimator inputs and are illustrative. Actual distributions depend on your trust/will terms; confirm with your attorney &amp; CPA.</div></div>
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
       <div class="grid g3">
-        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate after estate tax</div><div id="r_dist_aftertax" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">from the Tax Estimator</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Net after all taxes</div><div id="r_dist_aftertax" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">estate − estate tax − cap gains</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Less reserves</div><div id="r_dist_reserves" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">executor + property mgmt + taxes/debts</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Distributable to beneficiaries</div><div id="r_dist_distributable" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">split by the allocations below</div></div>
       </div>
+      <div class="legal-foot" id="r_dist_taxnote"></div>
     </div>
     ${card('Beneficiaries &amp; allocation', `
       <div class="btn-row" style="margin-bottom:8px"><button class="btn-primary btn-xs" onclick="addBene()">+ Add beneficiary</button><button class="btn-soft btn-xs" onclick="importBenesFromPeople()">Import from People</button></div>
@@ -1684,11 +1688,12 @@ function renderDistribution(){
 function computeDistribution(){
   ensureDist();
   const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
-  const afterTax=estateAfterTax().afterTax, r=S.reserves;
+  const N=netAfterAllTaxes(), afterTax=N.net, r=S.reserves;   // estate − estate tax − capital-gains − real-estate cap-gains
   const execPct=Math.min(100,Math.max(0,+unfmtNum(r.execPct)||0)), propMgmt=Math.max(0,+unfmtNum(r.propMgmt)||0), taxDebt=Math.max(0,+unfmtNum(r.taxDebt)||0);
   const execAmt=afterTax*execPct/100, totalReserves=execAmt+propMgmt+taxDebt;
   const distributable=Math.max(0,afterTax-totalReserves);
   set('r_dist_aftertax',m$(afterTax)); set('r_dist_reserves',m$(totalReserves)); set('r_dist_distributable',m$(distributable));
+  set('r_dist_taxnote','Net after all taxes = '+m$(N.estate)+' estate − '+m$(N.estTax)+' estate tax − '+m$(N.enteredCapTax)+' capital-gains − '+m$(N.reCapTax)+' real-estate cap-gains.');
   set('r_res_exec',m$(execAmt)); set('r_res_total',m$(totalReserves));
   const benes=S.beneficiaries||[]; let pctTotal=0; benes.forEach(b=>pctTotal+=Math.max(0,+unfmtNum(b.pct)||0));
   benes.forEach(b=>{
@@ -1747,6 +1752,19 @@ function reCapTaxOn(g){
   const fed=ltcgStack(ord,oLt+g+qd,ltBr)-ltcgStack(ord,oLt+qd,ltBr);
   const state=stateTax(ord+oLt+g+st+qd+od)-stateTax(ord+oLt+st+qd+od);
   return Math.max(0,fed+state);
+}
+/* Single source of truth: estate stepped down by federal estate tax, then entered capital-gains tax,
+   then real-estate capital-gains tax → net available to heirs. Used by the Tax Estimator AND the Distribution tab. */
+function netAfterAllTaxes(){
+  ensureTax(); const t=S.tax, Y=curY(), f=t.filing||'MFJ', fedBr=Y.fed[f], ltBr=Y.ltcg[f];
+  const ord=+t.ordinary||0, lt=+t.ltgain||0, st=+t.stgain||0, qd=+t.qdiv||0, od=+t.odiv||0;
+  const exTot=(+t.exemption||0)*(t.dual?2:1), estate=+t.estate||0;
+  const estTax=Math.max(0,estate-exTot)*TAXC.estRate, afterEstateTax=Math.max(0,estate-estTax);
+  const fedCG=ltcgStack(ord,lt+qd,ltBr)+(progTax(ord+st+od,fedBr)-progTax(ord,fedBr));
+  const stCG=stateTax(ord+lt+st+qd+od)-stateTax(ord);
+  const invest=lt+st+qd+od, niit=Math.max(0,Math.min(invest,ord+invest-TAXC.niit[f]))*0.038;
+  const enteredCapTax=Math.max(0,fedCG+stCG+niit), reCapTax=reCapInfo().tax;
+  return {estate, estTax, afterEstateTax, enteredCapTax, reCapTax, net:Math.max(0,afterEstateTax-enteredCapTax-reCapTax)};
 }
 function renderOutcome(){
   ensureOutcome(); ensureTax();
@@ -1944,7 +1962,7 @@ function renderTaxEstimator(){
     </div>
     <div class="grid g2">
       ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}<div class="legal-foot">Tax on the gains &amp; dividends entered here. <b>Real-estate capital gains are handled in the Real estate card below</b> (from each property's value − cost basis). Confirm with your CPA.</div>`)}
-      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}${res('Less capital-gains tax (entered)','r_est_lesscg')}${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Net to heirs after all taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
       ${card('Life-insurance proceeds', `${fld('Death benefit ($)','deathBenefit')}${chk('Held in an ILIT (outside your estate)','inILIT')}${res('Income tax','r_ins_inc')}${res('Estate-tax impact','r_ins_est',1)}`)}
       ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${profitFld}${fld('S-corp reasonable salary ($)','salary')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Net profit also fills Qualified business income & Self-employed net comp below (each still editable).</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
       ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi','tax_qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
@@ -1982,8 +2000,11 @@ function computeTax(){
   const exTot=(+t.exemption||0)*(t.dual?2:1), taxable=Math.max(0,(+t.estate||0)-exTot), estTax=taxable*TAXC.estRate;
   set('r_est_taxable', m$(taxable));
   set('r_est_tax',m$(estTax)); set('r_est_ca', STATE_ESTATE_TAX.includes(t.state)?('⚑ '+t.state+' has a state estate/inheritance tax — CPA review'):'$0 (no state estate tax)');
-  set('r_est_net', m$(Math.max(0,(+t.estate||0)-estTax)));   // estate value remaining after federal estate tax
-  note('r_est_note', taxable>0?('Taxable estate above exemption: '+m$(taxable)+' × 40%.'):('Estate is at or below the '+m$(exTot)+' exemption — no federal estate tax at current law.'));
+  const afterEstateTax=Math.max(0,(+t.estate||0)-estTax);
+  set('r_est_net', m$(afterEstateTax));   // estate value remaining after federal estate tax
+  const enteredCapTax=Math.max(0,fedCG+stCG+niit), netHeirs=Math.max(0,afterEstateTax-enteredCapTax-reCapTax);
+  set('r_est_lesscg', '– '+m$(enteredCapTax)); set('r_est_lessre', '– '+m$(reCapTax)); set('r_est_netheirs', m$(netHeirs));
+  note('r_est_note', (taxable>0?('Above exemption '+m$(taxable)+' × 40% = '+m$(estTax)+'. '):('At/below the '+m$(exTot)+' exemption — no federal estate tax. '))+'Estate after estate tax = '+m$(+t.estate||0)+' − '+m$(estTax)+' = '+m$(afterEstateTax)+'; net to heirs = '+m$(afterEstateTax)+' − '+m$(enteredCapTax)+' (cap-gains) − '+m$(reCapTax)+' (real-estate cap-gains) = '+m$(netHeirs)+'. Held to death, a step-up can erase the real-estate gain — confirm with your CPA.');
   // life insurance
   set('r_ins_inc','$0 (generally income-tax-free)');
   const insInEstate=t.inILIT?0:(+t.deathBenefit||0), insEstTax=( (+t.estate||0)+insInEstate>exTot )?insInEstate*TAXC.estRate:0;
@@ -2556,6 +2577,8 @@ function toggleSection(secId){
     if(hint) hint.textContent=collapsed?'Click to expand':'Click to collapse';
   }
 }
+/* Amber disclaimer bars are compact by default; tap any to expand/collapse (delegated so it covers re-rendered bars) */
+document.addEventListener('click', function(e){ const d=e.target.closest&&e.target.closest('.disclaimer'); if(d) d.classList.toggle('open'); });
 function toggleAcc(id){ openAcc[id]=!openAcc[id]; const el=document.getElementById('acc-'+id); if(el) el.classList.toggle('open',!!openAcc[id]); }
 function openAccordionFor(type){
   const map={properties:'properties',bankAccounts:'cash',brokerageAccounts:'brokerage',llcs:'llcs',subTrusts:'subTrusts',people:'people'};
