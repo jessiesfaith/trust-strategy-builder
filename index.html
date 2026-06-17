@@ -120,7 +120,9 @@
   /* Asset summary cards */
   .asset-card{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;flex-direction:column;gap:8px;min-width:0}
   .asset-card .sub{margin-top:2px}
-  .asset-card .sub.scroll{max-height:54px;overflow-y:auto;white-space:normal;word-break:break-word;padding-right:4px}
+  .asset-card .sub.scroll{max-height:150px;overflow-y:auto;white-space:normal;word-break:break-word;padding-right:4px}
+  .asset-card .sub .sub-line{padding:2px 0;border-bottom:1px dashed var(--line)}
+  .asset-card .sub .sub-line:last-child{border-bottom:none}
   .asset-card .sub.scroll::-webkit-scrollbar{width:6px}
   .asset-card .sub.scroll::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
   .asset-card .top{display:flex;align-items:center;justify-content:space-between}
@@ -226,10 +228,12 @@
   .memo ul{margin:4px 0 4px;padding-left:20px}
   .memo .lead{font-size:14.5px;color:var(--ink);background:var(--indigo-soft);padding:11px 13px;border-radius:10px}
   /* Collapsible section heads */
-  .section-head.collapsible{cursor:pointer;user-select:none}
-  .collapse-chev{margin-left:auto;color:var(--muted);font-size:14.5px;transition:transform .18s;transform:rotate(90deg)}
-  .block.collapsed .collapse-chev{transform:rotate(0deg)}
-  .block.collapsed > .collapse-body{display:none}
+  .collapsible{cursor:pointer;user-select:none}
+  .collapse-chev{color:var(--muted);font-size:14.5px;transition:transform .18s;transform:rotate(90deg)}
+  .section-head .collapse-chev{margin-left:auto}
+  .collapsed > .section-head .collapse-chev,
+  .collapsed > .collapse-head .collapse-chev{transform:rotate(0deg)}
+  .collapsed > .collapse-body{display:none}
 
   /* Export center */
   .exp{display:flex;align-items:center;gap:10px;padding:12px;border:1px solid var(--line);border-radius:11px;background:var(--panel)}
@@ -291,7 +295,6 @@
     <div class="muted" style="font-size:12.5px;margin-top:12px">Private demo — access limited.</div>
   </form>
 </div>
-<script>if(localStorage.getItem('tsb_auth')==='1'){var _g=document.getElementById('loginGate');if(_g)_g.style.display='none';}</script>
 
 <div class="preview-banner">
   <strong>Preview Mode:</strong> This is a planning prototype using sample data. No legal documents are created.
@@ -428,42 +431,47 @@
   </section>
 
   <!-- DETAILED ACCORDIONS -->
-  <section class="block" id="details">
-    <div class="section-head collapsible" onclick="toggleSection('details')" role="button" tabindex="0" aria-expanded="true" aria-controls="accordions" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('details')}">
+  <section class="block collapsed" id="details">
+    <div class="section-head collapsible" onclick="toggleSection('details')" role="button" tabindex="0" aria-expanded="false" aria-controls="accordions" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleSection('details')}">
       <span class="eyebrow">Detailed intake</span>
       <h2>Planning Detail Sections</h2>
       <span class="muted" style="font-size:14px">Open what you need.</span>
-      <span class="muted collapse-hint" style="font-size:14px">Click to collapse</span>
+      <span class="muted collapse-hint" style="font-size:14px">Click to expand</span>
       <span class="collapse-chev">▶</span>
     </div>
     <div id="accordions" class="collapse-body"><!-- rendered --></div>
   </section>
 
   <!-- ATTORNEY-READY REPORT -->
-  <section class="block" id="report">
-    <div class="section-head collapsible" onclick="toggleSection('report')" role="button" tabindex="0" aria-expanded="true" aria-controls="memo" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSection('report')}">
+  <section class="block collapsed" id="report">
+    <div class="section-head collapsible" onclick="toggleSection('report')" role="button" tabindex="0" aria-expanded="false" aria-controls="memo" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleSection('report')}">
       <span class="eyebrow">Attorney-prep</span>
       <h2>Attorney-Ready Planning Memo (Preview)</h2>
-      <span class="muted collapse-hint" style="font-size:14px">Click to collapse</span>
+      <span class="muted collapse-hint" style="font-size:14px">Click to expand</span>
       <span class="collapse-chev">▶</span>
     </div>
     <div class="memo collapse-body" id="memo"><!-- rendered --></div>
   </section>
 
   <!-- EXPORT CENTER -->
-  <section class="block" id="export">
-    <div class="section-head">
+  <section class="block collapsed" id="export">
+    <div class="section-head collapsible" onclick="toggleSection('export')" role="button" tabindex="0" aria-expanded="false" aria-controls="exportBody" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleSection('export')}">
       <span class="eyebrow">Output</span>
       <h2>Export Center</h2>
       <span class="muted" style="font-size:14px">PDF/CSV are placeholders in preview. Mermaid code and the Markdown memo download for real.</span>
+      <span class="muted collapse-hint" style="font-size:14px">Click to expand</span>
+      <span class="collapse-chev">▶</span>
     </div>
+    <div class="collapse-body" id="exportBody">
     <div class="grid g2" id="exportGrid"><!-- rendered --></div>
-    <div class="card pad" style="margin-top:14px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+    <div class="card pad collapsed" id="mermaidCard" style="margin-top:14px">
+      <div class="collapse-head collapsible" style="display:flex;align-items:center;gap:10px;margin-bottom:8px" onclick="toggleSection('mermaidCard')" role="button" tabindex="0" aria-expanded="false" aria-controls="mermaidCode" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleSection('mermaidCard')}">
         <strong style="font-size:16px">Mermaid Mind Map Code</strong>
-        <button class="btn-soft btn-xs" style="margin-left:auto" onclick="copyMermaid()">Copy code</button>
+        <button class="btn-soft btn-xs" style="margin-left:auto" onclick="event.stopPropagation();copyMermaid()">Copy code</button>
+        <span class="collapse-chev">▶</span>
       </div>
-      <pre class="code" id="mermaidCode"></pre>
+      <pre class="code collapse-body" id="mermaidCode"></pre>
+    </div>
     </div>
   </section>
 
@@ -956,6 +964,28 @@ function renderTrustPanel(key){
 /* ---------- Utils ---------- */
 function uid(){ return 'id'+Math.random().toString(36).slice(2,9); }
 function num(n){ return Number(n||0).toLocaleString('en-US'); }
+/* Thousands-separator helpers for numeric/currency INPUT fields (stored values stay comma-free) */
+function unfmtNum(v){ return String(v==null?'':v).replace(/,/g,''); }
+function groupNum(v){
+  let s=String(v==null?'':v).replace(/[^\d.]/g,'');
+  if(s==='') return '';
+  const dot=s.indexOf('.');
+  let int=dot<0?s:s.slice(0,dot), dec=dot<0?'':s.slice(dot);
+  int=int.replace(/^0+(?=\d)/,'').replace(/\B(?=(\d{3})+(?!\d))/g,',');
+  return (int||(dec?'0':''))+dec;
+}
+function fmtNumField(el){
+  const before=el.value, caret=el.selectionStart==null?before.length:el.selectionStart;
+  const totalDigits=(before.match(/\d/g)||[]).length;
+  const digitsLeft=(before.slice(0,caret).match(/\d/g)||[]).length;
+  const after=groupNum(before);
+  if(after===before) return;
+  el.value=after;
+  let pos;
+  if(digitsLeft>=totalDigits){ pos=after.length; }
+  else { pos=0; let seen=0; while(pos<after.length&&seen<digitsLeft){ if(/\d/.test(after[pos]))seen++; pos++; } }
+  try{ el.setSelectionRange(pos,pos); }catch(_){}
+}
 function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(S)); }catch(e){} }
 function load(){ try{ const r=localStorage.getItem(LS_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
@@ -963,16 +993,17 @@ function saveReview(){ try{ localStorage.setItem(LS_REVIEW, JSON.stringify(revie
 function loadReview(){ try{ const r=localStorage.getItem(LS_REVIEW); return r?JSON.parse(r):{checks:{},notes:''}; }catch(e){ return {checks:{},notes:''}; } }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1900); }
 function scrollToId(id){ document.getElementById(id).scrollIntoView({behavior:'smooth',block:'start'}); }
-/* Client-side demo gate (NOT real security — keeps casual viewers out only) */
+/* Client-side demo gate (NOT real security — keeps casual viewers out only).
+   Login is required on every visit: it is NOT remembered across page loads. */
 function login(e){ if(e&&e.preventDefault) e.preventDefault();
   const u=(document.getElementById('lg_user').value||'').trim();
   const p=document.getElementById('lg_pass').value||'';
   const U=[74,101,115,115,105,99,97,32,68,111,117,103,104,101,114,116,121].map(c=>String.fromCharCode(c)).join('');
   const P=[102,97,115,116,105,110,115,105,103,104,116,115].map(c=>String.fromCharCode(c)).join('');
-  if(u.toLowerCase()===U.toLowerCase() && p===P){ try{localStorage.setItem('tsb_auth','1');}catch(_){} document.getElementById('loginGate').style.display='none'; }
+  if(u.toLowerCase()===U.toLowerCase() && p===P){ document.getElementById('loginGate').style.display='none'; }
   else { document.getElementById('lg_err').textContent='Incorrect username or password.'; }
 }
-function lockApp(){ try{localStorage.removeItem('tsb_auth');}catch(_){} const g=document.getElementById('loginGate'); g.style.display='flex'; const p=document.getElementById('lg_pass'); if(p) p.value=''; const u=document.getElementById('lg_user'); if(u) u.focus(); }
+function lockApp(){ const g=document.getElementById('loginGate'); g.style.display='flex'; const p=document.getElementById('lg_pass'); if(p) p.value=''; const u=document.getElementById('lg_user'); if(u) u.focus(); }
 
 /* ---------- Recommendation / flag logic (Module 16) ---------- */
 function propertyFlags(e){
@@ -1101,7 +1132,7 @@ function renderAssets(){
   const llcs=S.llcs||[];
   const cards=[
     {ic:'🏠',t:'Personal Residence',n:residence.length,sub:residence.map(r=>r.name).join(', ')||'None added',type:'properties'},
-    {ic:'🏘️',t:'Rental Properties',n:rentals.length,sub:rentals.map(r=>r.name).join(', ')||'None added',type:'properties',scroll:true},
+    {ic:'🏘️',t:'Rental Properties',n:rentals.length,sub:rentals.map(r=>r.name).join(', ')||'None added',lines:rentals.map(r=>r.name),type:'properties',scroll:true},
     {ic:'🏦',t:'Cash / Bank',n:cash.length,sub:'$'+num(cash.reduce((a,b)=>a+Number(b.balance||0),0)),type:'bankAccounts'},
     {ic:'📈',t:'Taxable Brokerage',n:taxable.length,sub:'$'+num(taxable.reduce((a,b)=>a+Number(b.balance||0),0)),type:'brokerageAccounts'},
     {ic:'💼',t:'Retirement',n:retire.length,sub:'Beneficiary designation review',type:'brokerageAccounts'},
@@ -1114,7 +1145,7 @@ function renderAssets(){
         <div class="big">${c.n}</div>
       </div>
       <div style="min-width:0"><div style="font-weight:680;font-size:16px">${esc(c.t)}</div>
-      <div class="muted sub${c.scroll?' scroll':''}" style="font-size:13.5px${c.scroll?'':';white-space:nowrap;overflow:hidden;text-overflow:ellipsis'}">${esc(c.sub)}</div></div>
+      <div class="muted sub${c.scroll?' scroll':''}" style="font-size:13.5px${c.scroll?'':';white-space:nowrap;overflow:hidden;text-overflow:ellipsis'}">${c.lines&&c.lines.length?c.lines.map(l=>`<div class="sub-line">${esc(l)}</div>`).join(''):esc(c.sub)}</div></div>
       <div class="btn-row">
         <button class="btn-soft btn-xs" onclick="openEntityForm('${c.type}')">+ Add</button>
         <button class="btn-ghost btn-xs" onclick="openAccordionFor('${c.type}')">View details</button>
@@ -1225,6 +1256,17 @@ function profileBody(){
     <div class="btn-row"><button class="btn-danger btn-xs" onclick="clearProfile()">Clear profile fields</button></div>`;
 }
 
+/* Trustee timeline: compute a deadline date from the entered start date + an offset {d:days} or {m:months} */
+function protectionDeadline(off){
+  const v=S.protectionDate; if(!v||!off) return '';
+  const parts=String(v).split('-'); if(parts.length!==3) return '';
+  const dt=new Date(Number(parts[0]),Number(parts[1])-1,Number(parts[2]));
+  if(isNaN(dt.getTime())) return '';
+  if(off.d) dt.setDate(dt.getDate()+off.d);
+  if(off.m) dt.setMonth(dt.getMonth()+off.m);
+  return dt.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+}
+function updProtectionDate(v){ S.protectionDate=v; save(); renderAccordions(); }
 function trusteeBody(){
   const F=deriveFlags();
   const collect=[
@@ -1242,11 +1284,11 @@ function trusteeBody(){
     'Beneficiary communication log + distribution approval log'
   ];
   const timeline=[
-    ['At death / incapacity','Secure property, locate documents, notify co-trustee, do nothing irreversible without attorney'],
-    ['First 30 days','Engage attorney/CPA, order death certificates, inventory accounts, secure assets & insurance'],
-    ['90 days','Asset valuations, creditor/claims review, EIN for trust/estate if needed (banking review)'],
-    ['6 months','Tax planning with CPA, interim accounting, reserve analysis before any distribution'],
-    ['12 months','Final accounting, confirm debts/taxes paid, attorney-reviewed distributions, close accounts']
+    ['At death / incapacity','Secure property, locate documents, notify co-trustee, do nothing irreversible without attorney',{d:0}],
+    ['First 30 days','Engage attorney/CPA, order death certificates, inventory accounts, secure assets & insurance',{d:30}],
+    ['90 days','Asset valuations, creditor/claims review, EIN for trust/estate if needed (banking review)',{d:90}],
+    ['6 months','Tax planning with CPA, interim accounting, reserve analysis before any distribution',{m:6}],
+    ['12 months','Final accounting, confirm debts/taxes paid, attorney-reviewed distributions, close accounts',{m:12}]
   ];
   return `
     <div class="disclaimer" style="margin:12px 0"><span>🛡️</span><div>${F.trusteeProtection?'A family member is named as successor trustee/executor — a <b>Trustee Protection Packet</b> is recommended for discussion.':'Protection planning helps whoever administers the estate.'} Attorney review required for all authority, compensation, and indemnification language.</div></div>
@@ -1255,7 +1297,16 @@ function trusteeBody(){
       <div class="card pad"><h3 style="font-size:16px;margin-bottom:6px">Safeguards</h3><ul class="lite">${safeguards.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
     </div>
     <h3 style="font-size:16px;margin:16px 0 6px">Timeline checklist</h3>
-    ${timeline.map(t=>`<div class="kv"><span class="k" style="font-weight:700;color:var(--indigo-ink);min-width:120px">${esc(t[0])}</span><span class="v" style="font-weight:500;text-align:left">${esc(t[1])}</span></div>`).join('')}
+    <div class="field" style="max-width:300px;margin-bottom:6px">
+      <label>Date of death / incapacity (optional)</label>
+      <input type="date" value="${esc(S.protectionDate||'')}" onchange="updProtectionDate(this.value)">
+    </div>
+    <div class="muted" style="font-size:13px;margin-bottom:8px">${S.protectionDate?'Deadlines below are calculated from this date — planning estimates only; confirm actual legal &amp; tax deadlines with your attorney &amp; CPA.':'Enter a date above to calculate each deadline below. Planning only — these are not legal deadlines.'}</div>
+    ${timeline.map(t=>{
+      const dl=protectionDeadline(t[2]);
+      const lbl=dl?(t[2].d===0?`${t[0]} — ${dl}`:`${t[0]} — by ${dl}`):t[0];
+      return `<div class="kv"><span class="k" style="font-weight:700;color:var(--indigo-ink);min-width:120px">${esc(lbl)}</span><span class="v" style="font-weight:500;text-align:left">${esc(t[1])}</span></div>`;
+    }).join('')}
     <div class="legal-foot">⚠️ Do not make distributions, sign deeds, or move entity funds without attorney/CPA confirmation. Pay valid claims, debts, and taxes before final distribution.</div>`;
 }
 
@@ -1510,7 +1561,7 @@ function updYear(y){ S.tax.year=y; S.tax.exemption=TAXY[y].exemption; save(); re
 function m$(n){ return '$'+Math.round(+n||0).toLocaleString('en-US'); }
 function renderTaxEstimator(){
   ensureTax(); const t=S.tax;
-  const inp=(k,ph)=>`<input type="number" value="${esc(t[k])}" oninput="updTax('${k}',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%" placeholder="${ph||''}">`;
+  const inp=(k,ph)=>`<input type="text" inputmode="decimal" value="${esc(groupNum(t[k]))}" oninput="fmtNumField(this);updTax('${k}',unfmtNum(this.value))" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%" placeholder="${ph||''}">`;
   const fld=(lab,k)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label>${inp(k)}</div>`;
   const chk=(lab,k)=>`<label class="field chk" style="margin-bottom:8px"><input type="checkbox" ${t[k]?'checked':''} onchange="updTax('${k}',this.checked)" style="width:auto"> ${lab}</label>`;
   const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:17px':''}">—</span></div>`;
@@ -2070,7 +2121,8 @@ function openEntityForm(type,id){
     let input;
     if(f.t==='select') input=`<select id="${id2}">${(f.o||[]).map(o=>`<option ${String(val)===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
     else if(f.t==='textarea') input=`<textarea id="${id2}">${esc(val)}</textarea>`;
-    else input=`<input id="${id2}" type="${f.t==='number'?'number':'text'}" value="${esc(val)}">`;
+    else if(f.t==='number') input=`<input id="${id2}" type="text" inputmode="decimal" value="${esc(groupNum(val))}" oninput="fmtNumField(this)">`;
+    else input=`<input id="${id2}" type="text" value="${esc(val)}">`;
     return `<div class="field ${f.full?'full':''}"><label>${esc(f.l)}</label>${input}</div>`;
   }).join('')}</div>
   <div class="disclaimer" style="margin-top:6px"><span>⚠️</span><div>Planning only — confirm with qualified professionals. Nothing here is legal or tax advice.</div></div>`;
@@ -2079,7 +2131,7 @@ function openEntityForm(type,id){
     {label:'Cancel',cls:'btn-ghost',fn:closeModal},
     {label:editing?'Save changes':'Add '+def.label,cls:'btn-primary',fn:()=>{
       const obj=editing?editing:{id:uid()};
-      def.fields.forEach(f=>{const el=document.getElementById('fld_'+f.k); obj[f.k]=el?el.value:'';});
+      def.fields.forEach(f=>{const el=document.getElementById('fld_'+f.k); let v=el?el.value:''; if(f.t==='number') v=unfmtNum(v); obj[f.k]=v;});
       if(!editing){ S[type]=S[type]||[]; S[type].push(obj); }
       closeModal(); render(); toast((editing?'Updated ':'Added ')+def.label.toLowerCase());
     }}
@@ -2118,10 +2170,12 @@ function updEntityIntake(k,v){ S.entityIntake=S.entityIntake||{}; S.entityIntake
 function toggleSection(secId){
   const sec=document.getElementById(secId);
   const collapsed=sec.classList.toggle('collapsed');
-  const head=sec.querySelector('.section-head');
-  if(head) head.setAttribute('aria-expanded', collapsed?'false':'true');
-  const hint=sec.querySelector('.collapse-hint');
-  if(hint) hint.textContent=collapsed?'Click to expand':'Click to collapse';
+  const head=sec.querySelector(':scope > .section-head, :scope > .collapse-head');
+  if(head){
+    head.setAttribute('aria-expanded', collapsed?'false':'true');
+    const hint=head.querySelector('.collapse-hint');
+    if(hint) hint.textContent=collapsed?'Click to expand':'Click to collapse';
+  }
 }
 function toggleAcc(id){ openAcc[id]=!openAcc[id]; const el=document.getElementById('acc-'+id); if(el) el.classList.toggle('open',!!openAcc[id]); }
 function openAccordionFor(type){

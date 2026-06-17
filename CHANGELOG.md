@@ -4,6 +4,53 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Thousands-separator commas in number/currency input fields
+
+- **Number and currency input fields now format with commas as you type.** The entity detail forms
+  (Estimated value, Mortgage balance, Number of units, account Balances) and all Tax Estimator amount
+  fields were plain `type="number"` inputs (which can't show thousands separators). Switched them to
+  `type="text" inputmode="decimal"` with live comma grouping via `fmtNumField()` (caret-preserving),
+  formatted on initial display via `groupNum()`. **Stored values stay comma-free** — `unfmtNum()`
+  strips commas on save (entity forms) and before `updTax()` writes (Tax Estimator), so every
+  downstream `Number()`/sum/`computeTax()` keeps working. Display helpers (`num`/`M`/`m$`) already
+  added commas; this fixes the input side to match.
+
+## 2026-06-17 — Trustee timeline dates + per-line rental list
+
+- **Trustee Protection Plan: date-driven deadlines.** Added an optional "Date of death / incapacity"
+  date field to the Executor / Trustee Protection Plan timeline. When set, each milestone title shows
+  its computed deadline: "At death / incapacity — <date>", "First 30 days — by <date+30d>", "90 days
+  — by <date+90d>", "6 months — by <date+6mo>", "12 months — by <date+12mo>". Stored in
+  `S.protectionDate` (persists), recalculated live via `updProtectionDate()` → `renderAccordions()`.
+  Dates are parsed locally (no timezone drift) and formatted "Mon D, YYYY". Labels stay plain when no
+  date is entered. Carries a planning-only / "not legal deadlines" note.
+- **Rental Properties summary card: one property per line.** The Asset Summary "Rental Properties"
+  card was a single comma-joined run-on (hard to read, especially since addresses contain commas).
+  Now each property renders on its own dashed-separated line (`.sub-line`), still inside the
+  scrollable card (max-height raised 54px → 150px). Other cards unchanged.
+
+## 2026-06-17 — Login required on every visit (no "remember me")
+
+- **The client-side login gate now prompts on every page load.** Previously, a successful sign-in
+  set `localStorage['tsb_auth']='1'` and an inline script auto-hid the gate on all future visits, so
+  it only ever asked once per browser. Removed that persistence: deleted the auto-hide `<script>`,
+  dropped the `setItem`/`removeItem('tsb_auth')` calls, and `login()` now just hides the overlay for
+  the current page view. Reloading or returning re-shows the login. Stale `tsb_auth` flags from old
+  sessions no longer bypass the gate. (Note: this is still a cosmetic, client-side gate — the
+  password ships in the page, so it deters casual viewers only. Real access control would need
+  Vercel deployment password protection.)
+
+## 2026-06-17 — Collapsible Export Center + Mermaid card; all sections collapsed by default
+
+- **Export Center and the Mermaid Mind Map Code card are now collapsible too**, and **all four
+  collapsible sections now default to collapsed** (Planning Memo, Planning Detail Sections, Export
+  Center, Mermaid card) for a cleaner initial view. Export Center collapses its whole body (download
+  grid + Mermaid card); the Mermaid card nests inside and collapses independently. The "Copy code"
+  button uses `event.stopPropagation()` so it never triggers the card's collapse, and keyboard
+  toggles are guarded with `event.target===this` so activating the button doesn't toggle the card.
+  Generalized the shared CSS/JS: `.collapsible` (any head), `.collapse-head` for card-style heads,
+  `:scope >` selectors and direct-child combinators so nested collapsibles stay independent.
+
 ## 2026-06-17 — Collapsible report sections
 
 - **Collapse/expand for the Attorney-Ready Planning Memo and Planning Detail Sections.**
