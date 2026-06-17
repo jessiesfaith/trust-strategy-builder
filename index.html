@@ -109,10 +109,11 @@
 
   /* Disclaimer */
   .disclaimer{font-size:13.5px;color:var(--amber);background:var(--amber-soft);border:1px solid var(--amber-line);border-radius:10px;padding:9px 12px;display:flex;gap:8px;align-items:flex-start}
-  /* Collapsible amber warning bars — compact by default, tap to read */
+  /* Collapsible amber warning bars — subtle one-liner by default, tap to read */
   .disclaimer{cursor:pointer;user-select:none}
+  .disclaimer:not(.open){background:none;border-color:transparent;padding:2px 2px;opacity:.6;font-size:12.5px}
   .disclaimer:not(.open) > :not(:first-child){display:none}
-  .disclaimer:not(.open)::after{content:'Disclaimer — tap to read';font-size:13.5px;opacity:.92}
+  .disclaimer:not(.open)::after{content:'Disclaimer — tap to read'}
   .disclaimer.tight{margin-top:10px}
   .legal-foot{font-size:13px;color:var(--muted);margin-top:8px}
 
@@ -1958,6 +1959,7 @@ function renderTaxEstimator(){
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate tax now (at death)</div><div id="r_total_estate" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12.5px">federal; state flagged separately</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12.5px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
       </div>
+      <div class="legal-foot" id="r_annual_note"></div>
       <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts only ILIT, FLP (~30% discount) and QPRT removals — illustrative, attorney/CPA review.</div>
     </div>
     <div class="grid g2">
@@ -1968,7 +1970,7 @@ function renderTaxEstimator(){
       ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi','tax_qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
       ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp','tax_seComp')}</div>${fld('Your pre-tax contribution this year ($)','retContrib')}${res('401(k) elective max','r_ret_401')}${res('IRA max','r_ret_ira')}${res('SIMPLE max','r_ret_simple')}${res('SEP / solo-401k max','r_ret_sep')}${res('Income tax saved by your contribution','r_ret_saved',1)}<div class="legal-foot" id="r_ret_note">Limits shown for ${esc(t.year)} (incl. age-50 catch-up). SEP ≈ 25% of comp (≈20% of net SE); confirm with your CPA.</div>`)}
-      ${card('Real estate — property tax &amp; capital gains', `${fld('Property tax rate (%)','propTaxRate')}${res('Annual property tax (current est.)','r_pt_now',1)}${res('If reassessed to market value','r_pt_reassessed')}${res('Potential reassessment increase / yr','r_pt_increase',1)}${res('Real-estate unrealized gain (Σ value − basis)','r_su_gain')}${res('Capital-gains tax if sold (no step-up)','r_su_avoided',1)}<div class="legal-foot">Real-estate capital gains are managed here (not in the Capital gains card). Gain = Σ(value − cost basis) for properties with a basis entered. Held to death the <b>step-up</b> erases it (<b>$0</b> tax); sold during life or gifted out (carryover basis) the tax shown applies. Property tax ≈ assessed × rate; a transfer/death can trigger <b>reassessment to market</b> (CA Prop 13/19, exclusions may apply). Confirm with your CPA &amp; attorney.</div>`)}
+      ${card('Real estate — property tax &amp; capital gains', `${fld('Property tax rate (%)','propTaxRate')}${res('Annual property tax (current est.)','r_pt_now',1)}${res('If reassessed to market value','r_pt_reassessed')}${res('Potential reassessment increase / yr','r_pt_increase',1)}${res('Real-estate unrealized gain (Σ value − basis)','r_su_gain')}${res('Capital-gains tax if sold (no step-up)','r_su_avoided',1)}<div class="legal-foot" id="r_su_note"></div><div class="legal-foot">Real-estate capital gains are managed here (not in the Capital gains card). Gain = Σ(value − cost basis) for properties with a basis entered. Held to death the <b>step-up</b> erases it (<b>$0</b> tax); sold during life or gifted out (carryover basis) the tax shown applies. Property tax ≈ assessed × rate; a transfer/death can trigger <b>reassessment to market</b> (CA Prop 13/19, exclusions may apply). Confirm with your CPA &amp; attorney.</div>`)}
     </div>`;
   computeTax();
 }
@@ -1991,6 +1993,8 @@ function computeTax(){
   const reState=stateTax(ord+lt+reGain+st+qd+od)-stateTax(ord+lt+st+qd+od);
   const reCapTax=Math.max(0,reFed+reState);
   set('r_su_gain',m$(reGain)); set('r_su_avoided',m$(reCapTax));
+  const reEff=reGain>0?Math.round(reCapTax/reGain*1000)/10:0;
+  note('r_su_note', reGain>0?('Math: federal long-term cap-gains '+m$(reFed)+' (top rate ~20%, the figure you expect) + California '+m$(reState)+' (CA taxes gains as ordinary income, up to 13.3%) = '+m$(reCapTax)+' ≈ '+reEff+'% of the '+m$(reGain)+' gain. So it is ~20% federal plus CA state — that is why it exceeds 20%. NIIT (3.8%) may also apply — confirm with your CPA.'):'');
   const ptr=Math.max(0,+t.propTaxRate||0)/100;
   let assessedSum=0, marketSum=0;
   (S.properties||[]).forEach(p=>{ const v=+(p.value||0), a=(+(p.assessed||0))||(+(p.basis||0))||v; assessedSum+=a; marketSum+=v; });
@@ -2030,13 +2034,20 @@ function computeTax(){
   const retContrib=+t.retContrib||0, ordLess=Math.max(0,ord-retContrib);
   const retSaved=retContrib>0?((progTax(ord,fedBr)-progTax(ordLess,fedBr))+(stateTax(ord)-stateTax(ordLess))):0;
   set('r_ret_saved', retContrib>0?m$(retSaved):'$0');
-  note('r_ret_note', retContrib>k401max
-    ? ('⚑ Entry exceeds the 401(k) elective max ('+m$(k401max)+') — only amounts within a plan limit reduce taxable income. Tax saved shown assumes the full amount is pre-tax; confirm eligible limits with your CPA.')
-    : ('Pre-tax contributions reduce taxable income — saving ≈ your marginal rate. Limits shown for '+t.year+' (incl. age-50 catch-up); SEP ≈ 25% of comp. Confirm with your CPA.'));
+  const cu=age>=50, cuTxt=k=>cu?(' + '+m$(k)+' age-50 catch-up'):'';
+  note('r_ret_note', (retContrib>k401max?('⚑ Entry exceeds the 401(k) elective max ('+m$(k401max)+') — only amounts within a plan limit reduce taxable income. '):'')
+    +'These are '+t.year+' contribution LIMITS, not amounts entered'+(cu?' (you are 50+, so catch-ups apply)':'')+': '
+    +'401(k) '+m$(R.k401)+' base'+cuTxt(R.k401c)+' = '+m$(k401max)+'; '
+    +'IRA '+m$(R.ira)+cuTxt(R.irac)+' = '+m$(R.ira+(cu?R.irac:0))+'; '
+    +'SIMPLE '+m$(R.simple)+cuTxt(R.simplec)+' = '+m$(R.simple+(cu?R.simplec:0))+'; '
+    +'SEP/solo-401(k) = 25% × '+m$(comp)+' net comp = '+m$(comp*0.25)+', capped at '+m$(R.sepMax)+' → '+m$(Math.min(comp*0.25,R.sepMax))+'. '
+    +'Pre-tax contributions reduce taxable income (saving ≈ your marginal rate). Confirm eligibility with your CPA.');
   // ---- Summary: single annual total + estate before/after structures ----
   const ordTax=progTax(ord,fedBr)+stateTax(ord);
-  const annual=ordTax + fedCG+stCG+niit + llcSE - qsaved - retSaved;
+  const investTax=fedCG+stCG+niit;
+  const annual=ordTax + investTax + llcSE - qsaved - retSaved;
   set('r_total_annual', m$(annual));
+  note('r_annual_note', 'Math: ordinary-income tax '+m$(ordTax)+' + investment (cap-gains & dividends) '+m$(investTax)+' + self-employment '+m$(llcSE)+' − QBI saving '+m$(qsaved)+(retSaved>0?(' − retirement saving '+m$(retSaved)):'')+' = '+m$(annual)+'. (Real-estate capital gains are NOT in this annual figure — they sit in the Real estate card as a one-time, at-sale tax.)');
   set('r_total_estate', m$(estTax));
   const flpVal=(S.properties||[]).filter(p=>/rental|commercial|vacation/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
   const resVal=(S.properties||[]).filter(p=>/personal residence/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);

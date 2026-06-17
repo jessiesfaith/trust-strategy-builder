@@ -4,6 +4,18 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Show the math in notes (retirement, RE cap gains, annual income tax)
+
+- **Retirement contributions note** now spells out each limit's composition (e.g. "401(k) $24,500 base
+  + $8,000 age-50 catch-up = $32,500", IRA/SIMPLE likewise, SEP = 25% × comp capped) and clarifies these
+  are 2026 *limits*, not amounts entered.
+- **Real-estate capital-gains note** breaks the tax into federal long-term (~20%) + California (gains
+  taxed as ordinary income, up to 13.3%), with the effective % — answering "isn't it 20%?" (federal is;
+  CA state is the rest). Notes NIIT may also apply.
+- **"Est. annual income tax" note** shows the components: ordinary-income tax + investment (cap-gains &
+  dividends) + self-employment − QBI saving − retirement saving = total, and reminds that real-estate
+  capital gains are a one-time at-sale figure (in the Real estate card), not part of the annual number.
+
 ## 2026-06-17 — Net-to-heirs after all taxes; Distribution starts from the true net
 
 - **Estate tax card now shows the full math chain:** Estate → − federal estate tax = "Estate after
@@ -18,10 +30,14 @@ Newest first. Each entry notes the commit and what changed.
 
 ## 2026-06-17 — Collapsible amber disclaimer bars
 
-- **The amber "⚠️" warning/disclaimer bars now start compact** ("Disclaimer — tap to read", ~40px) and
+- **The amber "⚠️" warning/disclaimer bars now start compact** ("Disclaimer — tap to read") and
   expand on click. Implemented generically: `.disclaimer:not(.open)` hides the body and shows a label
   via `::after`, and a single delegated click handler toggles `.open` — so it covers every disclaimer,
   including the ones rendered dynamically on the Tax Estimator / Distribution / Strategy tabs.
+- **Collapsed state is now a subtle one-liner**, not a full amber bar: when collapsed the amber
+  background/border are dropped and the line is dimmed/shrunk (~24px), so it reads as minimized; tapping
+  restores the full amber bar. (Functionally they were already collapsing — this was a visual fix so it
+  actually *looks* collapsed.)
 
 ## 2026-06-17 — Real-estate cap gain managed in one place; Strategy model fixes
 
