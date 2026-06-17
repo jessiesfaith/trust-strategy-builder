@@ -4,6 +4,76 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Property tax, reassessment increase, step-up benefit + negative-input guards
+
+- **Real estate — property tax & step-up (new Tax Estimator card).** Added a per-property "Assessed
+  value — property tax" field and a "Property tax rate (%)" input (default 1.1%). Computes: annual
+  property tax (Σ assessed × rate; assessed ← entered assessed value, else cost basis), the tax if
+  **reassessed to market value**, and the **potential reassessment increase / yr** (the jump that can
+  occur on transfer/death — CA Prop 13/19, with a note on exclusions). Also computes the **step-up in
+  basis** benefit: the federal + state capital-gains tax the step-up erases at death, derived from the
+  real-estate unrealized gain (incremental LTCG on value − basis). Added to the downloadable tax summary.
+- **Distribution Plan — negative-input guards (from adversarial verification).** Floored reserve
+  inputs (execPct capped 0–100; propMgmt/taxDebt ≥ 0), beneficiary allocation %, and insurance
+  pct/amount at 0 in computeDistribution(), so a typed negative can no longer make distributable
+  exceed the estate, show negative reserves/shares, or corrupt the allocation total.
+
+## 2026-06-17 — Distribution Plan tab + estate-tax clarity + cross-screen exemption consistency
+
+- **New "Distribution" tab — Estate Distribution Plan.** A planning organizer that starts from the
+  estate after federal estate tax (from the Tax Estimator) and flows: after-tax estate → reserves →
+  distributable → per-beneficiary shares. Blocks: (1) a standalone **beneficiary list** with % allocation
+  (live $ amounts, 100%-allocation check, "Import from People"); (2) **distribution timing** per
+  beneficiary — outright, staggered by age (splits the share across ages), milestone-based, lifetime/HEMS
+  trust, income-only; (3) **life-insurance distributions by milestone** to children/grandchildren (% of
+  death benefit or fixed $, with over/under-allocation flag); (4) **reserves** — executor/trustee comp
+  (% of estate), property-management fund, taxes/debts reserve — deducted before distribution. State:
+  `S.beneficiaries` / `S.insDist` / `S.reserves`. New `renderDistribution()`/`computeDistribution()` +
+  CRUD; wired into the tab bar, `switchTab`, and `render()`.
+- **"Annual income tax" clarified.** Relabeled the headline metric "per year, during life — not a
+  death-time tax" to answer the common "is this at death?" question (estate-tax columns already say "at death").
+- **Estate value after tax.** Added "Estate after federal estate tax" to the Estate tax card (estate − estTax).
+- **Collapse the Estate Map.** The live diagram section is now collapsible and collapsed by default.
+- **Cross-screen consistency (follow-up to the estate-sync fix).** A verification pass found the
+  exemption threshold could still differ between the Tax Estimator and Tax Considerations. Unified it:
+  the exemption now auto-syncs to the current-year figure (`exemptionAuto`, with a manual-override +
+  "↻ Use current-year" link, mirroring the estate field), the spousal doubling is driven by one source
+  (marital status → `S.tax.dual`, still toggleable), Tax Considerations now honors a manual estate
+  override in its below/above-exemption verdict (with an on-screen note), and estate/exemption edits
+  refresh both panels. Fixes the stale-localStorage case (year shows 2026 but exemption frozen at 13.99M).
+
+## 2026-06-17 — Fix estate figure mismatch + manual Recalculate button
+
+- **Bug: Tax Estimator and Tax Considerations showed different estate totals.** `S.tax.estate` was set
+  once in ensureTax() and then frozen/persisted, while Tax Considerations recomputed its "Rough net
+  estate" live from assets — so the two drifted (e.g. ~45M vs ~35M) whenever assets changed after the
+  estimator first initialized. Fixed with a single source of truth, `estateFromAssets()`, used by BOTH
+  renderTax() and ensureTax(). The Tax Estimator's taxable-estate field now auto-syncs to the live
+  asset total (`S.tax.estateAuto`, default true) so it always matches Tax Considerations. Editing the
+  field switches it to a manual override (`updEstate` → estateAuto=false, with an "↻ Use asset total"
+  link via `resyncEstate` to re-enable). Also aligned the Tax Considerations exemption figure to the
+  current-year exemption (`curY().exemption`) instead of a hardcoded 13M, so both screens agree.
+- **Manual Recalculate button.** Added "↻ Recalculate" to the Tax Estimator header (`recalcTax`) —
+  the estimate already recomputes live on every field edit; this re-runs it on demand and re-syncs the
+  estate from current entries.
+
+## 2026-06-17 — Tax Estimator: retirement contribution, less double-entry, real-estate cap gains, layout
+
+- **Editable retirement contribution.** The Retirement card only showed contribution *limits*; added a
+  "Your pre-tax contribution this year ($)" field that shows the income tax saved (federal + state, via
+  the actual progressive-tax delta of reducing ordinary income) and flags entries over the 401(k)
+  elective max. The saving now reduces the headline annual income-tax total.
+- **Less double-entry.** "Net business profit" now auto-fills "Qualified business income" and
+  "Self-employed net comp" (the same number was previously typed in 3 cards). Each remains individually
+  editable; re-entering net profit re-syncs them. (`updProfit()` updates the sibling inputs in place — no
+  full re-render, caret preserved.)
+- **Real-estate capital gains.** Added a "Cost basis / purchase price ($)" field to each property. Per
+  property gain = max(0, value − basis); the list now shows "cap gain $X". The total across all
+  properties with a basis feeds the Tax Estimator as "Real-estate gain (from properties)" and rolls into
+  the long-term gain (the manual field is relabeled "Other long-term gain"). Full gain — no
+  primary-residence exclusion (per choice). Added to the Markdown tax summary.
+- **Layout.** Moved the Tax Considerations section above the Tax Estimator on the Tax Estimator tab.
+
 ## 2026-06-17 — Thousands-separator commas in number/currency input fields
 
 - **Number and currency input fields now format with commas as you type.** The entity detail forms

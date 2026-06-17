@@ -369,13 +369,15 @@
   </section>
 
   <!-- MIND MAP -->
-  <section class="block" id="mindmap">
-    <div class="section-head">
+  <section class="block collapsed" id="mindmap">
+    <div class="section-head collapsible" onclick="toggleSection('mindmap')" role="button" tabindex="0" aria-expanded="false" aria-controls="mindmapBody" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleSection('mindmap')}">
       <span class="eyebrow">Live diagram</span>
       <h2>Estate Map</h2>
       <span class="muted" style="font-size:14px">Updates automatically as you add or remove people, assets, LLCs, and sub-trusts.</span>
+      <span class="muted collapse-hint" style="font-size:14px">Click to expand</span>
+      <span class="collapse-chev">▶</span>
     </div>
-    <div class="card pad">
+    <div class="card pad collapse-body" id="mindmapBody">
       <div class="mm-tabs">
         <div class="mm-tab active" data-mm="flow" onclick="switchMM('flow')">Ownership Map</div>
         <div class="mm-tab" data-mm="mindmap" onclick="switchMM('mindmap')">Mind Map</div>
@@ -409,18 +411,7 @@
     </div>
   </section>
 
-  <!-- TAX ESTIMATOR (its own tab — hidden on the Overview tab) -->
-  <section class="block" id="taxest" style="display:none">
-    <div class="section-head">
-      <span class="eyebrow">Estimator</span>
-      <h2>Tax Estimator</h2>
-      <span class="muted" style="font-size:14px">Federal + state, 2025/2026. Rough estimates for planning — not tax advice; confirm with your CPA.</span>
-      <button class="btn-soft btn-xs" style="margin-left:auto" onclick="downloadTaxSummary()">⬇ Download tax summary</button>
-    </div>
-    <div id="taxEstimator"><!-- rendered --></div>
-  </section>
-
-  <!-- TAX CONSIDERATIONS (bottom of the Tax Estimator tab) -->
+  <!-- TAX CONSIDERATIONS (top of the Tax Estimator tab) -->
   <section class="block" id="taxconsider" style="display:none">
     <div class="section-head">
       <span class="eyebrow">Discussion framework</span>
@@ -428,6 +419,29 @@
       <span class="muted" style="font-size:14px">Which tax to minimize is the real question — concepts to raise with your CPA &amp; attorney, not advice.</span>
     </div>
     <div class="card pad" id="taxConsider"><!-- rendered --></div>
+  </section>
+
+  <!-- TAX ESTIMATOR (its own tab — hidden on the Overview tab) -->
+  <section class="block" id="taxest" style="display:none">
+    <div class="section-head">
+      <span class="eyebrow">Estimator</span>
+      <h2>Tax Estimator</h2>
+      <span class="muted" style="font-size:14px">Federal + state, 2025/2026. Rough estimates for planning — not tax advice; confirm with your CPA.</span>
+      <button class="btn-soft btn-xs" style="margin-left:auto" onclick="recalcTax()">↻ Recalculate</button>
+      <button class="btn-soft btn-xs" onclick="downloadTaxSummary()">⬇ Download tax summary</button>
+    </div>
+    <div id="taxEstimator"><!-- rendered --></div>
+  </section>
+
+  <!-- DISTRIBUTION PLAN (its own tab) -->
+  <section class="block" id="dist" style="display:none">
+    <div class="section-head">
+      <span class="eyebrow">Distribution</span>
+      <h2>Estate Distribution Plan</h2>
+      <span class="muted" style="font-size:14px">Planning organizer only — beneficiary shares, timing, insurance milestones, and reserves. Not legal or tax advice.</span>
+      <button class="btn-soft btn-xs" style="margin-left:auto" onclick="renderDistribution();toast('Recalculated')">↻ Recalculate</button>
+    </div>
+    <div id="distBody"><!-- rendered --></div>
   </section>
 
   <!-- DETAILED ACCORDIONS -->
@@ -645,6 +659,8 @@ const ENTITY = {
       {k:'type',l:'Property type',t:'select',o:['Personal residence','Rental property','Vacation home','Land','Commercial property','Other']},
       {k:'owner',l:'Current owner / title',t:'text'},
       {k:'value',l:'Estimated value ($)',t:'number'},
+      {k:'basis',l:'Cost basis / purchase price ($)',t:'number'},
+      {k:'assessed',l:'Assessed value — property tax ($)',t:'number'},
       {k:'state',l:'State where located',t:'text'},
       {k:'mortgage',l:'Mortgage / debt?',t:'select',o:['No','Yes']},
       {k:'mortgageBalance',l:'Mortgage balance ($)',t:'number'},
@@ -659,7 +675,7 @@ const ENTITY = {
       {k:'notes',l:'Notes',t:'textarea',full:true}
     ],
     title:e=>e.name||'Unnamed property',
-    meta:e=>[e.type,e.state,e.value?('$'+num(e.value)):''].filter(Boolean).join(' · '),
+    meta:e=>{ const v=+(e.value||0),b=+(e.basis||0),g=b>0?Math.max(0,v-b):0; return [e.type,e.state,e.value?('$'+num(e.value)):'',b>0?('cap gain $'+num(g)):''].filter(Boolean).join(' · '); },
     flags:e=>propertyFlags(e)
   },
   bankAccounts:{
@@ -891,7 +907,7 @@ function allTrusts(){ return TRUSTS.concat(S.customTrusts||[]); }
 function trustByKey(k){ return allTrusts().find(t=>t.k===k); }
 function renderTopTabs(){
   const el=document.getElementById('topTabs'); if(!el) return;
-  const tabs=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'}].concat(allTrusts().map(t=>({k:t.k,n:t.name})));
+  const tabs=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'},{k:'dist',n:'Distribution'}].concat(allTrusts().map(t=>({k:t.k,n:t.name})));
   el.innerHTML=tabs.map(t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`).join('')
     + `<button class="toptab add-trust" onclick="newTrust()" title="Add your own trust or entity tab">＋ New trust</button>`;
 }
@@ -917,17 +933,19 @@ function deleteTrust(k){
 }
 function switchTab(key){
   currentTab=key;
-  const isOv=key==='overview', isTax=key==='tax', isTrust=!isOv&&!isTax;
+  const isOv=key==='overview', isTax=key==='tax', isDist=key==='dist', isTrust=!isOv&&!isTax&&!isDist;
   document.querySelectorAll('.toptab').forEach(b=>b.classList.toggle('active',b.dataset.tab===key));
-  // The Tax Estimator lives in its own tab; every other .wrap section belongs to Overview.
+  // The Tax Estimator and Distribution Plan each live in their own tab; every other .wrap section belongs to Overview.
   document.querySelectorAll('.wrap > *').forEach(el=>{
     if(el.id==='tab-trust') return;                       // trust panel handled below
     if(el.id==='taxest'||el.id==='taxconsider'){ el.style.display=isTax?'':'none'; return; }
+    if(el.id==='dist'){ el.style.display=isDist?'':'none'; return; }
     el.style.display=isOv?'':'none';
   });
   const panel=document.getElementById('tab-trust'); panel.style.display=isTrust?'block':'none';
   if(isTrust) renderTrustPanel(key);
   if(isTax) renderTaxEstimator();
+  if(isDist) renderDistribution();
   window.scrollTo(0,0);
 }
 function updTrustNote(k,v){ S.trustNotes=S.trustNotes||{}; S.trustNotes[k]=v; save(); }
@@ -1054,6 +1072,7 @@ function render(){
   renderMemo();
   renderTax();
   renderTaxEstimator();
+  renderDistribution();
   renderExport();
   renderMermaid();
   renderReview();
@@ -1442,17 +1461,26 @@ function renderMemo(){
 }
 
 /* ---------- Tax considerations ---------- */
-function renderTax(){
+/* Single source of truth for the asset-based estate — used by BOTH the Tax Estimator and Tax Considerations
+   so the two screens never drift apart. */
+function estateFromAssets(){
   const props=S.properties||[];
   const grossRE=props.reduce((a,p)=>a+Number(p.value||0),0);
   const debt=props.reduce((a,p)=>a+Number(p.mortgageBalance||0),0);
   const cash=(S.bankAccounts||[]).reduce((a,b)=>a+Number(b.balance||0),0);
   const invest=(S.brokerageAccounts||[]).reduce((a,b)=>a+Number(b.balance||0),0);
-  const gross=grossRE+cash+invest, net=gross-debt;
-  const married=/married/i.test(S.profile.maritalStatus||'');
-  const ILLUS=13000000; // illustrative single-person federal exemption — confirm current figure with CPA
-  const exempt=ILLUS*(married?2:1);
-  const below=net<exempt;
+  const gross=grossRE+cash+invest;
+  return {grossRE,cash,invest,debt,gross,net:Math.max(0,gross-debt)};
+}
+function renderTax(){
+  ensureTax();
+  const t=S.tax;
+  const E=estateFromAssets(), grossRE=E.grossRE, cash=E.cash, invest=E.invest, debt=E.debt, net=E.net;
+  const override=(t.estateAuto===false), taxBase=override?(+t.estate||0):net;   // honor a manual taxable-estate override for the exemption verdict
+  const dual=!!t.dual;
+  const perPerson=(+t.exemption)||(curY()&&curY().exemption)||13000000;   // same exemption source the Tax Estimator/trust panels use
+  const exempt=perPerson*(dual?2:1);
+  const below=taxBase<exempt;
 
   const lev={
     estate:['b-amber','Estate tax'], income:['b-blue','Income tax'],
@@ -1482,11 +1510,12 @@ function renderTax(){
         <div class="legal-foot">Rough gross figure from entered assets only — excludes life insurance, business value, prior gifts, deductions, and state estate/inheritance tax. Your CPA computes the actual taxable estate.</div>
       </div>
       <div class="snap" style="align-items:flex-start;flex-direction:column;gap:8px;border-color:${below?'var(--green-line)':'var(--amber-line)'};background:${below?'var(--green-soft)':'var(--amber-soft)'}">
-        <div class="badges"><span class="badge ${below?'b-green':'b-amber'}">${below?'Likely below exemption':'May approach / exceed exemption'}</span><span class="badge b-gray">${married?'married — illustrative ~$26M':'single — illustrative ~$13M'}</span></div>
+        <div class="badges"><span class="badge ${below?'b-green':'b-amber'}">${below?'Likely below exemption':'May approach / exceed exemption'}</span><span class="badge b-gray">${dual?('×2 spousal — ~'+m$(exempt)):('~'+m$(perPerson)+'/person')}</span></div>
+        ${override?`<div class="muted" style="font-size:12.5px">Verdict uses your manual taxable-estate override ${m$(taxBase)} (asset-derived net is ${m$(net)}).</div>`:''}
         <div style="font-size:14px">${below
           ? `Below the illustrative federal exemption, there is usually <b>no federal estate tax to minimize</b>. The biggest lever becomes <b>preserving the capital-gains step-up</b> — keep appreciated assets in the estate via the revocable trust — plus retirement-account beneficiary planning. The advanced irrevocable structures can <b>forfeit</b> that step-up, so they often aren't the tax-minimizing move here.`
           : `Approaching or above the exemption is where the advanced gifting / irrevocable structures (IDGT, FLP, SLAT, ILIT, CLAT) earn their keep — moving assets and <b>future appreciation</b> out of the taxable estate.`}</div>
-        <div class="legal-foot">Illustrative exemption only (~$13M/person, doubled if married) — it changes with law. Confirm the current figure and your situation with your CPA.</div>
+        <div class="legal-foot">Federal exemption ~${m$(perPerson)}/person${dual?(' (≈'+m$(exempt)+' with spousal portability)'):''} for ${esc(t.year)}${t.exemptionAuto?'':' — manually overridden'} — changes with law. Confirm the current figure with your CPA.</div>
       </div>
     </div>
 
@@ -1508,6 +1537,149 @@ function renderTax(){
     ${structures.map(s=>`<div class="ent"><div class="ent-top"><div style="min-width:0"><h4>${esc(s[0])}</h4><div class="ent-meta">${esc(s[1])}</div></div><div class="badges">${s[2].map(b).join('')}</div></div></div>`).join('')}
 
     <div class="disclaimer" style="margin-top:14px"><span>⚠️</span><div><b>Not tax advice and not a recommendation.</b> These are general concepts. The tax-minimizing direction depends on your estate size, state, basis, goals, and the law in effect — determined with your CPA and estate attorney. Estate/gift-tax structures are largely irrevocable; confirm before acting.</div></div>`;
+}
+
+/* ---------- Estate Distribution Plan (planning organizer — not legal/tax advice) ---------- */
+const DIST_INSTY='font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%';
+const BENE_REL=['Spouse','Child','Grandchild','Sibling','Parent','Other family','Friend','Charity','Other'];
+const BENE_METHOD=['Outright at death','Staggered by age','Milestone-based','Lifetime trust (HEMS)','Income only'];
+function ensureDist(){
+  if(!Array.isArray(S.beneficiaries)) S.beneficiaries=[];
+  if(!Array.isArray(S.insDist)) S.insDist=[];
+  if(!S.reserves||typeof S.reserves!=='object') S.reserves={};
+  const r=S.reserves;
+  if(r.execPct===undefined) r.execPct='';
+  if(r.propMgmt===undefined) r.propMgmt='';
+  if(r.taxDebt===undefined) r.taxDebt='';
+}
+/* Estate value after federal estate tax — same inputs as the Tax Estimator, so the two tabs agree */
+function estateAfterTax(){ ensureTax(); const t=S.tax; const exTot=(+t.exemption||0)*(t.dual?2:1); const estate=+t.estate||0; const estTax=Math.max(0,estate-exTot)*TAXC.estRate; return {estate,estTax,afterTax:Math.max(0,estate-estTax)}; }
+/* Beneficiary CRUD */
+function addBene(){ ensureDist(); S.beneficiaries.push({id:uid(),name:'',relation:'Child',pct:'',method:'Outright at death',stagger:'25, 30, 35',milestone:'',notes:''}); save(); renderDistribution(); }
+function removeBene(id){ S.beneficiaries=(S.beneficiaries||[]).filter(b=>b.id!==id); save(); renderDistribution(); }
+function updBene(id,k,v){ const b=(S.beneficiaries||[]).find(x=>x.id===id); if(!b) return; b[k]=v; save(); if(k==='method') renderDistribution(); else computeDistribution(); }
+function importBenesFromPeople(){ ensureDist();
+  const ppl=(S.people||[]).filter(p=>/benefic/i.test(p.role||'')); let n=0;
+  ppl.forEach(p=>{ if(!(S.beneficiaries||[]).some(b=>(b.name||'').trim().toLowerCase()===(p.name||'').trim().toLowerCase())){
+    const tag=((p.relationship||'')+' '+(p.role||'')).toLowerCase();
+    const rel=/grand/.test(tag)?'Grandchild':(/child|son|daughter/.test(tag)?'Child':(/spouse|husband|wife|partner/.test(tag)?'Spouse':'Other'));
+    S.beneficiaries.push({id:uid(),name:p.name||'',relation:rel,pct:'',method:'Outright at death',stagger:'25, 30, 35',milestone:'',notes:''}); n++; } });
+  save(); renderDistribution(); toast(n?('Imported '+n+' beneficiar'+(n>1?'ies':'y')):'No new beneficiaries found in People (add a Primary/Contingent Beneficiary role first)');
+}
+/* Insurance-distribution CRUD */
+function addIns(){ ensureDist(); S.insDist.push({id:uid(),who:'',relation:'Grandchild',basis:'pct',pct:'',amount:'',milestone:''}); save(); renderDistribution(); }
+function removeIns(id){ S.insDist=(S.insDist||[]).filter(x=>x.id!==id); save(); renderDistribution(); }
+function updIns(id,k,v){ const e=(S.insDist||[]).find(x=>x.id===id); if(!e) return; e[k]=v; save(); if(k==='basis') renderDistribution(); else computeDistribution(); }
+function updReserve(k,v){ ensureDist(); S.reserves[k]=v; save(); computeDistribution(); }
+
+function beneRow(b){
+  const sel=(k,opts)=>`<select onchange="updBene('${b.id}','${k}',this.value)" style="${DIST_INSTY}">${opts.map(o=>`<option ${b[k]===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  let extra='';
+  if(b.method==='Staggered by age') extra=`<div class="field" style="margin-bottom:8px"><label>Distribution ages</label><input type="text" value="${esc(b.stagger||'')}" oninput="updBene('${b.id}','stagger',this.value)" placeholder="25, 30, 35" style="${DIST_INSTY}"></div>`;
+  else if(b.method==='Milestone-based') extra=`<div class="field" style="margin-bottom:8px"><label>Milestones</label><input type="text" value="${esc(b.milestone||'')}" oninput="updBene('${b.id}','milestone',this.value)" placeholder="college, first home, age 30" style="${DIST_INSTY}"></div>`;
+  return `<div class="ent">
+    <div class="form-grid">
+      <div class="field" style="margin-bottom:8px"><label>Name</label><input type="text" value="${esc(b.name||'')}" oninput="updBene('${b.id}','name',this.value)" style="${DIST_INSTY}"></div>
+      <div class="field" style="margin-bottom:8px"><label>Relation</label>${sel('relation',BENE_REL)}</div>
+      <div class="field" style="margin-bottom:8px"><label>Allocation %</label><input type="text" inputmode="decimal" value="${esc(b.pct)}" oninput="updBene('${b.id}','pct',this.value)" style="${DIST_INSTY}"></div>
+      <div class="field" style="margin-bottom:8px"><label>Distribution method</label>${sel('method',BENE_METHOD)}</div>
+      ${extra}
+    </div>
+    <div class="kv"><span class="k">Share of distributable estate</span><span class="v" id="bene_amt_${b.id}" style="font-size:16px">—</span></div>
+    <div class="muted" id="bene_timing_${b.id}" style="font-size:13px;margin-top:4px"></div>
+    <div class="ent-actions" style="margin-top:8px"><button class="btn-danger btn-xs" onclick="removeBene('${b.id}')">Remove</button></div>
+  </div>`;
+}
+function insRow(e){
+  const relSel=`<select onchange="updIns('${e.id}','relation',this.value)" style="${DIST_INSTY}">${BENE_REL.map(o=>`<option ${e.relation===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  const basisSel=`<select onchange="updIns('${e.id}','basis',this.value)" style="${DIST_INSTY}"><option value="pct" ${e.basis==='pct'?'selected':''}>% of death benefit</option><option value="amount" ${e.basis==='amount'?'selected':''}>Fixed $ amount</option></select>`;
+  const valField=e.basis==='amount'
+    ? `<div class="field" style="margin-bottom:8px"><label>Amount ($)</label><input type="text" inputmode="decimal" value="${esc(groupNum(e.amount))}" oninput="fmtNumField(this);updIns('${e.id}','amount',unfmtNum(this.value))" style="${DIST_INSTY}"></div>`
+    : `<div class="field" style="margin-bottom:8px"><label>% of death benefit</label><input type="text" inputmode="decimal" value="${esc(e.pct)}" oninput="updIns('${e.id}','pct',this.value)" style="${DIST_INSTY}"></div>`;
+  return `<div class="ent">
+    <div class="form-grid">
+      <div class="field" style="margin-bottom:8px"><label>Recipient</label><input type="text" value="${esc(e.who||'')}" oninput="updIns('${e.id}','who',this.value)" style="${DIST_INSTY}"></div>
+      <div class="field" style="margin-bottom:8px"><label>Relation</label>${relSel}</div>
+      <div class="field" style="margin-bottom:8px"><label>Basis</label>${basisSel}</div>
+      ${valField}
+      <div class="field full" style="margin-bottom:8px"><label>Milestone / trigger</label><input type="text" value="${esc(e.milestone||'')}" oninput="updIns('${e.id}','milestone',this.value)" placeholder="e.g. age 25, college graduation, first home" style="${DIST_INSTY}"></div>
+    </div>
+    <div class="kv"><span class="k">Distribution amount</span><span class="v" id="ins_amt_${e.id}">—</span></div>
+    <div class="ent-actions" style="margin-top:8px"><button class="btn-danger btn-xs" onclick="removeIns('${e.id}')">Remove</button></div>
+  </div>`;
+}
+function renderDistribution(){
+  ensureDist();
+  const benes=S.beneficiaries||[], ins=S.insDist||[], r=S.reserves;
+  const card=(title,body,sub)=>`<div class="card pad" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h3 style="font-size:16px;color:var(--indigo-ink)">${title}</h3>${sub||''}</div>${body}</div>`;
+  const resFld=(lab,k,ph)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label><input type="text" inputmode="decimal" value="${k==='execPct'?esc(r[k]||''):esc(groupNum(r[k]))}" oninput="${k==='execPct'?`updReserve('${k}',this.value)`:`fmtNumField(this);updReserve('${k}',unfmtNum(this.value))`}" style="${DIST_INSTY}" placeholder="${ph||''}"></div>`;
+  const el=document.getElementById('distBody'); if(!el) return;
+  el.innerHTML=`
+    <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Figures flow from your Tax Estimator inputs and are illustrative. Actual distributions depend on your trust/will terms; confirm with your attorney &amp; CPA.</div></div>
+    <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
+      <div class="grid g3">
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate after estate tax</div><div id="r_dist_aftertax" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">from the Tax Estimator</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Less reserves</div><div id="r_dist_reserves" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">executor + property mgmt + taxes/debts</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Distributable to beneficiaries</div><div id="r_dist_distributable" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">split by the allocations below</div></div>
+      </div>
+    </div>
+    ${card('Beneficiaries &amp; allocation', `
+      <div class="btn-row" style="margin-bottom:8px"><button class="btn-primary btn-xs" onclick="addBene()">+ Add beneficiary</button><button class="btn-soft btn-xs" onclick="importBenesFromPeople()">Import from People</button></div>
+      ${benes.length?benes.map(beneRow).join(''):'<div class="muted" style="font-size:14px">No beneficiaries yet — add one or import from People.</div>'}
+      <div class="muted" id="r_dist_unalloc" style="font-size:13px;margin-top:8px"></div>
+    `,`<span class="badge b-gray" id="r_dist_pcttotal" style="margin-left:auto">—</span>`)}
+    ${card('Reserves — set aside before distribution', `
+      <div class="form-grid">
+        ${resFld('Executor / trustee compensation (% of estate)','execPct','e.g. 1.5')}
+        ${resFld('Property management fund ($)','propMgmt','')}
+        ${resFld('Taxes &amp; debts reserve ($)','taxDebt','')}
+      </div>
+      <div class="kv"><span class="k">Executor / trustee comp</span><span class="v" id="r_res_exec">—</span></div>
+      <div class="kv"><span class="k" style="font-weight:700">Total reserves</span><span class="v" id="r_res_total" style="font-size:16px">—</span></div>
+      <div class="legal-foot">Executor/trustee compensation varies by state and the will/trust terms (often a small % of the estate) — confirm with your attorney. Property-management and tax/debt reserves are planning placeholders.</div>
+    `)}
+    ${card('Life-insurance distributions by milestone', `
+      <div class="btn-row" style="margin-bottom:8px"><button class="btn-primary btn-xs" onclick="addIns()">+ Add distribution</button></div>
+      <div class="kv"><span class="k">Death benefit available</span><span class="v" id="r_ins_db">—</span></div>
+      <div class="muted" style="font-size:12.5px;margin:2px 0 8px">From the Tax Estimator life-insurance input. Allocate to children, grandchildren, or specific milestones.</div>
+      ${ins.length?ins.map(insRow).join(''):'<div class="muted" style="font-size:14px">No insurance distributions yet — add allocations for beneficiaries or grandchildren by milestone.</div>'}
+      <div class="kv" style="margin-top:6px"><span class="k">Allocated</span><span class="v" id="r_ins_alloc">—</span></div>
+      <div class="muted" id="r_ins_remain" style="font-size:13px"></div>
+    `)}
+    <div class="legal-foot" style="margin-top:6px">⚠️ Allocations, timing, and reserves here are an organizer to discuss with your attorney &amp; CPA — they do not create or change any legal document.</div>`;
+  computeDistribution();
+}
+function computeDistribution(){
+  ensureDist();
+  const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  const afterTax=estateAfterTax().afterTax, r=S.reserves;
+  const execPct=Math.min(100,Math.max(0,+unfmtNum(r.execPct)||0)), propMgmt=Math.max(0,+unfmtNum(r.propMgmt)||0), taxDebt=Math.max(0,+unfmtNum(r.taxDebt)||0);
+  const execAmt=afterTax*execPct/100, totalReserves=execAmt+propMgmt+taxDebt;
+  const distributable=Math.max(0,afterTax-totalReserves);
+  set('r_dist_aftertax',m$(afterTax)); set('r_dist_reserves',m$(totalReserves)); set('r_dist_distributable',m$(distributable));
+  set('r_res_exec',m$(execAmt)); set('r_res_total',m$(totalReserves));
+  const benes=S.beneficiaries||[]; let pctTotal=0; benes.forEach(b=>pctTotal+=Math.max(0,+unfmtNum(b.pct)||0));
+  benes.forEach(b=>{
+    const pct=Math.max(0,+unfmtNum(b.pct)||0), amt=distributable*pct/100;
+    set('bene_amt_'+b.id, m$(amt)+(pct?(' · '+(Math.round(pct*10)/10)+'%'):''));
+    let timing;
+    if(b.method==='Staggered by age'){ const ages=(b.stagger||'').split(/[^0-9]+/).filter(Boolean); timing=ages.length?('≈ '+m$(amt/ages.length)+' at age '+ages.join(', ')):'Staggered — add ages'; }
+    else if(b.method==='Milestone-based') timing='At milestones: '+(b.milestone||'(add milestones)');
+    else if(b.method==='Lifetime trust (HEMS)') timing='Held in a lifetime trust — discretionary HEMS distributions';
+    else if(b.method==='Income only') timing='Income only during life; principal to remainder beneficiaries';
+    else timing='Outright at death';
+    set('bene_timing_'+b.id, timing);
+  });
+  const pe=document.getElementById('r_dist_pcttotal');
+  if(pe){ pe.textContent=(Math.round(pctTotal*10)/10)+'% allocated'; pe.style.color=Math.abs(pctTotal-100)<0.05?'var(--green)':'#c89a2d'; }
+  const ue=document.getElementById('r_dist_unalloc');
+  if(ue) ue.textContent=Math.abs(pctTotal-100)<0.05?'✓ Fully allocated (100%).':(pctTotal<100?('Unallocated: '+m$(distributable*(100-pctTotal)/100)+' ('+(Math.round((100-pctTotal)*10)/10)+'%) — shares don\'t total 100%.'):('⚑ Over-allocated by '+(Math.round((pctTotal-100)*10)/10)+'% — shares exceed 100%.'));
+  // insurance
+  const db=+S.tax.deathBenefit||0; const ins=S.insDist||[]; let insAlloc=0;
+  ins.forEach(e=>{ const amt=e.basis==='pct'?db*Math.max(0,+unfmtNum(e.pct)||0)/100:Math.max(0,+unfmtNum(e.amount)||0); insAlloc+=amt; set('ins_amt_'+e.id,m$(amt)); });
+  set('r_ins_db',m$(db)); set('r_ins_alloc',m$(insAlloc));
+  const re=document.getElementById('r_ins_remain'); const remain=db-insAlloc;
+  if(re){ re.textContent=(remain>=0?('Unallocated death benefit: '+m$(remain)):('⚑ Over-allocated by '+m$(-remain)+' — exceeds the death benefit.')); re.style.color=remain<-0.5?'#c89a2d':'var(--muted)'; }
 }
 
 /* ---------- Tax Estimator (CA + federal, 2025 — estimates only, not tax advice) ---------- */
@@ -1551,18 +1723,45 @@ function seTaxCalc(net){ const base=Math.max(0,net)*0.9235; return Math.min(base
 function ensureTax(){
   S.tax=S.tax||{};
   if(S.tax.year===undefined) S.tax.year='2026';
-  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,dual:true,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000};
+  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000,retContrib:'',propTaxRate:1.1};
   for(const k in d){ if(S.tax[k]===undefined) S.tax[k]=d[k]; }
+  if(S.tax.dual===undefined) S.tax.dual=/married/i.test((S.profile&&S.profile.maritalStatus)||'');   // exemption doubling follows marital status (user can still toggle the checkbox)
+  if(S.tax.exemptionAuto===undefined) S.tax.exemptionAuto=true;
   if(S.tax.exemption===undefined) S.tax.exemption=TAXY[S.tax.year].exemption;
-  if(S.tax.estate===undefined){ const P=(S.properties||[]).reduce((a,p)=>a+ +(p.value||0),0), D=(S.properties||[]).reduce((a,p)=>a+ +(p.mortgageBalance||0),0), C=(S.bankAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0), I=(S.brokerageAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0); S.tax.estate=Math.max(0,P+C+I-D); }
+  if(S.tax.exemptionAuto) S.tax.exemption=(curY()&&curY().exemption)||S.tax.exemption;   // keep exemption on the current-year figure unless manually overridden
+  if(S.tax.estateAuto===undefined) S.tax.estateAuto=true;
+  const liveNet=estateFromAssets().net;
+  if(S.tax.estate===undefined) S.tax.estate=liveNet;
+  if(S.tax.estateAuto) S.tax.estate=liveNet;   // keep the taxable-estate field in lockstep with assets unless manually overridden
 }
-function updTax(k,v){ S.tax[k]=v; save(); computeTax(); }
+function updTax(k,v){ S.tax[k]=v; save(); computeTax(); if(k==='dual') renderTax(); }   // dual affects the Tax Considerations exemption verdict too
+/* Net business profit auto-fills QBI & SE comp (still individually editable) */
+function updProfit(v){ const raw=unfmtNum(v); S.tax.profit=raw; S.tax.qbi=raw; S.tax.seComp=raw;
+  const q=document.getElementById('tax_qbi'); if(q) q.value=groupNum(raw);
+  const s=document.getElementById('tax_seComp'); if(s) s.value=groupNum(raw);
+  save(); computeTax(); }
+/* Editing the taxable estate marks it a manual override (stops auto-syncing from assets) */
+function updEstate(v){ const wasAuto=S.tax.estateAuto; S.tax.estate=unfmtNum(v); S.tax.estateAuto=false; save(); computeTax(); renderTax();
+  if(wasAuto){ const h=document.getElementById('estateHint'); if(h) h.innerHTML='<span style="color:#c89a2d">Manual override.</span> <a href="#" onclick="event.preventDefault();resyncEstate()" style="color:var(--indigo)">↻ Use asset total</a>'; } }
+function resyncEstate(){ S.tax.estateAuto=true; S.tax.estate=estateFromAssets().net; save(); renderTaxEstimator(); renderTax(); }
+/* Exemption: editing marks a manual override (stops auto-syncing to the current-year figure) */
+function updExemption(v){ const wasAuto=S.tax.exemptionAuto; S.tax.exemption=unfmtNum(v); S.tax.exemptionAuto=false; save(); computeTax(); renderTax();
+  if(wasAuto){ const h=document.getElementById('exemptionHint'); if(h) h.innerHTML='<span style="color:#c89a2d">Manual override.</span> <a href="#" onclick="event.preventDefault();resyncExemption()" style="color:var(--indigo)">↻ Use current-year</a>'; } }
+function resyncExemption(){ S.tax.exemptionAuto=true; S.tax.exemption=(curY()&&curY().exemption)||S.tax.exemption; save(); renderTaxEstimator(); renderTax(); }
+/* Manual recalc button — re-runs every figure from the current entries (estimate is already live on each edit) */
+function recalcTax(){ renderTaxEstimator(); renderTax(); toast('Recalculated from current entries'); }
 function updYear(y){ S.tax.year=y; S.tax.exemption=TAXY[y].exemption; save(); renderTaxEstimator(); } // rebuild so the exemption field reflects the year
 function m$(n){ return '$'+Math.round(+n||0).toLocaleString('en-US'); }
 function renderTaxEstimator(){
   ensureTax(); const t=S.tax;
-  const inp=(k,ph)=>`<input type="text" inputmode="decimal" value="${esc(groupNum(t[k]))}" oninput="fmtNumField(this);updTax('${k}',unfmtNum(this.value))" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%" placeholder="${ph||''}">`;
-  const fld=(lab,k)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label>${inp(k)}</div>`;
+  const inSty='font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%';
+  const inp=(k,ph,id)=>`<input ${id?`id="${id}" `:''}type="text" inputmode="decimal" value="${esc(groupNum(t[k]))}" oninput="fmtNumField(this);updTax('${k}',unfmtNum(this.value))" style="${inSty}" placeholder="${ph||''}">`;
+  const fld=(lab,k,id)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label>${inp(k,'',id)}</div>`;
+  const profitFld=`<div class="field" style="margin-bottom:8px"><label>Net business profit ($)</label><input id="tax_profit" type="text" inputmode="decimal" value="${esc(groupNum(t.profit))}" oninput="fmtNumField(this);updProfit(this.value)" style="${inSty}"></div>`;
+  const estateFld=`<div class="field" style="margin-bottom:8px"><label>Taxable estate ($)</label><input id="tax_estate" type="text" inputmode="decimal" value="${esc(groupNum(t.estate))}" oninput="fmtNumField(this);updEstate(this.value)" style="${inSty}"></div>`;
+  const estateHint=`<div class="muted" id="estateHint" style="font-size:12px;margin:-4px 0 8px">${t.estateAuto?('Auto-synced from your assets ('+m$(estateFromAssets().net)+') — matches the net estate on Tax Considerations.'):'<span style="color:#c89a2d">Manual override.</span> <a href="#" onclick="event.preventDefault();resyncEstate()" style="color:var(--indigo)">↻ Use asset total</a>'}</div>`;
+  const exemptionFld=`<div class="field" style="margin-bottom:8px"><label>Exemption / person ($)</label><input id="tax_exemption" type="text" inputmode="decimal" value="${esc(groupNum(t.exemption))}" oninput="fmtNumField(this);updExemption(this.value)" style="${inSty}"></div>`;
+  const exemptionHint=`<div class="muted" id="exemptionHint" style="font-size:12px;margin:-4px 0 8px">${t.exemptionAuto?('Auto-set to the '+esc(t.year)+' federal exemption ('+m$((curY()&&curY().exemption)||0)+'/person) — same figure Tax Considerations uses.'):'<span style="color:#c89a2d">Manual override.</span> <a href="#" onclick="event.preventDefault();resyncExemption()" style="color:var(--indigo)">↻ Use current-year</a>'}</div>`;
   const chk=(lab,k)=>`<label class="field chk" style="margin-bottom:8px"><input type="checkbox" ${t[k]?'checked':''} onchange="updTax('${k}',this.checked)" style="width:auto"> ${lab}</label>`;
   const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:17px':''}">—</span></div>`;
   const card=(title,body)=>`<div class="card pad"><h3 style="font-size:16px;margin-bottom:10px;color:var(--indigo-ink)">${title}</h3>${body}</div>`;
@@ -1580,20 +1779,21 @@ function renderTaxEstimator(){
     </div></div>
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
       <div class="grid g3">
-        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Est. annual income tax</div><div id="r_total_annual" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12.5px">ordinary + investment + SE − QBI</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Est. annual income tax</div><div id="r_total_annual" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12.5px"><b>per year, during life</b> — not a death-time tax (ordinary + investment + SE − QBI − retirement)</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate tax now (at death)</div><div id="r_total_estate" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12.5px">federal; state flagged separately</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:27px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12.5px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
       </div>
       <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts only ILIT, FLP (~30% discount) and QPRT removals — illustrative, attorney/CPA review.</div>
     </div>
     <div class="grid g2">
-      ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}`)}
-      ${card('Estate tax', `<div class="form-grid">${fld('Taxable estate ($)','estate')}${fld('Exemption / person ($)','exemption')}</div>${chk('Married — use 2× exemption (portability)','dual')}${res('Federal estate tax','r_est_tax',1)}${res('State estate','r_est_ca')}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Other long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Real-estate gain (from properties)','r_cg_re')}${res('Total long-term gain','r_cg_lt')}${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}<div class="legal-foot">Real-estate gain = Σ(value − cost basis) for properties with a basis entered (add it on each property under Real Estate). Full gain — no primary-residence exclusion applied. Confirm with your CPA.</div>`)}
+      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('Federal estate tax','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}<div class="legal-foot" id="r_est_note"></div>`)}
       ${card('Life-insurance proceeds', `${fld('Death benefit ($)','deathBenefit')}${chk('Held in an ILIT (outside your estate)','inILIT')}${res('Income tax','r_ins_inc')}${res('Estate-tax impact','r_ins_est',1)}`)}
-      ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${fld('Net business profit ($)','profit')}${fld('S-corp reasonable salary ($)','salary')}</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
-      ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
+      ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${profitFld}${fld('S-corp reasonable salary ($)','salary')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Net profit also fills Qualified business income & Self-employed net comp below (each still editable).</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
+      ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi','tax_qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
-      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp')}</div>${res('401(k) elective max','r_ret_401')}${res('IRA max','r_ret_ira')}${res('SIMPLE max','r_ret_simple')}${res('SEP / solo-401k max','r_ret_sep')}<div class="legal-foot">Limits shown for ${esc(t.year)} (incl. age-50 catch-up). SEP ≈ 25% of comp (≈20% of net SE); confirm with your CPA.</div>`)}
+      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp','tax_seComp')}</div>${fld('Your pre-tax contribution this year ($)','retContrib')}${res('401(k) elective max','r_ret_401')}${res('IRA max','r_ret_ira')}${res('SIMPLE max','r_ret_simple')}${res('SEP / solo-401k max','r_ret_sep')}${res('Income tax saved by your contribution','r_ret_saved',1)}<div class="legal-foot" id="r_ret_note">Limits shown for ${esc(t.year)} (incl. age-50 catch-up). SEP ≈ 25% of comp (≈20% of net SE); confirm with your CPA.</div>`)}
+      ${card('Real estate — property tax &amp; step-up', `${fld('Property tax rate (%)','propTaxRate')}${res('Annual property tax (current est.)','r_pt_now',1)}${res('If reassessed to market value','r_pt_reassessed')}${res('Potential reassessment increase / yr','r_pt_increase',1)}${res('Real-estate unrealized gain','r_su_gain')}${res('Step-up at death: cap-gains tax avoided','r_su_avoided',1)}<div class="legal-foot">Property tax ≈ assessed value × rate (assessed ← each property's entered assessed value, else its cost basis). On a transfer or death a property can be <b>reassessed to market value</b> (CA Prop 13/19 — parent-child and other exclusions may apply), raising the annual tax. The <b>step-up</b> resets basis to date-of-death value, erasing the unrealized capital gain — but gifting assets out during life can forfeit it. Confirm with your CPA &amp; attorney.</div>`)}
     </div>`;
   computeTax();
 }
@@ -1601,17 +1801,32 @@ function computeTax(){
   const t=S.tax, f=t.filing||'MFJ', Y=curY(), fedBr=Y.fed[f], ltBr=Y.ltcg[f];
   const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
   const note=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
-  const ord=+t.ordinary||0, lt=+t.ltgain||0, st=+t.stgain||0, qd=+t.qdiv||0, od=+t.odiv||0;
+  const ord=+t.ordinary||0;
+  const reGain=(S.properties||[]).reduce((a,p)=>{ const v=+(p.value||0),b=+(p.basis||0); return a+(b>0?Math.max(0,v-b):0); },0);
+  const lt=(+t.ltgain||0)+reGain, st=+t.stgain||0, qd=+t.qdiv||0, od=+t.odiv||0;
   // cap gains & dividends
   const fedLT=ltcgStack(ord, lt+qd, ltBr);
   const fedOrdAddl=progTax(ord+st+od,fedBr)-progTax(ord,fedBr);
   const fedCG=fedLT+fedOrdAddl;
   const stCG=stateTax(ord+lt+st+qd+od)-stateTax(ord);
   const invest=lt+st+qd+od, magi=ord+invest, niitBase=Math.max(0,Math.min(invest,magi-TAXC.niit[f])), niit=niitBase*0.038;
+  set('r_cg_re',m$(reGain)); set('r_cg_lt',m$(lt));
   set('r_cg_fed',m$(fedCG)); set('r_cg_ca',m$(stCG)); set('r_cg_niit',m$(niit)); set('r_cg_tot',m$(fedCG+stCG+niit));
+  // real estate: step-up-in-basis benefit (cap-gains tax the step-up erases) + property tax & reassessment
+  const ltNoRE=+t.ltgain||0;
+  const fedStepUp=fedLT-ltcgStack(ord, ltNoRE+qd, ltBr);                          // federal LTCG attributable to the RE unrealized gain
+  const stStepUp=stCG-(stateTax(ord+ltNoRE+st+qd+od)-stateTax(ord));             // state portion attributable to the RE gain
+  const stepUpAvoided=Math.max(0,fedStepUp+stStepUp);
+  set('r_su_gain',m$(reGain)); set('r_su_avoided',m$(stepUpAvoided));
+  const ptr=Math.max(0,+t.propTaxRate||0)/100;
+  let assessedSum=0, marketSum=0;
+  (S.properties||[]).forEach(p=>{ const v=+(p.value||0), a=(+(p.assessed||0))||(+(p.basis||0))||v; assessedSum+=a; marketSum+=v; });
+  const propTaxNow=assessedSum*ptr, propTaxReassessed=marketSum*ptr, reassessInc=Math.max(0,propTaxReassessed-propTaxNow);
+  set('r_pt_now',m$(propTaxNow)); set('r_pt_reassessed',m$(propTaxReassessed)); set('r_pt_increase',m$(reassessInc));
   // estate
   const exTot=(+t.exemption||0)*(t.dual?2:1), taxable=Math.max(0,(+t.estate||0)-exTot), estTax=taxable*TAXC.estRate;
   set('r_est_tax',m$(estTax)); set('r_est_ca', STATE_ESTATE_TAX.includes(t.state)?('⚑ '+t.state+' has a state estate/inheritance tax — CPA review'):'$0 (no state estate tax)');
+  set('r_est_net', m$(Math.max(0,(+t.estate||0)-estTax)));   // estate value remaining after federal estate tax
   note('r_est_note', taxable>0?('Taxable estate above exemption: '+m$(taxable)+' × 40%.'):('Estate is at or below the '+m$(exTot)+' exemption — no federal estate tax at current law.'));
   // life insurance
   set('r_ins_inc','$0 (generally income-tax-free)');
@@ -1632,11 +1847,18 @@ function computeTax(){
   set('r_drd_pct',Math.round(pct*100)+'%'); set('r_drd_ded',m$(drded)); set('r_drd_tax',m$(drtax));
   // retirement
   const age=+t.age||0, comp=+t.seComp||0, R=Y.ret;
-  set('r_ret_401',m$(R.k401+(age>=50?R.k401c:0))); set('r_ret_ira',m$(R.ira+(age>=50?R.irac:0)));
+  const k401max=R.k401+(age>=50?R.k401c:0);
+  set('r_ret_401',m$(k401max)); set('r_ret_ira',m$(R.ira+(age>=50?R.irac:0)));
   set('r_ret_simple',m$(R.simple+(age>=50?R.simplec:0))); set('r_ret_sep',m$(Math.min(comp*0.25,R.sepMax)));
+  const retContrib=+t.retContrib||0, ordLess=Math.max(0,ord-retContrib);
+  const retSaved=retContrib>0?((progTax(ord,fedBr)-progTax(ordLess,fedBr))+(stateTax(ord)-stateTax(ordLess))):0;
+  set('r_ret_saved', retContrib>0?m$(retSaved):'$0');
+  note('r_ret_note', retContrib>k401max
+    ? ('⚑ Entry exceeds the 401(k) elective max ('+m$(k401max)+') — only amounts within a plan limit reduce taxable income. Tax saved shown assumes the full amount is pre-tax; confirm eligible limits with your CPA.')
+    : ('Pre-tax contributions reduce taxable income — saving ≈ your marginal rate. Limits shown for '+t.year+' (incl. age-50 catch-up); SEP ≈ 25% of comp. Confirm with your CPA.'));
   // ---- Summary: single annual total + estate before/after structures ----
   const ordTax=progTax(ord,fedBr)+stateTax(ord);
-  const annual=ordTax + fedCG+stCG+niit + llcSE - qsaved;
+  const annual=ordTax + fedCG+stCG+niit + llcSE - qsaved - retSaved;
   set('r_total_annual', m$(annual));
   set('r_total_estate', m$(estTax));
   const flpVal=(S.properties||[]).filter(p=>/rental|commercial|vacation/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
@@ -1654,13 +1876,14 @@ function buildTaxSummaryMD(){
   s+=`- Estimated annual income tax: **${g('r_total_annual')}**\n`;
   s+=`- Estate tax now (at death): **${g('r_total_estate')}**\n`;
   s+=`- Estate tax with added structures: **${g('r_total_after')}** — ${g('r_total_saved')}\n\n`;
-  s+='## Capital gains & dividends\n'+`- Federal ${g('r_cg_fed')} · State ${g('r_cg_ca')} · NIIT ${g('r_cg_niit')} · **Total ${g('r_cg_tot')}**\n\n`;
+  s+='## Capital gains & dividends\n'+`- Real-estate gain (from properties) ${g('r_cg_re')} · Total long-term gain ${g('r_cg_lt')}\n`+`- Federal ${g('r_cg_fed')} · State ${g('r_cg_ca')} · NIIT ${g('r_cg_niit')} · **Total ${g('r_cg_tot')}**\n\n`;
+  s+='## Real estate — property tax & step-up\n'+`- Annual property tax (current) ${g('r_pt_now')} · if reassessed to market ${g('r_pt_reassessed')} · potential increase/yr ${g('r_pt_increase')}\n`+`- Real-estate unrealized gain ${g('r_su_gain')} · step-up cap-gains tax avoided at death ${g('r_su_avoided')}\n\n`;
   s+='## Estate\n'+`- Federal estate tax ${g('r_est_tax')} · ${g('r_est_ca')}\n\n`;
   s+='## Life insurance\n'+`- Income tax ${g('r_ins_inc')} · Estate impact ${g('r_ins_est')}\n\n`;
   s+='## LLC vs S-corp & SE tax\n'+`- LLC self-employment tax ${g('r_llc_se')} · S-corp payroll ${g('r_sc_pay')} · **Est. savings ${g('r_sc_save')}**\n\n`;
   s+='## Business income — QBI (§199A)\n'+`- 20% deduction ${g('r_qbi_ded')} · federal tax saved ${g('r_qbi_saved')}\n\n`;
   s+='## Corporate DRD\n'+`- ${g('r_drd_pct')} deductible ${g('r_drd_ded')} · taxable @21% ${g('r_drd_tax')}\n\n`;
-  s+='## Retirement contribution limits\n'+`- 401(k) ${g('r_ret_401')} · IRA ${g('r_ret_ira')} · SIMPLE ${g('r_ret_simple')} · SEP/solo-401k ${g('r_ret_sep')}\n\n`;
+  s+='## Retirement contribution limits\n'+`- 401(k) ${g('r_ret_401')} · IRA ${g('r_ret_ira')} · SIMPLE ${g('r_ret_simple')} · SEP/solo-401k ${g('r_ret_sep')}\n`+`- Income tax saved by your contribution: ${g('r_ret_saved')}\n\n`;
   if((S.customStructures||[]).length){ s+='## Structures considered\n'; (S.customStructures||[]).forEach(cs=>{ const x=structByKey(cs.k); if(x){ const a=structAvail(x,t.state); s+=`- **${x.name}** (${x.full}) — ${a.lvl==='available'?'available':a.lvl==='na'?'not typical in '+t.state:'verify'} — ${structImpact(x)}\n`; } }); s+='\n'; }
   s+='---\n_Estimates ignore AMT, deductions/credits, most phase-outs, and special rules. Confirm with your CPA & attorney._\n';
   return s;
