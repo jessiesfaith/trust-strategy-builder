@@ -344,28 +344,33 @@
   </section>
 
   <!-- STRATEGY SNAPSHOT -->
-  <section class="block" id="snapshot">
-    <div class="section-head">
+  <section class="block collapsed" id="snapshot">
+    <div class="section-head collapsible" onclick="toggleSection('snapshot')" role="button" tabindex="0" aria-expanded="false" aria-controls="snapshotBody" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleSection('snapshot')}">
       <span class="eyebrow">Planning signals</span>
       <h2>Strategy Snapshot</h2>
       <span class="muted" style="font-size:14px">Possible items to discuss — not recommendations.</span>
+      <span class="muted collapse-hint" style="font-size:14px">Click to expand</span>
+      <span class="collapse-chev">▶</span>
     </div>
-    <div class="grid g3" id="snapshotGrid"><!-- rendered --></div>
-    <div class="legal-foot">Badges flag <em>possible</em> review items based on your inputs. Nothing here is a final or recommended structure.</div>
+    <div class="collapse-body" id="snapshotBody">
+      <div class="grid g3" id="snapshotGrid"><!-- rendered --></div>
+      <div class="legal-foot">Badges flag <em>possible</em> review items based on your inputs. Nothing here is a final or recommended structure.</div>
+    </div>
   </section>
 
   <!-- ASSET SUMMARY -->
-  <section class="block" id="assets">
-    <div class="section-head">
+  <section class="block collapsed" id="assets">
+    <div class="section-head collapsible" onclick="toggleSection('assets')" role="button" tabindex="0" aria-expanded="false" aria-controls="assetGrid" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleSection('assets')}">
       <span class="eyebrow">Inventory</span>
       <h2>Asset Summary</h2>
       <div class="btn-row" style="margin-left:auto">
-        <button class="btn-soft btn-xs" onclick="openEntityForm('properties')">+ Add Property</button>
-        <button class="btn-soft btn-xs" onclick="openEntityForm('bankAccounts')">+ Add Cash/Bank</button>
-        <button class="btn-soft btn-xs" onclick="openEntityForm('brokerageAccounts')">+ Add Investment</button>
+        <button class="btn-soft btn-xs" onclick="event.stopPropagation();openEntityForm('properties')">+ Add Property</button>
+        <button class="btn-soft btn-xs" onclick="event.stopPropagation();openEntityForm('bankAccounts')">+ Add Cash/Bank</button>
+        <button class="btn-soft btn-xs" onclick="event.stopPropagation();openEntityForm('brokerageAccounts')">+ Add Investment</button>
       </div>
+      <span class="collapse-chev" style="margin-left:10px">▶</span>
     </div>
-    <div class="grid g3" id="assetGrid"><!-- rendered --></div>
+    <div class="grid g3 collapse-body" id="assetGrid"><!-- rendered --></div>
   </section>
 
   <!-- MIND MAP -->
@@ -1461,6 +1466,16 @@ function renderMemo(){
 }
 
 /* ---------- Tax considerations ---------- */
+/* Collapsible numbered subsections (1 open by default; 2 & 3 collapsed). State persists across re-renders. */
+let tcOpen={tc1:true,tc2:false,tc3:false};
+function toggleTC(id){
+  if(!(id in tcOpen)) return;
+  tcOpen[id]=!tcOpen[id];
+  const sec=document.getElementById(id); if(!sec) return;
+  sec.classList.toggle('collapsed',!tcOpen[id]);
+  const head=sec.querySelector(':scope > .collapse-head');
+  if(head){ head.setAttribute('aria-expanded', tcOpen[id]?'true':'false'); const h=head.querySelector('.collapse-hint'); if(h) h.textContent=tcOpen[id]?'Click to collapse':'Click to expand'; }
+}
 /* Single source of truth for the asset-based estate — used by BOTH the Tax Estimator and Tax Considerations
    so the two screens never drift apart. */
 function estateFromAssets(){
@@ -1496,11 +1511,16 @@ function renderTax(){
     ['CLAT + NFP / Private Foundation','Charitable deduction plus estate reduction; strongest in low-interest-rate environments.',['charity','estate','income']]
   ];
 
-  document.getElementById('taxConsider').innerHTML = `
-    <p class="lead">The real question isn't "minimize taxes" — it's <b>which tax</b>: estate tax, capital-gains tax, or income tax. The direction that lowers one can raise another. Use this to frame the conversation with your CPA and attorney; it is not tax advice or a recommendation.</p>
-
-    <h3 style="font-size:16px;margin:14px 0 8px;color:var(--indigo-ink)">1 · The fork that drives everything: estate size vs. the federal exemption</h3>
-    <div class="grid g2" style="align-items:start">
+  const tc=(id,title,body)=>{ const open=tcOpen[id]; return `
+    <div id="${id}" class="${open?'':'collapsed'}" style="margin-top:14px">
+      <div class="collapse-head collapsible" onclick="toggleTC('${id}')" role="button" tabindex="0" aria-expanded="${open?'true':'false'}" aria-controls="${id}-b" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleTC('${id}')}" style="display:flex;align-items:center;gap:10px;padding:6px 0">
+        <h3 style="font-size:16px;margin:0;color:var(--indigo-ink)">${title}</h3>
+        <span class="muted collapse-hint" style="font-size:13px;margin-left:auto">${open?'Click to collapse':'Click to expand'}</span>
+        <span class="collapse-chev">▶</span>
+      </div>
+      <div class="collapse-body" id="${id}-b" style="padding-top:4px">${body}</div>
+    </div>`; };
+  const body1=`<div class="grid g2" style="align-items:start">
       <div class="card pad" style="background:var(--panel2)">
         <div class="kv"><span class="k">Real estate (entered)</span><span class="v">$${num(grossRE)}</span></div>
         <div class="kv"><span class="k">Cash / bank</span><span class="v">$${num(cash)}</span></div>
@@ -1517,10 +1537,8 @@ function renderTax(){
           : `Approaching or above the exemption is where the advanced gifting / irrevocable structures (IDGT, FLP, SLAT, ILIT, CLAT) earn their keep — moving assets and <b>future appreciation</b> out of the taxable estate.`}</div>
         <div class="legal-foot">Federal exemption ~${m$(perPerson)}/person${dual?(' (≈'+m$(exempt)+' with spousal portability)'):''} for ${esc(t.year)}${t.exemptionAuto?'':' — manually overridden'} — changes with law. Confirm the current figure with your CPA.</div>
       </div>
-    </div>
-
-    <h3 style="font-size:16px;margin:18px 0 8px;color:var(--indigo-ink)">2 · The central tradeoff: step-up vs. gifting out</h3>
-    <div class="grid g2">
+    </div>`;
+  const body2=`<div class="grid g2">
       <div class="card pad"><div class="badges" style="margin-bottom:6px">${b('stepup')}</div>
         <div style="font-weight:680;font-size:15px">Keep assets in your estate</div>
         <div class="muted" style="font-size:14px;margin:4px 0">Revocable trust + pour-over will.</div>
@@ -1531,11 +1549,13 @@ function renderTax(){
         <div class="muted" style="font-size:14px;margin:4px 0">IDGT, FLP, living irrevocable trust.</div>
         <div style="font-size:14px"><b style="color:var(--good)">Wins:</b> removes the asset + future growth from a taxable estate.<br><b style="color:var(--bad)">Loses:</b> generally carryover basis — heirs keep your low basis, more capital-gains tax on sale.</div>
       </div>
-    </div>
-
-    <h3 style="font-size:16px;margin:18px 0 8px;color:var(--indigo-ink)">3 · Which structure pulls which tax lever</h3>
-    ${structures.map(s=>`<div class="ent"><div class="ent-top"><div style="min-width:0"><h4>${esc(s[0])}</h4><div class="ent-meta">${esc(s[1])}</div></div><div class="badges">${s[2].map(b).join('')}</div></div></div>`).join('')}
-
+    </div>`;
+  const body3=structures.map(s=>`<div class="ent"><div class="ent-top"><div style="min-width:0"><h4>${esc(s[0])}</h4><div class="ent-meta">${esc(s[1])}</div></div><div class="badges">${s[2].map(b).join('')}</div></div></div>`).join('');
+  document.getElementById('taxConsider').innerHTML = `
+    <p class="lead">The real question isn't "minimize taxes" — it's <b>which tax</b>: estate tax, capital-gains tax, or income tax. The direction that lowers one can raise another. Use this to frame the conversation with your CPA and attorney; it is not tax advice or a recommendation.</p>
+    ${tc('tc1','1 · The fork that drives everything: estate size vs. the federal exemption',body1)}
+    ${tc('tc2','2 · The central tradeoff: step-up vs. gifting out',body2)}
+    ${tc('tc3','3 · Which structure pulls which tax lever',body3)}
     <div class="disclaimer" style="margin-top:14px"><span>⚠️</span><div><b>Not tax advice and not a recommendation.</b> These are general concepts. The tax-minimizing direction depends on your estate size, state, basis, goals, and the law in effect — determined with your CPA and estate attorney. Estate/gift-tax structures are largely irrevocable; confirm before acting.</div></div>`;
 }
 

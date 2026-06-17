@@ -4,6 +4,17 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Collapse Strategy Snapshot & Asset Summary; collapsible Tax-Considerations subsections
+
+- **Strategy Snapshot and Asset Summary are now collapsible, collapsed by default** (same idiom as the
+  other sections). The Asset Summary's "+ Add" buttons use `event.stopPropagation()` so they no longer
+  trigger the section toggle.
+- **Tax Considerations subsections 1 / 2 / 3 are now individually collapsible.** Section 1 ("estate
+  size vs. exemption") stays expanded by default with a collapse option; sections 2 ("step-up vs.
+  gifting out") and 3 ("which structure pulls which lever") start collapsed. State persists across
+  re-renders (`tcOpen` + `toggleTC()`), so editing an estate/exemption figure no longer snaps an
+  opened subsection shut.
+
 ## 2026-06-17 — Property tax, reassessment increase, step-up benefit + negative-input guards
 
 - **Real estate — property tax & step-up (new Tax Estimator card).** Added a per-property "Assessed
