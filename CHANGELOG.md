@@ -4,6 +4,30 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Tax Estimator: card swap, QBI deductible total, editable retirement
+
+- **Swapped the LLC-vs-S-corp and Life-insurance cards** (LLC now first/left, Life-insurance second/right).
+- **QBI card:** the deductible amount is now the final, emphasized line — "Total deductible from income
+  (20% of QBI)" — with "Est. federal tax saved" above it, so it's clear what's in the total.
+- **Retirement contributions are now editable.** Replaced the read-only limit lines with four editable
+  per-account contribution inputs (401(k) / IRA / SIMPLE / SEP-solo-401k), each labeled with the year's
+  max for reference, defaulting blank. "Total pre-tax contributions" + "Income tax saved" compute from
+  what's entered (progressive fed + CA delta); over-limit flags and a coordination/eligibility caveat in
+  the note. (`S.tax.ret401/retIra/retSimple/retSep`; the old single "pre-tax contribution" field removed.)
+
+## 2026-06-17 — Grandchildren milestone-funding reserve + negative-sign consistency
+
+- **New "Grandchildren milestone funding" card** on the Distribution tab. Toggle on and enter: number of
+  grandchildren, per-child life-insurance death benefit + **annual premium × premium-years**, college-grad
+  gift, age-25 gift, first-home down payment, and IRA (annual × years). The estate reserve = **premiums +
+  cash milestones + IRAs** (× children) — i.e. the cash the estate sets aside to *pay the premiums* and the
+  disbursements; the death benefit is shown for reference (what the premiums buy). The reserve flows into
+  "Less reserves" so it's deducted before distribution. Includes a "structure to discuss" note recommending
+  an ILIT on the grantor's life (survivorship if married) vs grantor-owned (in estate) vs grandkid-owned.
+  All inputs floored at 0; IRA earned-income caveat noted. State: `S.gk` + `updGk()`.
+- **Estate tax card: deduction lines now all show a minus sign** — "Federal estate tax", "Less
+  capital-gains tax", and "Less real-estate capital-gains tax" all render as "– $X" (consistent), $0 plain.
+
 ## 2026-06-17 — Headline: total tax at death + estate remaining for heirs
 
 - **The headline "Estate tax now (at death)" became "Total tax at death"** and now adds capital-gains

@@ -3,18 +3,25 @@
 Generic workflow rules live in `~/.claude/CLAUDE.md` (they apply to every repo). This file holds
 **repo-specific facts only**. Source of truth = this repo, not the chat transcript.
 
-## Repo facts (created 2026-06-10)
-- **What:** Single-page static estate/trust/entity **planning & attorney-prep** tool. Organizes
-  people/roles, real estate (residence + rentals), cash/bank, brokerage/retirement, LLC options,
-  sub-trusts, and executor/trustee protection. Produces an attorney-ready planning memo, intake
-  previews, checklists, and a dynamic Mermaid mind map + ownership flowchart. **Planning/organization
-  only — not legal/tax/financial advice; creates no legal documents.** All client-side; state in
-  `localStorage`; no accounts/backend.
+## Repo facts (created 2026-06-10; major expansion 2026-06-17 — see HANDOFF.md)
+- **What:** Single-page static estate/trust/entity **planning & attorney-prep** tool. Tabs:
+  **Overview** (people/roles, real estate, cash/bank, brokerage/retirement, LLCs, sub-trusts, Estate
+  Map diagram, planning memo, executor/trustee protection — all collapsible), **Tax Estimator**
+  (federal + state income/cap-gains/estate/SE/QBI/DRD/retirement + real-estate property tax & cap
+  gains; a 4-metric headline incl. "Total tax at death" and "Estate remaining for heirs"; Tax
+  Considerations framework), **Distribution** (beneficiary % allocation + timing, milestone insurance
+  distributions, reserves incl. a **grandchildren milestone-funding** reserve → distributable), and
+  **Strategy** (toggle ILIT/FLP/QPRT/IDGT → No-planning vs Your-setup comparison + a charitable
+  break-even calculator). Per-trust tabs + user-created custom trusts. **Planning/organization only —
+  not legal/tax/financial advice; creates no legal documents.** Client-side; state in `localStorage`;
+  no accounts/backend. A cosmetic client-side login gate prompts every visit (NOT real security).
 - **Package manager / framework:** none. Vanilla HTML/CSS/JS, no `package.json`, no build step.
   Mermaid.js loaded from CDN (`cdn.jsdelivr.net/npm/mermaid@10`).
 - **Key file:** `index.html` (the entire tool: inlined CSS + JS). Data-driven forms via the `ENTITY`
-  map; flag/recommendation logic in `deriveFlags()` / `propertyFlags()`; diagrams in
-  `buildMindmap()` / `buildFlow()`.
+  map; flags in `deriveFlags()`/`propertyFlags()`; diagrams in `buildMindmap()`/`buildFlow()`; tax
+  engine in `computeTax()` + `renderTaxEstimator()`; cross-tax single source of truth
+  `netAfterAllTaxes()` (shared by the Tax Estimator card + Distribution base); tabs via `switchTab()`.
+  **See HANDOFF.md for the full architecture map.**
 - **Dev (localhost):** `python -m http.server 8000` -> http://localhost:8000 (run from repo root).
 - **Build / test / lint / typecheck:** none configured. Verification = manual + URL check.
 - **Git:** branch `main`. Remote `origin` = **github.com/jessiesfaith/trust-strategy-builder**

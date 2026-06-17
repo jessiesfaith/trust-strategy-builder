@@ -35,12 +35,6 @@
   small{color:var(--muted)}
   .muted{color:var(--muted)}
 
-  /* Preview banner */
-  .preview-banner{
-    background:linear-gradient(90deg,#00c805 0%,#006d04 55%,#c89a2d 100%); color:#001a00; text-align:center;
-    font-size:14.5px; padding:8px 14px; position:sticky; top:0; z-index:40;
-  }
-  .preview-banner strong{font-weight:700}
 
   /* Header */
   header.app{
@@ -1588,7 +1582,20 @@ function ensureDist(){
   if(r.execPct===undefined) r.execPct='';
   if(r.propMgmt===undefined) r.propMgmt='';
   if(r.taxDebt===undefined) r.taxDebt='';
+  if(!S.gk||typeof S.gk!=='object') S.gk={};
+  const g=S.gk;
+  if(g.on===undefined) g.on=false;
+  if(g.count===undefined) g.count='';
+  if(g.insFace===undefined) g.insFace='250000';
+  if(g.college===undefined) g.college='10000';
+  if(g.age25===undefined) g.age25='10000';
+  if(g.home===undefined) g.home='200000';
+  if(g.iraAnnual===undefined) g.iraAnnual='7000';
+  if(g.iraYears===undefined) g.iraYears='18';
+  if(g.premAnnual===undefined) g.premAnnual='';     // annual insurance premium / child (enter from a carrier illustration)
+  if(g.premYears===undefined) g.premYears='10';
 }
+function updGk(k,v){ ensureDist(); S.gk[k]=v; save(); if(k==='on') renderDistribution(); else computeDistribution(); }
 /* Estate value after federal estate tax — same inputs as the Tax Estimator, so the two tabs agree */
 /* Beneficiary CRUD */
 function addBene(){ ensureDist(); S.beneficiaries.push({id:uid(),name:'',relation:'Child',pct:'',method:'Outright at death',stagger:'25, 30, 35',milestone:'',notes:''}); save(); renderDistribution(); }
@@ -1649,13 +1656,15 @@ function renderDistribution(){
   const benes=S.beneficiaries||[], ins=S.insDist||[], r=S.reserves;
   const card=(title,body,sub)=>`<div class="card pad" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px"><h3 style="font-size:16px;color:var(--indigo-ink)">${title}</h3>${sub||''}</div>${body}</div>`;
   const resFld=(lab,k,ph)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label><input type="text" inputmode="decimal" value="${k==='execPct'?esc(r[k]||''):esc(groupNum(r[k]))}" oninput="${k==='execPct'?`updReserve('${k}',this.value)`:`fmtNumField(this);updReserve('${k}',unfmtNum(this.value))`}" style="${DIST_INSTY}" placeholder="${ph||''}"></div>`;
+  const g=S.gk;
+  const gf=(lab,k,comma)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label><input type="text" inputmode="${comma?'decimal':'numeric'}" value="${comma?esc(groupNum(g[k])):esc(g[k]||'')}" oninput="${comma?`fmtNumField(this);updGk('${k}',unfmtNum(this.value))`:`updGk('${k}',this.value)`}" style="${DIST_INSTY}"></div>`;
   const el=document.getElementById('distBody'); if(!el) return;
   el.innerHTML=`
     <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Figures flow from your Tax Estimator inputs and are illustrative. Actual distributions depend on your trust/will terms; confirm with your attorney &amp; CPA.</div></div>
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
       <div class="grid g3">
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Net after all taxes</div><div id="r_dist_aftertax" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">estate − estate tax − cap gains</div></div>
-        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Less reserves</div><div id="r_dist_reserves" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">executor + property mgmt + taxes/debts</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Less reserves</div><div id="r_dist_reserves" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">executor + property mgmt + taxes/debts + grandkids funding</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Distributable to beneficiaries</div><div id="r_dist_distributable" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">split by the allocations below</div></div>
       </div>
       <div class="legal-foot" id="r_dist_taxnote"></div>
@@ -1675,6 +1684,29 @@ function renderDistribution(){
       <div class="kv"><span class="k" style="font-weight:700">Total reserves</span><span class="v" id="r_res_total" style="font-size:16px">—</span></div>
       <div class="legal-foot">Executor/trustee compensation varies by state and the will/trust terms (often a small % of the estate) — confirm with your attorney. Property-management and tax/debt reserves are planning placeholders.</div>
     `)}
+    ${card('Grandchildren milestone funding', `
+      <label class="field" style="margin-bottom:10px;display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" ${g.on?'checked':''} onchange="updGk('on',this.checked)" style="width:auto"> <b>Set aside a grandchildren milestone-funding reserve from the estate</b></label>
+      ${g.on?`<div class="form-grid">
+        ${gf('Number of grandchildren','count',false)}
+        ${gf('Life-insurance death benefit / child ($)','insFace',true)}
+        ${gf('Annual insurance premium / child ($)','premAnnual',true)}
+        ${gf('Premium-paying years','premYears',false)}
+        ${gf('College-graduation gift / child ($)','college',true)}
+        ${gf('Gift at age 25 / child ($)','age25',true)}
+        ${gf('First-home down payment / child ($)','home',true)}
+        ${gf('IRA contribution / yr / child ($)','iraAnnual',true)}
+        ${gf('IRA funding years','iraYears',false)}
+      </div>
+      <div class="kv"><span class="k">Insurance premiums / child (annual × years)</span><span class="v" id="r_gk_prem">—</span></div>
+      <div class="kv"><span class="k">Cash milestones / child (college + age 25 + home)</span><span class="v" id="r_gk_cash">—</span></div>
+      <div class="kv"><span class="k">IRA funding / child (annual × years)</span><span class="v" id="r_gk_ira">—</span></div>
+      <div class="kv"><span class="k">Per-child total set aside</span><span class="v" id="r_gk_perkid">—</span></div>
+      <div class="kv"><span class="k">Death benefit those premiums buy — all children</span><span class="v" id="r_gk_insface">—</span></div>
+      <div class="kv"><span class="k" style="font-weight:700">Reserved from the estate (premiums + disbursements × children)</span><span class="v" id="r_gk_reserve" style="font-size:16px">—</span></div>
+      <div class="legal-foot" id="r_gk_note"></div>
+      <div class="legal-foot"><b>Structure to discuss (not advice):</b> for an estate above the exemption, an <b>ILIT</b> owning a policy on the <b>grantor's life</b> keeps the death benefit OUT of the taxable estate — fund premiums with annual-exclusion gifts (Crummey). A <b>survivorship / second-to-die</b> policy is usually cheapest if married. A <b>grantor-OWNED</b> policy is pulled INTO the taxable estate (40% tax). Policies on the <b>grandkids' own lives</b> mainly lock in their insurability / cash value — a different goal. Enter the premium from a carrier illustration; confirm with your attorney, CPA &amp; insurance advisor.</div>`
+      :'<div class="muted" style="font-size:14px">Off — check the box to set aside, from the estate, the insurance premiums plus per-grandchild milestone gifts (college, age 25, first home, IRAs) before distribution. IRA funding assumes the child has earned income.</div>'}
+    `)}
     ${card('Life-insurance distributions by milestone', `
       <div class="btn-row" style="margin-bottom:8px"><button class="btn-primary btn-xs" onclick="addIns()">+ Add distribution</button></div>
       <div class="kv"><span class="k">Death benefit available</span><span class="v" id="r_ins_db">—</span></div>
@@ -1691,11 +1723,25 @@ function computeDistribution(){
   const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
   const N=netAfterAllTaxes(), afterTax=N.net, r=S.reserves;   // estate − estate tax − capital-gains − real-estate cap-gains
   const execPct=Math.min(100,Math.max(0,+unfmtNum(r.execPct)||0)), propMgmt=Math.max(0,+unfmtNum(r.propMgmt)||0), taxDebt=Math.max(0,+unfmtNum(r.taxDebt)||0);
-  const execAmt=afterTax*execPct/100, totalReserves=execAmt+propMgmt+taxDebt;
+  const execAmt=afterTax*execPct/100;
+  // grandchildren milestone funding
+  const g=S.gk; const gkOn=!!g.on, count=Math.max(0,Math.round(+unfmtNum(g.count)||0));
+  const gkCash=Math.max(0,+unfmtNum(g.college)||0)+Math.max(0,+unfmtNum(g.age25)||0)+Math.max(0,+unfmtNum(g.home)||0);
+  const gkIra=Math.max(0,+unfmtNum(g.iraAnnual)||0)*Math.max(0,Math.round(+unfmtNum(g.iraYears)||0));
+  const gkPrem=Math.max(0,+unfmtNum(g.premAnnual)||0)*Math.max(0,Math.round(+unfmtNum(g.premYears)||0));   // total premiums / child the estate funds
+  const gkInsFace=Math.max(0,+unfmtNum(g.insFace)||0);
+  const gkPerKid=gkPrem+gkCash+gkIra;                                                                       // reserve the premiums + disbursements (not the face)
+  const gkReserve=gkOn?gkPerKid*count:0;
+  const totalReserves=execAmt+propMgmt+taxDebt+gkReserve;
   const distributable=Math.max(0,afterTax-totalReserves);
   set('r_dist_aftertax',m$(afterTax)); set('r_dist_reserves',m$(totalReserves)); set('r_dist_distributable',m$(distributable));
-  set('r_dist_taxnote','Net after all taxes = '+m$(N.estate)+' estate − '+m$(N.estTax)+' estate tax − '+m$(N.enteredCapTax)+' capital-gains − '+m$(N.reCapTax)+' real-estate cap-gains.');
+  set('r_dist_taxnote','Net after all taxes = '+m$(N.estate)+' estate − '+m$(N.estTax)+' estate tax − '+m$(N.enteredCapTax)+' capital-gains − '+m$(N.reCapTax)+' real-estate cap-gains.'+(gkReserve>0?(' Less '+m$(gkReserve)+' grandchildren milestone funding (in reserves).'):''));
   set('r_res_exec',m$(execAmt)); set('r_res_total',m$(totalReserves));
+  if(gkOn){
+    set('r_gk_prem',m$(gkPrem)); set('r_gk_cash',m$(gkCash)); set('r_gk_ira',m$(gkIra)); set('r_gk_perkid',m$(gkPerKid));
+    set('r_gk_insface',m$(gkInsFace*count)); set('r_gk_reserve',m$(gkReserve));
+    set('r_gk_note','Per child: premiums '+m$(gkPrem)+' + cash '+m$(gkCash)+' + IRA '+m$(gkIra)+' = '+m$(gkPerKid)+', × '+count+' = '+m$(gkReserve)+' set aside from the estate (to pay the premiums and the milestone disbursements). Those premiums fund a '+m$(gkInsFace*count)+' total death benefit. '+(gkPrem===0?'Enter the annual premium from a carrier illustration. ':'')+'IRA funding requires the child to have earned income.');
+  }
   const benes=S.beneficiaries||[]; let pctTotal=0; benes.forEach(b=>pctTotal+=Math.max(0,+unfmtNum(b.pct)||0));
   benes.forEach(b=>{
     const pct=Math.max(0,+unfmtNum(b.pct)||0), amt=distributable*pct/100;
@@ -1899,7 +1945,7 @@ function seTaxCalc(net){ const base=Math.max(0,net)*0.9235; return Math.min(base
 function ensureTax(){
   S.tax=S.tax||{};
   if(S.tax.year===undefined) S.tax.year='2026';
-  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000,retContrib:'',propTaxRate:1.1};
+  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,profit:300000,salary:120000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000,ret401:'',retIra:'',retSimple:'',retSep:'',propTaxRate:1.1};
   for(const k in d){ if(S.tax[k]===undefined) S.tax[k]=d[k]; }
   if(S.tax.dual===undefined) S.tax.dual=/married/i.test((S.profile&&S.profile.maritalStatus)||'');   // exemption doubling follows marital status (user can still toggle the checkbox)
   if(S.tax.exemptionAuto===undefined) S.tax.exemptionAuto=true;
@@ -1942,6 +1988,8 @@ function renderTaxEstimator(){
   const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:17px':''}">—</span></div>`;
   const card=(title,body)=>`<div class="card pad"><h3 style="font-size:16px;margin-bottom:10px;color:var(--indigo-ink)">${title}</h3>${body}</div>`;
   const selSty='style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"';
+  const RR=curY().ret, ageN=+t.age||0, cuN=ageN>=50;   // retirement contribution limits (incl. age-50 catch-up) for the field labels
+  const max401=RR.k401+(cuN?RR.k401c:0), maxIra=RR.ira+(cuN?RR.irac:0), maxSimple=RR.simple+(cuN?RR.simplec:0), maxSep=Math.round(Math.min((+t.seComp||0)*0.25,RR.sepMax));
   const STATE_OPTS=Array.from(new Set([...Object.keys(STATE_TAX),...NO_TAX_STATES])).sort().concat('Other');
   const optsArr=STATE_OPTS.includes(t.state)?STATE_OPTS:[t.state].concat(STATE_OPTS);
   const stateOpts=optsArr.map(s=>`<option ${t.state===s?'selected':''}>${esc(s)}</option>`).join('');
@@ -1966,11 +2014,19 @@ function renderTaxEstimator(){
     <div class="grid g2">
       ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}<div class="legal-foot">Tax on the gains &amp; dividends entered here. <b>Real-estate capital gains are handled in the Real estate card below</b> (from each property's value − cost basis). Confirm with your CPA.</div>`)}
       ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}${res('Less capital-gains tax (entered)','r_est_lesscg')}${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Net to heirs after all taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
-      ${card('Life-insurance proceeds', `${fld('Death benefit ($)','deathBenefit')}${chk('Held in an ILIT (outside your estate)','inILIT')}${res('Income tax','r_ins_inc')}${res('Estate-tax impact','r_ins_est',1)}`)}
       ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${profitFld}${fld('S-corp reasonable salary ($)','salary')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Net profit also fills Qualified business income & Self-employed net comp below (each still editable).</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
-      ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi','tax_qbi')}${chk('Specified service business (SSTB)','sstb')}${res('20% QBI deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
+      ${card('Life-insurance proceeds', `${fld('Death benefit ($)','deathBenefit')}${chk('Held in an ILIT (outside your estate)','inILIT')}${res('Income tax','r_ins_inc')}${res('Estate-tax impact','r_ins_est',1)}`)}
+      ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi','tax_qbi')}${chk('Specified service business (SSTB)','sstb')}${res('Est. federal tax saved','r_qbi_saved')}${res('Total deductible from income (20% of QBI)','r_qbi_ded',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
-      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp','tax_seComp')}</div>${fld('Your pre-tax contribution this year ($)','retContrib')}${res('401(k) elective max','r_ret_401')}${res('IRA max','r_ret_ira')}${res('SIMPLE max','r_ret_simple')}${res('SEP / solo-401k max','r_ret_sep')}${res('Income tax saved by your contribution','r_ret_saved',1)}<div class="legal-foot" id="r_ret_note">Limits shown for ${esc(t.year)} (incl. age-50 catch-up). SEP ≈ 25% of comp (≈20% of net SE); confirm with your CPA.</div>`)}
+      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp','tax_seComp')}</div>
+        <div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Enter what you plan to contribute to each (the ${esc(t.year)} max is shown for reference). Pre-tax contributions reduce your taxable income.</div>
+        <div class="form-grid">
+          ${fld('401(k) contribution ($) · max '+m$(max401),'ret401')}
+          ${fld('IRA contribution ($) · max '+m$(maxIra),'retIra')}
+          ${fld('SIMPLE IRA contribution ($) · max '+m$(maxSimple),'retSimple')}
+          ${fld('SEP / solo-401(k) ($) · max '+m$(maxSep),'retSep')}
+        </div>
+        ${res('Total pre-tax contributions','r_ret_total')}${res('Income tax saved','r_ret_saved',1)}<div class="legal-foot" id="r_ret_note"></div>`)}
       ${card('Real estate — property tax &amp; capital gains', `${fld('Property tax rate (%)','propTaxRate')}${res('Annual property tax (current est.)','r_pt_now',1)}${res('If reassessed to market value','r_pt_reassessed')}${res('Potential reassessment increase / yr','r_pt_increase',1)}${res('Real-estate unrealized gain (Σ value − basis)','r_su_gain')}${res('Capital-gains tax if sold (no step-up)','r_su_avoided',1)}<div class="legal-foot" id="r_su_note"></div><div class="legal-foot">Real-estate capital gains are managed here (not in the Capital gains card). Gain = Σ(value − cost basis) for properties with a basis entered. Held to death the <b>step-up</b> erases it (<b>$0</b> tax); sold during life or gifted out (carryover basis) the tax shown applies. Property tax ≈ assessed × rate; a transfer/death can trigger <b>reassessment to market</b> (CA Prop 13/19, exclusions may apply). Confirm with your CPA &amp; attorney.</div>`)}
     </div>`;
   computeTax();
@@ -2004,11 +2060,11 @@ function computeTax(){
   // estate
   const exTot=(+t.exemption||0)*(t.dual?2:1), taxable=Math.max(0,(+t.estate||0)-exTot), estTax=taxable*TAXC.estRate;
   set('r_est_taxable', m$(taxable));
-  set('r_est_tax',m$(estTax)); set('r_est_ca', STATE_ESTATE_TAX.includes(t.state)?('⚑ '+t.state+' has a state estate/inheritance tax — CPA review'):'$0 (no state estate tax)');
+  set('r_est_tax', estTax>0?('– '+m$(estTax)):m$(estTax)); set('r_est_ca', STATE_ESTATE_TAX.includes(t.state)?('⚑ '+t.state+' has a state estate/inheritance tax — CPA review'):'$0 (no state estate tax)');
   const afterEstateTax=Math.max(0,(+t.estate||0)-estTax);
   set('r_est_net', m$(afterEstateTax));   // estate value remaining after federal estate tax
   const enteredCapTax=Math.max(0,fedCG+stCG+niit), netHeirs=Math.max(0,afterEstateTax-enteredCapTax-reCapTax);
-  set('r_est_lesscg', '– '+m$(enteredCapTax)); set('r_est_lessre', '– '+m$(reCapTax)); set('r_est_netheirs', m$(netHeirs));
+  set('r_est_lesscg', enteredCapTax>0?('– '+m$(enteredCapTax)):m$(enteredCapTax)); set('r_est_lessre', reCapTax>0?('– '+m$(reCapTax)):m$(reCapTax)); set('r_est_netheirs', m$(netHeirs));
   note('r_est_note', (taxable>0?('Above exemption '+m$(taxable)+' × 40% = '+m$(estTax)+'. '):('At/below the '+m$(exTot)+' exemption — no federal estate tax. '))+'Estate after estate tax = '+m$(+t.estate||0)+' − '+m$(estTax)+' = '+m$(afterEstateTax)+'; net to heirs = '+m$(afterEstateTax)+' − '+m$(enteredCapTax)+' (cap-gains) − '+m$(reCapTax)+' (real-estate cap-gains) = '+m$(netHeirs)+'. Held to death, a step-up can erase the real-estate gain — confirm with your CPA.');
   // life insurance
   set('r_ins_inc','$0 (generally income-tax-free)');
@@ -2027,22 +2083,15 @@ function computeTax(){
   // DRD
   const amt=+t.drdAmt||0, pct=t.drdOwn==='<20'?0.50:(t.drdOwn==='20-80'?0.65:1.00), drded=amt*pct, drtax=(amt-drded)*TAXC.corpRate;
   set('r_drd_pct',Math.round(pct*100)+'%'); set('r_drd_ded',m$(drded)); set('r_drd_tax',m$(drtax));
-  // retirement
-  const age=+t.age||0, comp=+t.seComp||0, R=Y.ret;
-  const k401max=R.k401+(age>=50?R.k401c:0);
-  set('r_ret_401',m$(k401max)); set('r_ret_ira',m$(R.ira+(age>=50?R.irac:0)));
-  set('r_ret_simple',m$(R.simple+(age>=50?R.simplec:0))); set('r_ret_sep',m$(Math.min(comp*0.25,R.sepMax)));
-  const retContrib=+t.retContrib||0, ordLess=Math.max(0,ord-retContrib);
-  const retSaved=retContrib>0?((progTax(ord,fedBr)-progTax(ordLess,fedBr))+(stateTax(ord)-stateTax(ordLess))):0;
-  set('r_ret_saved', retContrib>0?m$(retSaved):'$0');
-  const cu=age>=50, cuTxt=k=>cu?(' + '+m$(k)+' age-50 catch-up'):'';
-  note('r_ret_note', (retContrib>k401max?('⚑ Entry exceeds the 401(k) elective max ('+m$(k401max)+') — only amounts within a plan limit reduce taxable income. '):'')
-    +'These are '+t.year+' contribution LIMITS, not amounts entered'+(cu?' (you are 50+, so catch-ups apply)':'')+': '
-    +'401(k) '+m$(R.k401)+' base'+cuTxt(R.k401c)+' = '+m$(k401max)+'; '
-    +'IRA '+m$(R.ira)+cuTxt(R.irac)+' = '+m$(R.ira+(cu?R.irac:0))+'; '
-    +'SIMPLE '+m$(R.simple)+cuTxt(R.simplec)+' = '+m$(R.simple+(cu?R.simplec:0))+'; '
-    +'SEP/solo-401(k) = 25% × '+m$(comp)+' net comp = '+m$(comp*0.25)+', capped at '+m$(R.sepMax)+' → '+m$(Math.min(comp*0.25,R.sepMax))+'. '
-    +'Pre-tax contributions reduce taxable income (saving ≈ your marginal rate). Confirm eligibility with your CPA.');
+  // retirement — contributions entered per account (default blank); estimate income tax saved on the pre-tax total
+  const age=+t.age||0, comp=+t.seComp||0, R=Y.ret, cu=age>=50;
+  const k401max=R.k401+(cu?R.k401c:0), iraMax=R.ira+(cu?R.irac:0), simpleMax=R.simple+(cu?R.simplec:0), sepMax=Math.min(comp*0.25,R.sepMax);
+  const c401=Math.max(0,+unfmtNum(t.ret401)||0), cIra=Math.max(0,+unfmtNum(t.retIra)||0), cSimple=Math.max(0,+unfmtNum(t.retSimple)||0), cSep=Math.max(0,+unfmtNum(t.retSep)||0);
+  const preTaxRet=c401+cIra+cSimple+cSep, ordLess=Math.max(0,ord-preTaxRet);
+  const retSaved=preTaxRet>0?((progTax(ord,fedBr)-progTax(ordLess,fedBr))+(stateTax(ord)-stateTax(ordLess))):0;
+  set('r_ret_total',m$(preTaxRet)); set('r_ret_saved',m$(retSaved));
+  const over=[]; if(c401>k401max)over.push('401(k) over '+m$(k401max)); if(cIra>iraMax)over.push('IRA over '+m$(iraMax)); if(cSimple>simpleMax)over.push('SIMPLE over '+m$(simpleMax)); if(cSep>Math.round(sepMax))over.push('SEP over '+m$(Math.round(sepMax)));
+  note('r_ret_note', (over.length?('⚑ '+over.join('; ')+'. '):'')+'Income tax saved ≈ the pre-tax total × your marginal rate (federal + CA). You generally can\'t fund all account types at once, and traditional-IRA deductibility/eligibility rules apply — this sums whatever you enter as pre-tax. SEP ≈ 25% of net comp, capped. Confirm with your CPA.');
   // ---- Summary: single annual total + estate before/after structures ----
   const ordTax=progTax(ord,fedBr)+stateTax(ord);
   const investTax=fedCG+stCG+niit;
@@ -2074,7 +2123,7 @@ function buildTaxSummaryMD(){
   s+='## LLC vs S-corp & SE tax\n'+`- LLC self-employment tax ${g('r_llc_se')} · S-corp payroll ${g('r_sc_pay')} · **Est. savings ${g('r_sc_save')}**\n\n`;
   s+='## Business income — QBI (§199A)\n'+`- 20% deduction ${g('r_qbi_ded')} · federal tax saved ${g('r_qbi_saved')}\n\n`;
   s+='## Corporate DRD\n'+`- ${g('r_drd_pct')} deductible ${g('r_drd_ded')} · taxable @21% ${g('r_drd_tax')}\n\n`;
-  s+='## Retirement contribution limits\n'+`- 401(k) ${g('r_ret_401')} · IRA ${g('r_ret_ira')} · SIMPLE ${g('r_ret_simple')} · SEP/solo-401k ${g('r_ret_sep')}\n`+`- Income tax saved by your contribution: ${g('r_ret_saved')}\n\n`;
+  s+='## Retirement contributions\n'+`- Total pre-tax contributions ${g('r_ret_total')} · income tax saved ${g('r_ret_saved')}\n\n`;
   if((S.customStructures||[]).length){ s+='## Structures considered\n'; (S.customStructures||[]).forEach(cs=>{ const x=structByKey(cs.k); if(x){ const a=structAvail(x,t.state); s+=`- **${x.name}** (${x.full}) — ${a.lvl==='available'?'available':a.lvl==='na'?'not typical in '+t.state:'verify'} — ${structImpact(x)}\n`; } }); s+='\n'; }
   s+='---\n_Estimates ignore AMT, deductions/credits, most phase-outs, and special rules. Confirm with your CPA & attorney._\n';
   return s;
