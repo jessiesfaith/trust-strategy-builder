@@ -15,7 +15,13 @@ Generic workflow rules live in `~/.claude/CLAUDE.md` (they apply to every repo).
   (per-property trust & tax-strategy scenarios — an 8-column per-property table (purchase price/assessed/
   current & FMV-reassessed property tax/FMV/cap gain/cap-gains tax), a deed/title comparison (trust vs
   beneficiary vs gifted, with the Fed+CA/FTB step-up callout), an FLP+IDGT installment-sale "loan" freeze
-  model, and a rental P&L + tax-impact card; reuses the same tax helpers so it reconciles), **Distribution**
+  model, and a rental P&L + tax-impact card; reuses the same tax helpers so it reconciles),
+  **Financial** (retirement/brokerage/cash — step-up vs IRD, gross-estate inclusion, trust strategies
+  flagged for gross-estate impact), **Charity** (CLAT/CRT/PF/DAF/outright — an interactive deduction &
+  estate-impact calculator + comparison; encodes the gross-vs-taxable rule and the §2036 grantor-retained-CRT
+  caveat), **Estate Roll-up** (the gross-estate centerpiece — every strategy sorted into 3 buckets:
+  reduces gross / reduces taxable only / reduces estate-tax-or-after-tax only, with a waterfall and a plain
+  answer to "how do I reduce my gross estate?"), **Distribution**
   (beneficiary % allocation + timing, milestone life-insurance distributions (reserved before the split) + itemized reserves incl. a
   **grandchildren milestone-funding** reserve → distributable), and **Strategy** (enter the
   life-insurance death benefit + toggle ILIT/FLP/QPRT/IDGT → No-planning vs Your-setup comparison + a

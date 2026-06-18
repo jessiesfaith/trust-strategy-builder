@@ -14,7 +14,8 @@ Single-page, client-side estate/trust/entity **planning & attorney-prep** organi
 
 ## Layout (tabs via `switchTab(key)`)
 `.wrap > section.block` blocks are shown/hidden per tab. Tab order in `renderTopTabs()`:
-**Overview · Tax Estimator · Property · Distribution · Strategy · (per-trust tabs) · + New trust.**
+**Overview · Tax Estimator · Property · Financial · Charity · Estate Roll-up · Distribution · Strategy ·
+(per-trust tabs) · + New trust.**
 The left nav (`#topTabs`) is pinned just below the sticky header via `syncNavTop()` (re-measured on
 window resize; falls back to static, row-wrapped below 760px).
 
@@ -50,6 +51,35 @@ window resize; falls back to static, row-wrapped below 760px).
   (`reCapTaxOn(rentalsGain)`), and the grantor-paid income tax (`annualIncomeTax().pnlTax`); (4) **Rental P&L** —
   per-property rental table + portfolio P&L/tax via `rentalPnl()` and `annualIncomeTax()`. Empty state when no
   properties. The property-tax-rate field here writes the shared `S.tax.propTaxRate`.
+- **Financial** (`#financial`) — `renderFinancial()` / `computeFinancial()` / `finBalances()`. Retirement /
+  brokerage / cash: a summary table (balance · step-up vs IRD · gross-estate inclusion · income tax to heirs) +
+  per-asset detail with trust strategies (each gross-estate-flagged) and key-flag callouts, from the verified
+  `FIN_ASSETS` constant. Balances summed from `S.brokerageAccounts` (retirement = kind/name matches
+  `/retire|ira|401|403|roth/i`) and `S.bankAccounts`. Read-only/educational (no inputs).
+- **Charity** (`#charity`) — `renderCharityTab()` / `computeCharityTab()` / `charityPlanEffect()` /
+  `ensureCharityPlan()`, state `S.charityPlan{vehicle,amount,timing,asset,charPct,agi,marg,gainPct}`. An
+  interactive calculator (vehicle × inter-vivos/testamentary × cash/appreciated → §170 income-tax deduction
+  capped at the AGI ceiling w/ 5-yr carryforward, capital-gains avoided, gross- vs taxable-estate reduction,
+  estate tax saved) + a 5-vehicle comparison + per-vehicle detail, from the verified `CHARITY_VEHICLES` constant
+  and the `CHARITY_CALC` map. `charityPlanEffect()` is the single source the Roll-up reads: a grantor-retained
+  CRT routes to taxable-only (§2036); a lifetime non-CRT gift routes to gross; testamentary routes to taxable.
+- **Estate Roll-up** (`#rollup`) — `renderRollup()` / `computeRollup()` / `ensureRollup()`, state
+  `S.rollup{gift,retCharity,useCharity}`. The centerpiece for "reduce my GROSS estate": every strategy sorted
+  into **3 buckets** — Bucket 1 reduces the gross estate (completed lifetime transfers: ILIT/FLP-partial/QPRT/
+  IDGT/outright gift/lifetime charity), Bucket 2 reduces only the taxable estate (testamentary charity,
+  grantor-retained CRT, retirement→charity; asset stays in gross + §2055/§2056 deduction), Bucket 3 reduces
+  only estate tax / after-tax / income tax (revocable trust, brokerage step-up). Headline waterfall (gross →
+  resulting gross → taxable → 40% estate tax → net) + a plain-language answer counting gross-reducing vs not.
+  Toggles write `S.outcome` (shared with the Strategy tab via `updRollupToggle`); reads `charityPlanEffect()`.
+  Gross estate = `estateFromAssets().gross + deathBenefit` (gross of debt; the Tax Estimator/Strategy use the
+  net figure — labeled). The verified classification lives in `ROLLUP_STRATEGIES` / `GROSS_EXPLAINER`.
+- **Code-reference footers** — `refFooter(cites,title)` groups a `{c,s}[]` into Probate · IRC · FTB/R&T
+  sections; `cc()` renders "sec" → the section symbol; `ic(c)` is an inline citation chip; `grossBadge(v)` is the
+  yes/partial/no flag. A footer is on **every** tab: the four strategy tabs (Property/Financial/Charity/Roll-up)
+  build their own; Tax Estimator/Strategy/Distribution append one; Overview’s is `renderOverviewRefs()` →
+  `#overviewRefs`. The tax/legal substance + citations were produced by a multi-agent research + adversarial-
+  verification workflow (two corrections applied: grantor-retained CRT does NOT reduce the gross estate per
+  §2036; an inter-vivos CLAT citation fixed to §2033).
 - **Distribution** (`#dist`) — `renderDistribution()` / `computeDistribution()`. Beneficiary list (% allocation
   + timing) and reserves — executor %, property mgmt, taxes/debts, **grandchildren milestone funding**, and
   **milestone life-insurance distributions** (the allocated death benefit is earmarked, so it's reserved from
@@ -106,7 +136,9 @@ exemption+exemptionAuto, dual, deathBenefit, sstb/drd…, `execSal` — the mana
 rental P&L deducts and that is taxed as the executor's own income — age/seComp,
 ret401/retIra/retSimple/retSep, propTaxRate), `beneficiaries[]`, `insDist[]`,
 `reserves{execPct,propMgmt,taxDebt}`, `gk{...}` (grandchildren funding), `outcome{...}` + `charity{...}`
-(Strategy tab), `prop{flpDiscount,growth,years,noteRate}` (Property tab), `review`. `ensureTax()`/`ensureDist()`/`ensureOutcome()` backfill defaults. QBI and gross
+(Strategy tab), `prop{flpDiscount,growth,years,noteRate}` (Property tab),
+`charityPlan{vehicle,amount,timing,asset,charPct,agi,marg,gainPct}` (Charity tab),
+`rollup{gift,retCharity,useCharity}` (Roll-up tab), `review`. `ensureTax()`/`ensureDist()`/`ensureOutcome()` backfill defaults. QBI and gross
 rental are **derived, not inputs** (QBI = net rental P&L; gross = Σ per-property `annualRent`) and ILIT is
 the Strategy tab's `outcome.ilit`, so the old `qbi`/`rentalGross`/`inILIT` tax defaults were removed.
 

@@ -36,6 +36,10 @@ estate per §2036; an inter-vivos CLAT citation fixed to §2033).
   tab; inline citations sit next to the relevant notes.
 - Wired into `renderTopTabs()` (Overview · Tax Estimator · Property · Financial · Charity · Estate Roll-up ·
   Distribution · Strategy), `switchTab()`, and `render()`. Console clean; math verified in preview.
+- Follow-up: code-reference footers now on **every** tab — appended to Tax Estimator, Strategy, and
+  Distribution, and added to Overview via `renderOverviewRefs()` / `#overviewRefs` (the four strategy tabs and
+  the per-trust tabs already had references). Removed a dead `rentalRemoved` variable in `computeRollup()`
+  flagged by an adversarial code-review workflow (otherwise clean — no correctness/double-count/escaping bugs).
 
 ## 2026-06-18 — New **Property** tab (per-property trust & tax-strategy scenarios)
 

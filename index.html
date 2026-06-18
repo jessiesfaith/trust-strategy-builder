@@ -523,6 +523,9 @@
     </div>
   </section>
 
+  <!-- OVERVIEW CODE REFERENCES (Probate · IRC · FTB / R&T) -->
+  <section class="block" id="overviewRefs"><!-- rendered --></section>
+
   <div class="legal-foot" style="margin-top:26px;text-align:center;max-width:760px;margin-left:auto;margin-right:auto">
     Trust Strategy Builder is a planning and organization tool only. It does not provide legal, tax, investment, banking, lending, or insurance advice and does not create legal documents.
     Before retitling property, forming an LLC, changing beneficiaries, opening entity accounts, or transferring assets, confirm with your attorney, CPA, lender, bank, and insurance provider.
@@ -1144,6 +1147,7 @@ function render(){
   renderExport();
   renderMermaid();
   renderReview();
+  renderOverviewRefs();
   renderTopTabs();
   syncNavTop();
   if(currentTab!=='overview') renderTrustPanel(currentTab);
@@ -1776,7 +1780,17 @@ function renderDistribution(){
       <div class="kv" style="margin-top:6px"><span class="k">Allocated</span><span class="v" id="r_ins_alloc">—</span></div>
       <div class="muted" id="r_ins_remain" style="font-size:13px"></div>
     `)}
-    <div class="legal-foot" style="margin-top:6px">⚠️ Allocations, timing, and reserves here are an organizer to discuss with your attorney &amp; CPA — they do not create or change any legal document.</div>`;
+    <div class="legal-foot" style="margin-top:6px">⚠️ Allocations, timing, and reserves here are an organizer to discuss with your attorney &amp; CPA — they do not create or change any legal document.</div>`
+    + refFooter([
+        {c:'Cal. Prob. Code sec 10800, sec 10810',s:'Statutory executor and attorney probate fees a funded trust can avoid.'},
+        {c:'Cal. Prob. Code sec 16060-16064',s:'Trustee’s duty to keep beneficiaries reasonably informed and to account.'},
+        {c:'Cal. Prob. Code sec 15800',s:'While the settlor is competent, the trustee’s duties run to the settlor.'},
+        {c:'Cal. Prob. Code sec 16335 / sec 16341',s:'Trust accounting and the rules for principal-and-income allocation among beneficiaries.'},
+        {c:'IRC sec 2056',s:'Unlimited marital deduction for amounts passing to a surviving spouse.'},
+        {c:'IRC sec 2055',s:'Estate-tax charitable deduction for amounts passing to charity at death.'},
+        {c:'IRC sec 691',s:'Inherited retirement (IRD) is taxed as ordinary income to the beneficiary.'},
+        {c:'IRC sec 2503(b); Crummey v. Comm’r',s:'Annual-exclusion gifts (e.g., to fund milestone life-insurance premiums) need Crummey rights.'}
+      ]);
   computeDistribution();
 }
 function computeDistribution(){
@@ -1958,7 +1972,20 @@ function renderOutcome(){
       ${row('Break-even year (gains cover net cost)','ch_breakeven',1)}
       <div class="legal-foot" id="ch_note"></div>
     `)}
-    <div class="legal-foot" style="margin-top:6px">⚠️ Gifting assets out reduces estate tax but generally forfeits the step-up (capital-gains tax later) — the right balance is determined with your attorney &amp; CPA. Private-foundation / CLAT assets remain dedicated to charitable purposes.</div>`;
+    <div class="legal-foot" style="margin-top:6px">⚠️ Gifting assets out reduces estate tax but generally forfeits the step-up (capital-gains tax later) — the right balance is determined with your attorney &amp; CPA. Private-foundation / CLAT assets remain dedicated to charitable purposes.</div>`
+    + refFooter([
+        {c:'IRC sec 2042',s:'Life-insurance proceeds are out of your estate only if you hold no incidents of ownership — an ILIT removes them.'},
+        {c:'IRC sec 2035',s:'A transferred existing policy is pulled back if the insured dies within 3 years.'},
+        {c:'IRC sec 2704',s:'Limits family-entity (FLP) lack-of-control / marketability valuation discounts.'},
+        {c:'IRC sec 2702; Treas. Reg. sec 25.2702-5',s:'Special valuation rules; the QPRT is the personal-residence exception.'},
+        {c:'IRC sec 2036, sec 2038',s:'Retained enjoyment or control pulls a transferred asset back into the gross estate.'},
+        {c:'Rev. Rul. 85-13; IRC sec 671-679',s:'IDGT: a sale to your own grantor trust is income-tax-free; grantor-trust rules tax income to you.'},
+        {c:'IRC sec 1014',s:'Assets held to death get a basis step-up; gifting them out (carryover, sec 1015) forfeits it.'},
+        {c:'IRC sec 170; sec 664; sec 642(c)',s:'Charitable income-tax deduction; CRT/CLAT split-interest trust rules.'},
+        {c:'IRC sec 2055',s:'Estate-tax charitable deduction for a transfer to charity at death (reduces the taxable estate).'},
+        {c:'IRC sec 2001, sec 2010',s:'Federal estate tax (40%) and the unified exemption (~$15M/person, 2026).'},
+        {c:'Cal. Rev. & Tax. Code sec 13302',s:'California imposes no state estate tax.'}
+      ]);
   computeOutcome(); computeCharity();
 }
 function computeOutcome(){
@@ -2133,7 +2160,23 @@ function renderTaxEstimator(){
         </div>
         ${res('Total pre-tax contributions','r_ret_total')}${res('Income tax saved','r_ret_saved',1)}<div class="legal-foot" id="r_ret_note"></div>`)}
       ${card('Real estate — property tax &amp; capital gains', `${fld('Property tax rate (%)','propTaxRate')}${res('Annual property tax (current est.)','r_pt_now',1)}${res('If reassessed to market value','r_pt_reassessed')}${res('— rental / business (in the rental P&amp;L)','r_pt_business')}${res('— personal / land — Schedule A (not in rental P&amp;L)','r_pt_nonbusiness')}${res('Potential reassessment increase / yr','r_pt_increase',1)}${res('Real-estate unrealized gain (Σ value − basis)','r_su_gain')}${res('Capital-gains tax if sold (no step-up)','r_su_avoided',1)}<div class="legal-foot" id="r_su_note"></div><div class="legal-foot">Real-estate capital gains are managed here (not in the Capital gains card). Gain = Σ(value − cost basis) for properties with a basis entered. Held to death the <b>step-up</b> erases it (<b>$0</b> tax); sold during life or gifted out (carryover basis) the tax shown applies. Property tax ≈ assessed × rate; a transfer/death can trigger <b>reassessment to market</b> (CA Prop 13/19, exclusions may apply). Confirm with your CPA &amp; attorney.</div>`)}
-    </div>`;
+    </div>`
+    + refFooter([
+        {c:'IRC sec 1',s:'Federal individual income-tax rate brackets used for the final 1040.'},
+        {c:'IRC sec 1(h)',s:'Preferential net long-term capital-gains and qualified-dividend rates (0/15/20%).'},
+        {c:'IRC sec 1411',s:'3.8% net investment income tax (NIIT) above the MAGI thresholds.'},
+        {c:'IRC sec 199A',s:'20% qualified-business-income (QBI) deduction; SSTB phase-out above the income cap.'},
+        {c:'IRC sec 243',s:'Corporate dividends-received deduction (50/65/100% by ownership).'},
+        {c:'IRC sec 1401, sec 1402',s:'Self-employment / payroll tax on the management-salary recipient.'},
+        {c:'IRC sec 401, sec 408',s:'Retirement contribution limits (401(k)/IRA/SIMPLE/SEP) with age-50 catch-up.'},
+        {c:'IRC sec 1014',s:'Date-of-death basis step-up — erases real-estate / brokerage capital gain held to death.'},
+        {c:'IRC sec 2001, sec 2010',s:'Federal estate tax (top rate 40%) and the unified exemption (~$15M/person, 2026).'},
+        {c:'Cal. Rev. & Tax. Code sec 17041',s:'California personal income-tax rates (FTB).'},
+        {c:'Cal. Rev. & Tax. Code sec 17071',s:'California taxes capital gains and dividends as ordinary income (no CA preferential rate).'},
+        {c:'Cal. Rev. & Tax. Code sec 18031',s:'California (FTB) conforms to the IRC sec 1014 basis step-up.'},
+        {c:'Cal. Rev. & Tax. Code sec 110.1',s:'Prop 13 base-year value: assessed value tracks acquisition cost until a change in ownership.'},
+        {c:'Cal. Rev. & Tax. Code sec 13302',s:'California imposes no state estate tax.'}
+      ]);
   computeTax();
 }
 function computeTax(){
@@ -2874,7 +2917,6 @@ function computeRollup(){
   // ---- Bucket 1: reduces gross estate (completed lifetime transfers) ----
   const b1=[];
   if(o.ilit&&db>0) b1.push({name:'ILIT — life insurance out',amt:db,sec:'IRC sec 2042',part:false});
-  const rentalRemoved=o.idgt?rentalVal:(o.flp?0.30*rentalVal:0);
   if(o.idgt&&rentalVal>0) b1.push({name:'IDGT — rentals gifted/sold out (full value)',amt:rentalVal,sec:'Rev. Rul. 85-13',part:false});
   else if(o.flp&&rentalVal>0) b1.push({name:'FLP — ~30% valuation discount on rentals',amt:0.30*rentalVal,sec:'IRC sec 2704',part:true});
   if(o.qprt&&resVal>0) b1.push({name:'QPRT — residence out (if you outlive the term)',amt:resVal,sec:'IRC sec 2702',part:true});
@@ -2912,6 +2954,25 @@ function computeRollup(){
   html('ro_bucket2',card('<div class="badges" style="margin-bottom:8px"><span class="badge b-amber">Bucket 2 · Reduces only the TAXABLE estate</span></div><div class="muted" style="font-size:12.5px;margin-bottom:8px">The asset STAYS in the gross estate at full FMV; a sec 2055 (charitable) or sec 2056 (marital) deduction nets it out on the way to the taxable estate. <b>These do NOT lower the gross-estate figure.</b></div>',b2tbl,'var(--amber-line)'));
   const b3tbl=`<div>${b3.map(x=>`<div class="kv"><span class="k">${cc(x.name)} ${ic(x.sec)}</span><span class="v" style="font-weight:400;font-size:12.5px;text-align:right;max-width:60%">${cc(x.note)}</span></div>`).join('')}</div>`;
   html('ro_bucket3',card('<div class="badges" style="margin-bottom:8px"><span class="badge b-red">Bucket 3 · Reduces only estate tax / after-tax / income tax</span></div><div class="muted" style="font-size:12.5px;margin-bottom:8px">No effect on either the gross OR the taxable estate — but still valuable (probate avoidance, basis step-up).</div>',b3tbl,'var(--red-line)'));
+}
+
+/* Overview page code-reference footer (Probate · IRC · FTB / R&T) */
+function renderOverviewRefs(){
+  const el=document.getElementById('overviewRefs'); if(!el) return;
+  el.innerHTML=refFooter([
+    {c:'Cal. Prob. Code sec 15200-15210',s:'How a trust is created — by declaration or transfer of property to a trustee with trust intent.'},
+    {c:'Cal. Prob. Code sec 15400-15401',s:'A trust is revocable unless made expressly irrevocable; sec 15401 sets the revocation methods.'},
+    {c:'Cal. Prob. Code sec 6300 (UTATA)',s:'A pour-over will may fund a trust that exists at death.'},
+    {c:'Cal. Prob. Code sec 10800, sec 10810',s:'Statutory executor + attorney probate fees a funded revocable trust can avoid.'},
+    {c:'Cal. Prob. Code sec 5600 et seq.',s:'Revocable transfer-on-death (beneficiary) deed for real property.'},
+    {c:'IRC sec 2031 / sec 2033',s:'Gross estate = fair market value of everything owned or controlled at death.'},
+    {c:'IRC sec 2001, sec 2010',s:'Federal estate tax (top rate 40%) and the unified exemption (~$15M/person, 2026).'},
+    {c:'IRC sec 1014',s:'Date-of-death basis step-up for assets included in the estate; CA/FTB conforms.'},
+    {c:'IRC sec 2056 / sec 2055',s:'Unlimited marital and charitable deductions (reduce the taxable estate).'},
+    {c:'Cal. Rev. & Tax. Code sec 60-69.5',s:'Change-in-ownership / property-tax reassessment rules (Prop 13/19).'},
+    {c:'Cal. Rev. & Tax. Code sec 18031',s:'California (FTB) conforms to the IRC sec 1014 basis step-up.'},
+    {c:'Cal. Rev. & Tax. Code sec 13302',s:'California imposes no state estate tax.'}
+  ],'Code references — Probate · IRC · FTB / R&amp;T');
 }
 
 /* ---------- Export center ---------- */
