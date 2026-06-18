@@ -1791,7 +1791,7 @@ function updDeathBenefit(v){ S.tax.deathBenefit=unfmtNum(v); save(); computeOutc
 /* Rental / operating P&L: gross − executor salary (a fixed expense, charged even with no profit) − rental property tax (current assessed; reassessed-to-market variant for the example line). A net loss is suspended for the income-tax base. Single source for the rental figures. */
 function rentalPnl(){
   ensureTax(); const t=S.tax, rate=Math.max(0,+t.propTaxRate||0)/100;
-  const isR=p=>/rental|commercial|vacation/i.test(p.type||'');
+  const isR=p=>/rental|commercial|vacation/i.test(p.type||'') || (+(p.annualRent||0)>0) || p.incomeProducing==='Yes';   // count any income-producing property (rent entered or flagged income-producing) even if typed Land / Other
   const rentals=(S.properties||[]).filter(isR);
   const propNow=rentals.reduce((a,p)=>{ const v=+(p.value||0), as=(+(p.assessed||0))||(+(p.basis||0))||v; return a+as*rate; },0);
   const propReassessed=rentals.reduce((a,p)=>a+(+(p.value||0))*rate,0);
