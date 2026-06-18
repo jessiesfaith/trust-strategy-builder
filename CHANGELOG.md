@@ -4,6 +4,33 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-18 — New **Property** tab (per-property trust & tax-strategy scenarios)
+
+- **New "Property" tab** (`#property`, between Tax Estimator and Distribution) — `renderProperty()` /
+  `computeProperty()`, with `ensureProp()` (defaults `S.prop`), `updProp` / `updPropTaxRate`, and `m$p()`
+  (accounting-style negatives in parentheses). Reuses the single-source helpers (`rentalPnl`, `reCapInfo`,
+  `reCapTaxOn`, `annualIncomeTax`) so every figure reconciles with the Tax Estimator. Four cards:
+  1. **8-column per-property table** — Property · Purchase price (basis) · Assessed value · Current property tax
+     · Reassessed tax (per FMV) · FMV · Cap gain/(loss) · Tax on cap gain/(loss) — plus a portfolio-total row.
+     The per-property cap-gains tax is stacked sequentially above the ordinary base + entered gains, so the
+     column **sums exactly to `reCapInfo().tax`** (verified). An editable property-tax-rate field writes the
+     shared `S.tax.propTaxRate`.
+  2. **Deed/title scenario** table — *trust on deed* vs *beneficiary on deed* vs *gifted out* — comparing basis
+     treatment, cap-gains tax to heirs, property-tax reassessment, estate inclusion, and probate. Step-up
+     callout: held in your estate (trust/beneficiary deed) → step-up to FMV for **Fed AND California (FTB)**
+     (CA conforms to §1014) → $0 cap gains; gifted out → carryover basis. CA Prop 13/19 reassessment notes.
+  3. **FLP + IDGT installment-sale ("loan") freeze** — inputs `flpDiscount` / `growth` / `years` / `noteRate`.
+     Models the valuation discount, the discounted interest sold to the IDGT for a frozen note, the appreciation
+     grown outside the estate (FV − note), ≈40% estate tax saved (now + at horizon), the carryover-basis
+     trade-off (`reCapTaxOn(rentalsGain)`), the grantor-paid income tax (a tax-free gift), and the entity
+     property-tax reassessment-avoidance angle (R&T §62(a)(2)/§64).
+  4. **Rental income — P&L & tax impact** — per-property rental table (gross rent · operating expenses ·
+     property tax at FMV · net P&L) + portfolio P&L and the income tax it generates (your P&L income tax, QBI
+     §199A, executor's own tax, after-tax cash flow) via `rentalPnl()` + `annualIncomeTax()`.
+  - Empty state when no properties. `S.prop{flpDiscount,growth,years,noteRate}` added to state; `ensureProp()`
+    backfills. Wired into `renderTopTabs()`, `switchTab()`, and `render()`. Console clean; no behavior change to
+    other tabs.
+
 ## 2026-06-17 — Rental P&L at FMV-reassessed property tax; RE property-tax split; negative tax rows; estate income-tax note
 
 - **Rental P&L is now modeled at FMV-reassessed property tax** (the estate's go-forward basis after a Prop 19

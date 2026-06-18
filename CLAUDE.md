@@ -11,7 +11,11 @@ Generic workflow rules live in `~/.claude/CLAUDE.md` (they apply to every repo).
   operating expenses summed from each property, net P&L (rental-business types only, at FMV-reassessed property tax) drives QBI/§199A — plus a management/executor
   salary modeled as a deductible expense and taxed to the executor as a single filer; real-estate
   property tax (split rental-business vs personal/land–Schedule A) & cap gains; a 4-metric headline: Total estate value · Grand total tax due · Estate tax
-  with added structures · Estate remaining after taxes; Tax Considerations framework), **Distribution**
+  with added structures · Estate remaining after taxes; Tax Considerations framework), **Property**
+  (per-property trust & tax-strategy scenarios — an 8-column per-property table (purchase price/assessed/
+  current & FMV-reassessed property tax/FMV/cap gain/cap-gains tax), a deed/title comparison (trust vs
+  beneficiary vs gifted, with the Fed+CA/FTB step-up callout), an FLP+IDGT installment-sale "loan" freeze
+  model, and a rental P&L + tax-impact card; reuses the same tax helpers so it reconciles), **Distribution**
   (beneficiary % allocation + timing, milestone life-insurance distributions (reserved before the split) + itemized reserves incl. a
   **grandchildren milestone-funding** reserve → distributable), and **Strategy** (enter the
   life-insurance death benefit + toggle ILIT/FLP/QPRT/IDGT → No-planning vs Your-setup comparison + a

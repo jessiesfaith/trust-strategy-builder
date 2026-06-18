@@ -413,6 +413,17 @@
     <div id="taxEstimator"><!-- rendered --></div>
   </section>
 
+  <!-- PROPERTY — TRUST & TAX STRATEGY SCENARIOS (its own tab) -->
+  <section class="block" id="property" style="display:none">
+    <div class="section-head">
+      <span class="eyebrow">Property scenarios</span>
+      <h2>Property — Trust &amp; Tax Strategy</h2>
+      <span class="muted" style="font-size:14px">Per-property step-up, property-tax reassessment, deed/title scenarios, FLP/IDGT freeze, and rental P&amp;L. Planning estimates — not legal or tax advice.</span>
+      <button class="btn-soft btn-xs" style="margin-left:auto" onclick="renderProperty();toast('Recalculated')">↻ Recalculate</button>
+    </div>
+    <div id="propertyBody"><!-- rendered --></div>
+  </section>
+
   <!-- DISTRIBUTION PLAN (its own tab) -->
   <section class="block" id="dist" style="display:none">
     <div class="section-head">
@@ -899,7 +910,7 @@ function allTrusts(){ return TRUSTS.concat(S.customTrusts||[]); }
 function trustByKey(k){ return allTrusts().find(t=>t.k===k); }
 function renderTopTabs(){
   const el=document.getElementById('topTabs'); if(!el) return;
-  const main=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'},{k:'dist',n:'Distribution'},{k:'outcome',n:'Strategy'}];
+  const main=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'},{k:'property',n:'Property'},{k:'dist',n:'Distribution'},{k:'outcome',n:'Strategy'}];
   const btn=t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`;
   // Primary tabs stay pinned at the top; the trust tabs (which can grow long) scroll below them.
   el.innerHTML=`<div class="toptabs-main">${main.map(btn).join('')}</div>`
@@ -928,12 +939,13 @@ function deleteTrust(k){
 }
 function switchTab(key){
   currentTab=key;
-  const isOv=key==='overview', isTax=key==='tax', isDist=key==='dist', isOutcome=key==='outcome', isTrust=!isOv&&!isTax&&!isDist&&!isOutcome;
+  const isOv=key==='overview', isTax=key==='tax', isProp=key==='property', isDist=key==='dist', isOutcome=key==='outcome', isTrust=!isOv&&!isTax&&!isProp&&!isDist&&!isOutcome;
   document.querySelectorAll('.toptab').forEach(b=>b.classList.toggle('active',b.dataset.tab===key));
-  // The Tax Estimator, Distribution Plan, and Strategy Outcome each live in their own tab; every other .wrap section belongs to Overview.
+  // The Tax Estimator, Property, Distribution Plan, and Strategy Outcome each live in their own tab; every other .wrap section belongs to Overview.
   document.querySelectorAll('.wrap > *').forEach(el=>{
     if(el.id==='tab-trust') return;                       // trust panel handled below
     if(el.id==='taxest'||el.id==='taxconsider'){ el.style.display=isTax?'':'none'; return; }
+    if(el.id==='property'){ el.style.display=isProp?'':'none'; return; }
     if(el.id==='dist'){ el.style.display=isDist?'':'none'; return; }
     if(el.id==='outcome'){ el.style.display=isOutcome?'':'none'; return; }
     el.style.display=isOv?'':'none';
@@ -941,6 +953,7 @@ function switchTab(key){
   const panel=document.getElementById('tab-trust'); panel.style.display=isTrust?'block':'none';
   if(isTrust) renderTrustPanel(key);
   if(isTax) renderTaxEstimator();
+  if(isProp) renderProperty();
   if(isDist) renderDistribution();
   if(isOutcome) renderOutcome();
   window.scrollTo(0,0);
@@ -1082,6 +1095,7 @@ function render(){
   renderMemo();
   renderTax();
   renderTaxEstimator();
+  renderProperty();
   renderDistribution();
   renderOutcome();
   renderExport();
@@ -2169,6 +2183,222 @@ function buildTaxSummaryMD(){
   return s;
 }
 function downloadTaxSummary(){ const blob=new Blob([buildTaxSummaryMD()],{type:'text/markdown'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='tax-estimate-summary.md'; a.click(); URL.revokeObjectURL(a.href); toast('Tax summary downloaded'); }
+
+/* ---------- Property — trust & tax strategy scenarios (per property) ---------- */
+/* Per-property step-up, property-tax reassessment, deed/title scenarios, FLP/IDGT freeze, and rental P&L.
+   Reuses the single-source tax helpers (rentalPnl / reCapInfo / reCapTaxOn / annualIncomeTax) so every figure
+   reconciles with the Tax Estimator. The per-property capital-gains tax is stacked sequentially above the
+   ordinary base + entered gains, so the column sums exactly to reCapInfo().tax. */
+const isRental=p=>/rental|commercial|vacation/i.test(p.type||'');
+function ensureProp(){
+  if(!S.prop||typeof S.prop!=='object') S.prop={};
+  const p=S.prop;
+  if(p.flpDiscount===undefined) p.flpDiscount='30';   // FLP/LLC valuation discount (lack of control + marketability)
+  if(p.growth===undefined)      p.growth='5';         // assumed annual appreciation %
+  if(p.years===undefined)       p.years='20';         // estate-freeze projection horizon (years)
+  if(p.noteRate===undefined)    p.noteRate='5';       // IDGT installment-note interest (≈ AFR) %
+}
+function updProp(k,v){ ensureProp(); S.prop[k]=v; save(); computeProperty(); }
+function updPropTaxRate(v){ ensureTax(); S.tax.propTaxRate=unfmtNum(v); save(); computeProperty(); }
+/* negative money in parentheses (accounting style) for P&L / loss rows */
+function m$p(n){ n=+n||0; return n<0?('('+m$(-n)+')'):m$(n); }
+function renderProperty(){
+  ensureTax(); ensureProp();
+  const el=document.getElementById('propertyBody'); if(!el) return;
+  const props=(S.properties||[]);
+  // every property needs a stable id for the cell ids below
+  let idsAdded=false; props.forEach(p=>{ if(!p.id){ p.id=uid(); idsAdded=true; } }); if(idsAdded) save();
+  const disc=`<div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Figures flow from your Real Estate &amp; Tax Estimator inputs and are illustrative. Step-up, reassessment, and entity rules are simplified; confirm everything with your CPA &amp; estate attorney.</div></div>`;
+  if(!props.length){
+    el.innerHTML=disc+`<div class="card pad"><div class="muted" style="font-size:14.5px">No properties yet. Add real estate in <b>Overview → Real Estate</b> (with a cost basis / purchase price, assessed value, estimated value (FMV), and — for rentals — annual rent &amp; operating expenses) and it will appear here for scenario analysis.</div></div>`;
+    return;
+  }
+  const card=(title,body,sub)=>`<div class="card pad" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap"><h3 style="font-size:16px;color:var(--indigo-ink);margin:0">${title}</h3>${sub||''}</div>${body}</div>`;
+  const inSty='font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%';
+  const Lh=s=>`<th style="text-align:left;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)">${s}</th>`;
+  const Rh=s=>`<th style="text-align:right;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap">${s}</th>`;
+  const Rtd=(id,extra)=>`<td id="${id}" style="text-align:right;padding:7px 8px;font-size:14px;border-bottom:1px solid var(--line);white-space:nowrap;${extra||''}">—</td>`;
+  const Ltd=(html,extra)=>`<td style="text-align:left;padding:7px 8px;font-size:14px;border-bottom:1px solid var(--line);${extra||''}">${html}</td>`;
+  const rate=Math.max(0,+S.tax.propTaxRate||0);
+
+  // ---- 1 · The 8-column per-property table ----
+  const mainRows=props.map(p=>`<tr>
+      ${Ltd(`<b>${esc(p.name||'Property')}</b><div class="muted" style="font-size:12px">${esc(p.type||'')}${p.state?(' · '+esc(p.state)):''}</div>`)}
+      ${Rtd('pr_basis_'+p.id)}${Rtd('pr_assessed_'+p.id)}${Rtd('pr_ptnow_'+p.id)}${Rtd('pr_ptre_'+p.id)}${Rtd('pr_fmv_'+p.id)}${Rtd('pr_gain_'+p.id)}${Rtd('pr_captax_'+p.id)}
+    </tr>`).join('');
+  const totExtra='font-weight:700;border-top:2px solid var(--line);border-bottom:none';
+  const mainTable=`<div style="overflow-x:auto;margin:2px 0">
+    <table style="width:100%;border-collapse:collapse;min-width:820px">
+      <thead><tr>${Lh('Property')}${Rh('Purchase price')}${Rh('Assessed value')}${Rh('Current property tax')}${Rh('Reassessed tax (per FMV)')}${Rh('FMV')}${Rh('Cap gain/(loss)')}${Rh('Tax on cap gain/(loss)')}</tr></thead>
+      <tbody>${mainRows}</tbody>
+      <tfoot><tr>${Ltd('<b>Portfolio total</b>',totExtra)}${Rtd('pr_t_basis',totExtra)}${Rtd('pr_t_assessed',totExtra)}${Rtd('pr_t_ptnow',totExtra)}${Rtd('pr_t_ptre',totExtra)}${Rtd('pr_t_fmv',totExtra)}${Rtd('pr_t_gain',totExtra)}${Rtd('pr_t_captax',totExtra)}</tr></tfoot>
+    </table></div>
+    <div class="legal-foot">Purchase price = cost basis entered · Current property tax = assessed × rate · Reassessed = FMV × rate · Cap gain/(loss) = FMV − basis (shown only when a basis is entered) · Tax on cap gain = federal LTCG + ${esc(S.tax.state||'state')} if sold during life with <b>no step-up</b> (each property stacked above your ordinary income; the column sums to your total real-estate cap-gains tax). A property held to death in your estate gets a step-up and this becomes <b>$0</b> — see the scenarios below.</div>`;
+  const rateFld=`<div style="display:flex;align-items:center;gap:8px;margin-left:auto"><span class="muted" style="font-size:13px">Property-tax rate</span><div style="width:90px"><input type="text" inputmode="decimal" value="${esc(groupNum(S.tax.propTaxRate))}" oninput="fmtNumField(this);updPropTaxRate(this.value)" style="${inSty}"></div><span class="muted" style="font-size:13px">%</span></div>`;
+
+  // ---- step-up callout ----
+  const stepup=`<div class="card pad" style="margin-bottom:14px;border-color:var(--green-line);background:var(--green-soft)">
+    <div class="badges" style="margin-bottom:6px"><span class="badge b-green">Step-up · Federal</span><span class="badge b-green">Step-up · California (FTB)</span></div>
+    <div style="font-size:14.5px"><b>If the property is held in your trust (or otherwise in your estate at death), the heirs get a basis step-up to date-of-death FMV — for BOTH federal and California (FTB) income tax.</b> California has no separate estate tax and conforms to IRC §1014, so the built-in capital gain is erased for Fed <i>and</i> CA when the asset passes through your estate. Gifting the asset <b>out</b> during life instead gives carryover (your low) basis — no step-up, Fed or CA — so the heirs owe capital-gains tax when they sell.</div>
+    <div class="legal-foot">Step-up is an income-tax (basis) benefit, separate from estate tax and from California property-tax reassessment (Prop 13/19), which are handled below. Confirm with your CPA.</div></div>`;
+
+  // ---- 2 · deed / title scenario comparison ----
+  const sc=(scLabel,note,basisId,cgId,ptId,estate,probate,hi)=>`<tr ${hi?'style="background:var(--green-soft)"':''}>
+      ${Ltd(`<b>${scLabel}</b><div class="muted" style="font-size:12px">${note}</div>`)}
+      <td id="${basisId}" style="padding:7px 8px;font-size:13.5px;border-bottom:1px solid var(--line)">—</td>
+      <td id="${cgId}" style="text-align:right;padding:7px 8px;font-size:14px;border-bottom:1px solid var(--line);white-space:nowrap">—</td>
+      <td id="${ptId}" style="text-align:right;padding:7px 8px;font-size:13px;border-bottom:1px solid var(--line)">—</td>
+      <td style="padding:7px 8px;font-size:13.5px;border-bottom:1px solid var(--line)">${estate}</td>
+      <td style="padding:7px 8px;font-size:13.5px;border-bottom:1px solid var(--line)">${probate}</td>
+    </tr>`;
+  const scenarioTable=`<div style="overflow-x:auto;margin:2px 0">
+    <table style="width:100%;border-collapse:collapse;min-width:760px">
+      <thead><tr>${Lh('Scenario')}${Lh('Basis at transfer')}${Rh('Cap-gains tax (heirs)')}${Rh('Property tax going forward')}${Lh('In taxable estate?')}${Lh('Probate')}</tr></thead>
+      <tbody>
+        ${sc('Trust named on deed','Revocable living trust holds title','sc_basis_trust','sc_cg_trust','sc_pt_trust','<b style="color:var(--green)">Yes — included</b> (revocable = still yours; no estate-tax reduction)','Avoided — all trust assets',true)}
+        ${sc('Beneficiary named on deed','TOD / beneficiary deed (passes at death)','sc_basis_bene','sc_cg_bene','sc_pt_bene','Yes — included (no estate-tax reduction)','Avoided — that property only')}
+        ${sc('Gifted during life','To an irrevocable trust / heirs (out of estate)','sc_basis_gift','sc_cg_gift','sc_pt_gift','<b>Removed</b> — uses lifetime gift exemption; cuts estate tax','Avoided')}
+      </tbody>
+    </table></div>
+    <div class="legal-foot"><b>Step-up vs estate tax is the core trade-off.</b> Keeping the property in your estate (trust or beneficiary deed) preserves the step-up → <b>$0</b> capital gains, but gives <b>no</b> estate-tax reduction. Gifting it out cuts estate tax but forfeits the step-up (carryover basis → the cap-gains tax shown). <b>California property tax:</b> moving your own property into a <i>revocable</i> trust is not a change in ownership (base stays). A transfer at death to heirs — or a lifetime gift — is generally a change in ownership and triggers <b>reassessment to market</b> (Prop 19 limits the parent-child exclusion to a primary residence the child occupies, capped). Investment/rental property is reassessed. An FLP/LLC can avoid this — see below.</div>`;
+
+  // ---- 3 · FLP & IDGT freeze ----
+  const ci=(lab,k,suffix)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label><div style="display:flex;align-items:center;gap:6px"><input type="text" inputmode="decimal" value="${esc(groupNum(S.prop[k]))}" oninput="fmtNumField(this);updProp('${k}',unfmtNum(this.value))" style="${inSty}">${suffix?`<span class="muted" style="font-size:13px">${suffix}</span>`:''}</div></div>`;
+  const row=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" ${big?'style="font-size:16px"':''}>—</span></div>`;
+  const flpCard=`
+    <div class="muted" style="font-size:13.5px;margin:-2px 0 10px">Hold the rental / commercial properties in a <b>Family Limited Partnership (or LLC)</b>, then <b>sell discounted FLP interests to an IDGT in exchange for a promissory note</b> ("the loan"). The note (frozen at face value) replaces the rentals in your estate; all future appreciation grows <b>outside</b> your estate, and — because you keep paying the trust's income tax (a grantor trust) — that tax payment is itself a tax-free transfer to your heirs.</div>
+    <div class="form-grid">
+      ${ci('Valuation discount (lack of control / marketability)','flpDiscount','%')}
+      ${ci('Assumed appreciation','growth','%/yr')}
+      ${ci('Projection horizon','years','yrs')}
+      ${ci('IDGT note interest (≈ AFR)','noteRate','%')}
+    </div>
+    ${row('Rental / commercial value (FMV) in the FLP','fl_rentalsval')}
+    ${row('Valuation discount','fl_discountamt')}
+    ${row('Discounted value sold to the IDGT','fl_discounted',1)}
+    ${row('Installment note kept in your estate (frozen)','fl_note')}
+    <div class="muted" style="font-size:11px;margin:7px 0 2px;text-transform:uppercase;letter-spacing:.06em">Estate freeze over the horizon</div>
+    ${row('Property value at horizon (grows in the IDGT)','fl_fv')}
+    ${row('Value kept OUT of your estate (FV − note)','fl_keptout',1)}
+    ${row('≈ Estate tax saved from the discount (now, 40%)','fl_estsavenow')}
+    ${row('≈ Estate tax saved at horizon (40%)','fl_estsavehorizon',1)}
+    ${row('Grantor-paid income tax / yr (extra tax-free gift)','fl_idgttax')}
+    <div class="legal-foot" id="fl_note_text"></div>
+    <div class="legal-foot"><b>Trade-off:</b> IDGT assets take <b>carryover basis</b> (no step-up) — heirs owe ≈ <span id="fl_carrytax">—</span> in capital-gains tax when they sell. <b>Property-tax win:</b> contributing property to an entity you control in proportion to your ownership can be excluded from reassessment (R&amp;T §62(a)(2)); later transfers of <i>interests</i> don't reassess the real property unless one person gains >50% control (§64). This is how an FLP/IDGT can avoid the death reassessment that a plain trust/beneficiary deed cannot. All simplified — attorney &amp; CPA review.</div>`;
+
+  // ---- 4 · rental income & P&L ----
+  const rentals=props.filter(isRental);
+  let rentalCard;
+  if(rentals.length){
+    const rRows=rentals.map(p=>`<tr>
+        ${Ltd(`<b>${esc(p.name||'Property')}</b><div class="muted" style="font-size:12px">${esc(p.type||'')}</div>`)}
+        ${Rtd('rt_gross_'+p.id)}${Rtd('rt_opex_'+p.id)}${Rtd('rt_pt_'+p.id)}${Rtd('rt_net_'+p.id)}
+      </tr>`).join('');
+    rentalCard=`
+      <div style="overflow-x:auto;margin:2px 0">
+      <table style="width:100%;border-collapse:collapse;min-width:620px">
+        <thead><tr>${Lh('Property')}${Rh('Gross rent')}${Rh('Operating expenses')}${Rh('Property tax (FMV)')}${Rh('Net P&L (pre-tax)')}</tr></thead>
+        <tbody>${rRows}</tbody>
+        <tfoot><tr>${Ltd('<b>Total</b>',totExtra)}${Rtd('rt_t_gross',totExtra)}${Rtd('rt_t_opex',totExtra)}${Rtd('rt_t_pt',totExtra)}${Rtd('rt_t_net',totExtra)}</tr></tfoot>
+      </table></div>
+      <div class="muted" style="font-size:11px;margin:10px 0 2px;text-transform:uppercase;letter-spacing:.06em">Portfolio P&L &amp; tax impact</div>
+      ${row('Net P&L before management salary','rt_netpre')}
+      ${row('Less management / executor salary','rt_sal')}
+      ${row('Net rental P&L (at FMV property tax)','rt_netfinal',1)}
+      <div class="muted" style="font-size:11px;margin:7px 0 2px;text-transform:uppercase;letter-spacing:.06em">Tax this P&L generates</div>
+      ${row('Your income tax on the P&L','rt_inctax')}
+      ${row('QBI §199A deduction (20% of net P&L)','rt_qbi')}
+      ${row('Income tax saved by QBI','rt_qbisaved')}
+      ${row('Executor — tax on the salary (income + SE)','rt_exectax')}
+      ${row('After-tax rental cash flow','rt_aftertax',1)}
+      <div class="legal-foot" id="rt_note"></div>`;
+  } else {
+    rentalCard=`<div class="muted" style="font-size:14.5px">No rental / commercial / vacation properties entered. Add one in <b>Overview → Real Estate</b> with an <b>annual rent</b> and <b>annual operating expenses</b> to model the rental P&amp;L here.</div>`;
+  }
+
+  el.innerHTML=disc
+    + stepup
+    + card('Property scenarios — basis, value, property tax &amp; capital gains', mainTable, rateFld)
+    + card('Tax impact by deed / title — gifted vs beneficiary vs trust', scenarioTable)
+    + card('Advanced strategy — FLP + IDGT installment-sale ("loan") freeze', flpCard)
+    + card('Rental income — P&amp;L &amp; tax impact', rentalCard)
+    + `<div class="legal-foot" style="margin-top:6px">⚠️ Scenarios, discounts, and projections here are an organizer to discuss with your attorney &amp; CPA — they do not create or change any legal document, and they don't constitute tax advice.</div>`;
+  computeProperty();
+}
+function computeProperty(){
+  ensureTax(); ensureProp();
+  const set=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+  const t=S.tax, rate=Math.max(0,+t.propTaxRate||0)/100, Y=curY(), f=t.filing||'MFJ', ltBr=Y.ltcg[f];
+  const props=(S.properties||[]);
+  // ordinary base + entered gains, for stacking the per-property cap-gains tax (matches reCapInfo)
+  const ordBase=(+t.ordinary||0)+rentalPnl().taxable, oLt=+t.ltgain||0, qd=+t.qdiv||0, st=+t.stgain||0, od=+t.odiv||0;
+  let runGains=0, tBasis=0, tAssessed=0, tPtNow=0, tPtRe=0, tFmv=0, tGain=0, tCapTax=0;
+  props.forEach(p=>{
+    const fmv=+(p.value||0), basis=+(p.basis||0), assessed=(+(p.assessed||0))||basis||fmv;
+    const hasBasis=basis>0, gain=hasBasis?(fmv-basis):0;
+    const ptNow=assessed*rate, ptRe=fmv*rate;
+    let capTax=0;
+    if(gain>0){
+      const fed=ltcgStack(ordBase, oLt+qd+runGains+gain, ltBr)-ltcgStack(ordBase, oLt+qd+runGains, ltBr);
+      const stt=stateTax(ordBase+oLt+st+qd+od+runGains+gain)-stateTax(ordBase+oLt+st+qd+od+runGains);
+      capTax=Math.max(0,fed+stt); runGains+=gain;
+    }
+    set('pr_basis_'+p.id, hasBasis?m$(basis):'—');
+    set('pr_assessed_'+p.id, m$(assessed));
+    set('pr_ptnow_'+p.id, m$(ptNow));
+    set('pr_ptre_'+p.id, m$(ptRe));
+    set('pr_fmv_'+p.id, m$(fmv));
+    set('pr_gain_'+p.id, hasBasis?m$p(gain):'—');
+    set('pr_captax_'+p.id, hasBasis?(gain>0?m$(capTax):'$0'):'—');
+    const ge=document.getElementById('pr_gain_'+p.id); if(ge) ge.style.color=hasBasis?(gain<0?'var(--red)':'var(--ink)'):'var(--muted)';
+    tBasis+=basis; tAssessed+=assessed; tPtNow+=ptNow; tPtRe+=ptRe; tFmv+=fmv; tGain+=(hasBasis?gain:0); tCapTax+=capTax;
+  });
+  set('pr_t_basis',m$(tBasis)); set('pr_t_assessed',m$(tAssessed)); set('pr_t_ptnow',m$(tPtNow)); set('pr_t_ptre',m$(tPtRe)); set('pr_t_fmv',m$(tFmv)); set('pr_t_gain',m$p(tGain)); set('pr_t_captax',m$(tCapTax));
+
+  // ---- scenario comparison ----
+  set('sc_basis_trust','Step-up → FMV (Fed + CA)'); set('sc_basis_bene','Step-up → FMV (Fed + CA)'); set('sc_basis_gift','Carryover — your '+m$(tBasis));
+  set('sc_cg_trust','$0'); set('sc_cg_bene','$0'); set('sc_cg_gift', m$(tCapTax)+' (on sale)');
+  set('sc_pt_trust', m$(tPtNow)+' now → '+m$(tPtRe)+' at death'); set('sc_pt_bene', m$(tPtNow)+' now → '+m$(tPtRe)+' at death'); set('sc_pt_gift', m$(tPtRe)+' (reassessed now)');
+
+  // ---- FLP & IDGT ----
+  const disc=Math.min(90,Math.max(0,+unfmtNum(S.prop.flpDiscount)||0))/100;
+  const growth=Math.max(0,+unfmtNum(S.prop.growth)||0)/100;
+  const years=Math.max(0,Math.round(+unfmtNum(S.prop.years)||0));
+  const rentalsVal=props.filter(isRental).reduce((a,p)=>a+ +(p.value||0),0);
+  const discountAmt=rentalsVal*disc, discountedVal=rentalsVal-discountAmt;
+  const fv=rentalsVal*Math.pow(1+growth,years);
+  const keptOut=Math.max(0,fv-discountedVal);
+  const rentalsGain=props.filter(isRental).reduce((a,p)=>{const v=+(p.value||0),b=+(p.basis||0);return a+(b>0?Math.max(0,v-b):0);},0);
+  const rentalsCapTax=reCapTaxOn(rentalsGain);
+  const A=annualIncomeTax();
+  set('fl_rentalsval',m$(rentalsVal)); set('fl_discountamt','– '+m$(discountAmt)); set('fl_discounted',m$(discountedVal)); set('fl_note',m$(discountedVal));
+  set('fl_fv',m$(fv)); set('fl_keptout',m$(keptOut)); set('fl_estsavenow',m$(discountAmt*TAXC.estRate)); set('fl_estsavehorizon',m$(keptOut*TAXC.estRate));
+  set('fl_idgttax', A.pnlTax>0?m$(A.pnlTax):m$(0)); set('fl_carrytax', m$(rentalsCapTax));
+  set('fl_note_text','Freeze math: '+m$(rentalsVal)+' of rentals grows at '+Math.round(growth*100)+'%/yr to '+m$(fv)+' over '+years+' yrs, all inside the IDGT. Your estate keeps the '+m$(discountedVal)+' note (frozen), so '+m$(keptOut)+' of value (appreciation + discount) lands outside the estate — ≈ '+m$(keptOut*TAXC.estRate)+' of estate tax avoided at 40%. The '+Math.round(disc*100)+'% valuation discount removes '+m$(discountAmt)+' immediately. Illustrative — actual results depend on the AFR, performance, and how the structure is drafted.');
+
+  // ---- rental P&L ----
+  const rentals=props.filter(isRental);
+  if(rentals.length){
+    let tGross=0,tOpex=0,tPt=0,tNet=0;
+    rentals.forEach(p=>{
+      const gross=Math.max(0,+(p.annualRent||0)), opex=Math.max(0,+(p.annualExpenses||0)), ptRe=(+(p.value||0))*rate, netPre=gross-opex-ptRe;
+      set('rt_gross_'+p.id,m$(gross)); set('rt_opex_'+p.id, opex>0?('– '+m$(opex)):m$(0)); set('rt_pt_'+p.id, ptRe>0?('– '+m$(ptRe)):m$(0)); set('rt_net_'+p.id, m$p(netPre));
+      const ne=document.getElementById('rt_net_'+p.id); if(ne) ne.style.color=netPre<0?'var(--red)':'var(--ink)';
+      tGross+=gross; tOpex+=opex; tPt+=ptRe; tNet+=netPre;
+    });
+    const R=rentalPnl();
+    set('rt_t_gross',m$(R.gross)); set('rt_t_opex',R.opEx>0?('– '+m$(R.opEx)):m$(0)); set('rt_t_pt',R.propReassessed>0?('– '+m$(R.propReassessed)):m$(0));
+    const netPreSal=R.gross-R.opEx-R.propReassessed;
+    set('rt_t_net',m$p(netPreSal)); set('rt_netpre',m$p(netPreSal));
+    set('rt_sal',R.sal>0?('– '+m$(R.sal)):m$(0));
+    set('rt_netfinal',m$p(R.reassessed));
+    set('rt_inctax', A.pnlTax>0?('– '+m$(A.pnlTax)):m$(0));
+    set('rt_qbi', m$(A.ded)); set('rt_qbisaved', A.qsaved>0?m$(A.qsaved):m$(0));
+    set('rt_exectax', A.execTax>0?('– '+m$(A.execTax)):m$(0));
+    set('rt_aftertax', m$(Math.max(0, R.reassessed - A.pnlTax)));
+    set('rt_note','Rental is passive — no SE tax on the P&L itself. Modeled at FMV-reassessed property tax (the go-forward basis after a death reassessment; an FLP/IDGT can avoid that — see above). Net P&L = gross '+m$(R.gross)+' − operating expenses '+m$(R.opEx)+' − property tax '+m$(R.propReassessed)+' − management salary '+m$(R.sal)+' = '+m$p(R.reassessed)+'. QBI = the net P&L ('+m$(A.qbi)+'); the executor reports the salary as their own income ('+m$(A.execTax)+' income + SE). A net loss is generally suspended (not netted against other income) until you have passive income or sell. CPA review.');
+  }
+}
 
 /* ---------- Export center ---------- */
 function renderExport(){

@@ -14,7 +14,7 @@ Single-page, client-side estate/trust/entity **planning & attorney-prep** organi
 
 ## Layout (tabs via `switchTab(key)`)
 `.wrap > section.block` blocks are shown/hidden per tab. Tab order in `renderTopTabs()`:
-**Overview · Tax Estimator · Distribution · Strategy · (per-trust tabs) · + New trust.**
+**Overview · Tax Estimator · Property · Distribution · Strategy · (per-trust tabs) · + New trust.**
 The left nav (`#topTabs`) is pinned just below the sticky header via `syncNavTop()` (re-measured on
 window resize; falls back to static, row-wrapped below 760px).
 
@@ -36,6 +36,20 @@ window resize; falls back to static, row-wrapped below 760px).
   income-tax line carries a self-reconciling note (`r_est_lessinc_other_note`). The Real Estate "property tax
   & capital gains" card splits the reassessed total into `r_pt_business` (rental/business, = the rental P&L)
   and `r_pt_nonbusiness` (personal/land — Schedule A), summing to `r_pt_reassessed`.
+- **Property** (`#property`) — `renderProperty()` / `computeProperty()` (+ `ensureProp()` defaults `S.prop`,
+  `updProp`/`updPropTaxRate`, `m$p()` = accounting-negatives). A per-property scenario deep-dive that reuses the
+  single-source helpers so it reconciles with the Tax Estimator. Four cards: (1) an **8-column per-property table**
+  (Property · Purchase price · Assessed value · Current property tax · Reassessed tax per FMV · FMV · Cap
+  gain/(loss) · Tax on cap gain/(loss)) + a portfolio-total row — the per-property cap-gains tax is stacked
+  sequentially above the ordinary base + entered gains, so the column **sums exactly to `reCapInfo().tax`**;
+  (2) a **deed/title scenario** table (trust on deed vs beneficiary on deed vs gifted out) showing basis
+  treatment, cap-gains tax, property-tax reassessment, estate inclusion, probate — with the step-up callout
+  (Fed + CA/FTB conform to §1014); (3) **FLP + IDGT installment-sale ("loan") freeze** — inputs `flpDiscount`
+  /`growth`/`years`/`noteRate` in `S.prop`; models the discount, the discounted interest sold for a frozen note,
+  the appreciation grown out of the estate (FV − note), ≈40% estate tax saved, the carryover-basis trade-off
+  (`reCapTaxOn(rentalsGain)`), and the grantor-paid income tax (`annualIncomeTax().pnlTax`); (4) **Rental P&L** —
+  per-property rental table + portfolio P&L/tax via `rentalPnl()` and `annualIncomeTax()`. Empty state when no
+  properties. The property-tax-rate field here writes the shared `S.tax.propTaxRate`.
 - **Distribution** (`#dist`) — `renderDistribution()` / `computeDistribution()`. Beneficiary list (% allocation
   + timing) and reserves — executor %, property mgmt, taxes/debts, **grandchildren milestone funding**, and
   **milestone life-insurance distributions** (the allocated death benefit is earmarked, so it's reserved from
@@ -92,7 +106,7 @@ exemption+exemptionAuto, dual, deathBenefit, sstb/drd…, `execSal` — the mana
 rental P&L deducts and that is taxed as the executor's own income — age/seComp,
 ret401/retIra/retSimple/retSep, propTaxRate), `beneficiaries[]`, `insDist[]`,
 `reserves{execPct,propMgmt,taxDebt}`, `gk{...}` (grandchildren funding), `outcome{...}` + `charity{...}`
-(Strategy tab), `review`. `ensureTax()`/`ensureDist()`/`ensureOutcome()` backfill defaults. QBI and gross
+(Strategy tab), `prop{flpDiscount,growth,years,noteRate}` (Property tab), `review`. `ensureTax()`/`ensureDist()`/`ensureOutcome()` backfill defaults. QBI and gross
 rental are **derived, not inputs** (QBI = net rental P&L; gross = Σ per-property `annualRent`) and ILIT is
 the Strategy tab's `outcome.ilit`, so the old `qbi`/`rentalGross`/`inILIT` tax defaults were removed.
 
