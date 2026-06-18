@@ -673,6 +673,8 @@ const ENTITY = {
       {k:'value',l:'Estimated value ($)',t:'number'},
       {k:'basis',l:'Cost basis / purchase price ($)',t:'number'},
       {k:'assessed',l:'Assessed value — property tax ($)',t:'number'},
+      {k:'annualRent',l:'Annual rent / gross income ($)',t:'number'},
+      {k:'annualExpenses',l:'Annual operating expenses — excl. property tax ($)',t:'number'},
       {k:'state',l:'State where located',t:'text'},
       {k:'mortgage',l:'Mortgage / debt?',t:'select',o:['No','Yes']},
       {k:'mortgageBalance',l:'Mortgage balance ($)',t:'number'},
@@ -687,7 +689,7 @@ const ENTITY = {
       {k:'notes',l:'Notes',t:'textarea',full:true}
     ],
     title:e=>e.name||'Unnamed property',
-    meta:e=>{ const v=+(e.value||0),b=+(e.basis||0),g=b>0?Math.max(0,v-b):0; const a=(+(e.assessed||0))||b||v; const rate=Math.max(0,+((S.tax&&S.tax.propTaxRate)||0))/100; const pt=a*rate; return [e.type,e.state,e.value?('$'+num(e.value)):'',b>0?('cap gain $'+num(g)):'',pt?('property tax ~$'+num(Math.round(pt))+'/yr'):''].filter(Boolean).join(' · '); },
+    meta:e=>{ const v=+(e.value||0),b=+(e.basis||0),g=b>0?Math.max(0,v-b):0; const a=(+(e.assessed||0))||b||v; const rate=Math.max(0,+((S.tax&&S.tax.propTaxRate)||0))/100; const pt=a*rate; const rent=+(e.annualRent||0); return [e.type,e.state,e.value?('$'+num(e.value)):'',b>0?('cap gain $'+num(g)):'',pt?('property tax ~$'+num(Math.round(pt))+'/yr'):'',rent?('rent $'+num(rent)+'/yr'):''].filter(Boolean).join(' · '); },
     flags:e=>propertyFlags(e)
   },
   bankAccounts:{
@@ -1081,6 +1083,16 @@ function deriveFlags(){
 }
 
 /* ---------- Renderers ---------- */
+/* Pin the side nav just below the sticky header so its top tabs aren't hidden behind it when scrolling (the header grows when its action buttons wrap, so measure it live). */
+function syncNavTop(){
+  const hdr=document.querySelector('header.app'), nav=document.getElementById('topTabs');
+  if(!hdr||!nav) return;
+  if(window.innerWidth<=760){ nav.style.top=''; nav.style.maxHeight=''; return; }   // mobile: nav is static (CSS media query) — clear any inline overrides
+  const top=33+hdr.offsetHeight+6;                                                   // header sticks at top:33px; clear its full height + a small gap
+  nav.style.top=top+'px';
+  nav.style.maxHeight='calc(100vh - '+(top+12)+'px)';
+}
+window.addEventListener('resize', syncNavTop);
 function render(){
   ensureTax();   // initialize S.tax (incl. property-tax rate) before any list that uses it renders
   // keep properties in natural numeric order by name (1,2,…,10,…,17 — not 1,10,11,2,…)
@@ -1098,6 +1110,7 @@ function render(){
   renderMermaid();
   renderReview();
   renderTopTabs();
+  syncNavTop();
   if(currentTab!=='overview') renderTrustPanel(currentTab);
   save();
 }
@@ -1791,11 +1804,15 @@ function updDeathBenefit(v){ S.tax.deathBenefit=unfmtNum(v); save(); computeOutc
 function rentalPnl(){
   ensureTax(); const t=S.tax, rate=Math.max(0,+t.propTaxRate||0)/100;
   const isR=p=>/rental|commercial|vacation/i.test(p.type||'');
-  const propNow=(S.properties||[]).filter(isR).reduce((a,p)=>{ const v=+(p.value||0), as=(+(p.assessed||0))||(+(p.basis||0))||v; return a+as*rate; },0);
-  const propReassessed=(S.properties||[]).filter(isR).reduce((a,p)=>a+(+(p.value||0))*rate,0);
-  const gross=+t.rentalGross||0, sal=+t.execSal||0;
-  const actual=gross-sal-propNow, reassessed=gross-sal-propReassessed;
-  return {gross, sal, propNow, propReassessed, actual, reassessed, taxable:Math.max(0,actual)};
+  const rentals=(S.properties||[]).filter(isR);
+  const propNow=rentals.reduce((a,p)=>{ const v=+(p.value||0), as=(+(p.assessed||0))||(+(p.basis||0))||v; return a+as*rate; },0);
+  const propReassessed=rentals.reduce((a,p)=>a+(+(p.value||0))*rate,0);
+  const propRent=rentals.reduce((a,p)=>a+Math.max(0,+(p.annualRent||0)),0);          // Σ per-property annual rent
+  const opEx=rentals.reduce((a,p)=>a+Math.max(0,+(p.annualExpenses||0)),0);            // Σ per-property operating expenses (excl. property tax)
+  const gross=propRent>0?propRent:(+t.rentalGross||0);                                  // per-property rents (Real Estate) take precedence; manual field is the fallback
+  const sal=+t.execSal||0;
+  const actual=gross-sal-opEx-propNow, reassessed=gross-sal-opEx-propReassessed;
+  return {gross, sal, propRent, opEx, propNow, propReassessed, actual, reassessed, taxable:Math.max(0,actual)};
 }
 function updCharity(k,v){ ensureOutcome(); S.charity[k]=v; save(); computeCharity(); }
 /* capital-gains tax on the real-estate unrealized gain (federal LTCG + state, stacked on ordinary) */
@@ -1854,7 +1871,7 @@ function annualIncomeTax(){
   // grantor's final-1040 income tax (floored at 0), then corporate DRD + the executor's own tax (whole-household)
   const yourIncomeTax=Math.max(0,ordTax+pnlTax+investTax-qsaved-retSaved);
   const total=yourIncomeTax+drdTax+execTax;
-  return {ord, rentalGross, execSal, netRental, netRentalActual:R.actual, netRentalReassessed:R.reassessed, rentalPropNow:R.propNow, ordTax, pnlTax, fedCG, stCG, niit, investTax, qbi, ded, qsaved, qbiPhasedOut, sstbCap, drdPct, drded, drdTax, preTaxRet, retSaved, execIncTax, execSE, execTax, yourIncomeTax, total};
+  return {ord, rentalGross, execSal, netRental, netRentalActual:R.actual, netRentalReassessed:R.reassessed, rentalPropNow:R.propNow, rentalOpEx:R.opEx, ordTax, pnlTax, fedCG, stCG, niit, investTax, qbi, ded, qsaved, qbiPhasedOut, sstbCap, drdPct, drded, drdTax, preTaxRet, retSaved, execIncTax, execSE, execTax, yourIncomeTax, total};
 }
 function renderOutcome(){
   ensureOutcome(); ensureTax();
@@ -2043,16 +2060,16 @@ function renderTaxEstimator(){
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px">
         <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Total estate value</div><div id="r_total_estatevalue" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">assets + life insurance</div></div>
         <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Grand total tax due</div><div id="r_total_grand" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">income + estate + real-estate cap-gains (1 yr)</div></div>
-        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
+        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px" id="r_total_saved">toggle ILIT / FLP / QPRT / IDGT in the Strategy tab to project</div></div>
         <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate remaining for heirs</div><div id="r_total_remaining" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">estate value − grand total tax</div></div>
       </div>
       <div class="legal-foot" id="r_annual_note"></div>
-      <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts only ILIT, FLP (~30% discount) and QPRT removals — illustrative, attorney/CPA review.</div>
+      <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts ILIT (death benefit), FLP (~30% discount), QPRT (residence) and IDGT (full rental value) removals — illustrative, attorney/CPA review.</div>
     </div>
     <div class="grid g2">
       ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}<div class="legal-foot">Tax on the gains &amp; dividends entered here. <b>Real-estate capital gains are handled in the Real estate card below</b> (from each property's value − cost basis). Confirm with your CPA.</div>`)}
       ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('+ Life-insurance death benefit','r_est_db')}${res('= Total estate value (incl. life ins.)','r_est_value')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}<div class="muted" id="r_est_net_math" style="font-size:11.5px;margin:-4px 0 6px;text-align:right"></div>${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Less income tax (1 yr, all)','r_est_lessinc')}${res('Net to heirs after all taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
-      ${card('Rental income &amp; executor salary', `<div class="form-grid">${fld('Rental / operating income — gross ($)','rentalGross')}${fld('Management / executor salary ($)','execSal')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Rental is passive (no SE tax). The salary is a fixed deductible expense (charged even with no profit); rental property tax (current assessed) is also deducted. The executor reports the salary as their own income (below).</div>${res('Gross rental income','r_pnl_gross')}${res('Less management / executor salary','r_pnl_sal')}${res('Less property tax (rental, current)','r_pnl_proptax')}${res('Net rental P&amp;L','r_pnl_net',1)}${res('Net rental P&amp;L if reassessed to market','r_pnl_net_reassessed')}${res('Your income tax on the P&amp;L','r_pnl_tax')}${res('Executor — income tax on salary','r_exec_inc')}${res('Executor — payroll/SE tax on salary','r_exec_se')}<div class="legal-foot" id="r_pnl_note"></div>`)}
+      ${card('Rental income &amp; executor salary', `<div class="form-grid">${fld('Gross rental income ($) — fallback if no per-property rent','rentalGross')}${fld('Management / executor salary ($)','execSal')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Enter <b>annual rent &amp; operating expenses per property in Real Estate</b> — they sum into the P&amp;L below (the gross field above is used only if none are entered). Rental is passive (no SE tax); the salary is a fixed deductible expense charged even with no profit. The executor reports the salary as their own income (below).</div>${res('Gross rental income','r_pnl_gross')}${res('Less management / executor salary','r_pnl_sal')}${res('Less operating expenses (from properties)','r_pnl_opex')}${res('Less property tax (rental, current)','r_pnl_proptax')}${res('Net rental P&amp;L','r_pnl_net',1)}${res('Net rental P&amp;L if reassessed to market','r_pnl_net_reassessed')}${res('Your income tax on the P&amp;L','r_pnl_tax')}${res('Executor — income tax on salary','r_exec_inc')}${res('Executor — payroll/SE tax on salary','r_exec_se')}<div class="legal-foot" id="r_pnl_note"></div>`)}
       ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi','tax_qbi')}${chk('Specified service business (SSTB)','sstb')}${res('Est. federal tax saved','r_qbi_saved')}${res('Total deductible from income (20% of QBI)','r_qbi_ded',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
       ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp','tax_seComp')}</div>
@@ -2091,8 +2108,8 @@ function computeTax(){
   const propTaxNow=assessedSum*ptr, propTaxReassessed=marketSum*ptr, reassessInc=Math.max(0,propTaxReassessed-propTaxNow);
   set('r_pt_now',m$(propTaxNow)); set('r_pt_reassessed',m$(propTaxReassessed)); set('r_pt_increase',m$(reassessInc));
   // rental income & executor salary card (from the shared helper) — gross − salary − rental property tax, with a reassessed-property-tax example line
-  set('r_pnl_gross',m$(A.rentalGross)); set('r_pnl_sal',A.execSal>0?('– '+m$(A.execSal)):m$(0)); set('r_pnl_proptax',A.rentalPropNow>0?('– '+m$(A.rentalPropNow)):m$(0)); set('r_pnl_net',m$(A.netRentalActual)); set('r_pnl_net_reassessed',m$(A.netRentalReassessed)); set('r_pnl_tax',m$(A.pnlTax)); set('r_exec_inc',m$(A.execIncTax)); set('r_exec_se',m$(A.execSE));
-  note('r_pnl_note','Rental is passive — no self-employment tax. Net rental P&L = gross '+m$(A.rentalGross)+' − salary '+m$(A.execSal)+' − rental property tax '+m$(A.rentalPropNow)+' = '+m$(A.netRentalActual)+'. The salary is a fixed expense, charged even with no profit; if it pushes the P&L negative, that rental loss is generally suspended (not netted against other income) until you have passive income or sell. If the property reassesses to market the property tax rises and the P&L becomes '+m$(A.netRentalReassessed)+'. The executor reports the '+m$(A.execSal)+' as their own income — income tax '+m$(A.execIncTax)+' + payroll/SE '+m$(A.execSE)+' (standalone single filer). CPA review.');
+  set('r_pnl_gross',m$(A.rentalGross)); set('r_pnl_sal',A.execSal>0?('– '+m$(A.execSal)):m$(0)); set('r_pnl_opex',A.rentalOpEx>0?('– '+m$(A.rentalOpEx)):m$(0)); set('r_pnl_proptax',A.rentalPropNow>0?('– '+m$(A.rentalPropNow)):m$(0)); set('r_pnl_net',m$(A.netRentalActual)); set('r_pnl_net_reassessed',m$(A.netRentalReassessed)); set('r_pnl_tax',m$(A.pnlTax)); set('r_exec_inc',m$(A.execIncTax)); set('r_exec_se',m$(A.execSE));
+  note('r_pnl_note','Rental is passive — no self-employment tax. Net rental P&L = gross '+m$(A.rentalGross)+' − salary '+m$(A.execSal)+' − operating expenses '+m$(A.rentalOpEx)+' − rental property tax '+m$(A.rentalPropNow)+' = '+m$(A.netRentalActual)+'. Gross rent and operating expenses are summed from the per-property fields in Real Estate (the gross field above is a fallback used only when no per-property rent is entered). The salary is a fixed expense, charged even with no profit; if it pushes the P&L negative, that rental loss is generally suspended (not netted against other income) until you have passive income or sell. If the property reassesses to market the property tax rises and the P&L becomes '+m$(A.netRentalReassessed)+'. The executor reports the '+m$(A.execSal)+' as their own income — income tax '+m$(A.execIncTax)+' + payroll/SE '+m$(A.execSE)+' (standalone single filer). CPA review.');
   // QBI card (from the shared helper)
   set('r_qbi_ded',m$(A.ded)); set('r_qbi_saved',m$(A.qsaved));
   note('r_qbi_note', A.qbiPhasedOut?('Service business above ~'+m$(A.sstbCap)+' — QBI deduction phased out to $0 (SSTB), so no income-tax saving applied. CPA review.'):'Wage/UBIA limits may apply above the threshold — CPA review.');
@@ -2123,10 +2140,14 @@ function computeTax(){
   note('r_annual_note', 'Grand total tax due = your income tax '+m$(A.yourIncomeTax)+' (ordinary '+m$(A.ordTax)+' + net rental P&L '+m$(A.pnlTax)+' + cap-gains & dividends '+m$(A.investTax)+' − QBI '+m$(A.qsaved)+(A.retSaved>0?(' − retirement '+m$(A.retSaved)):'')+') + corporate DRD '+m$(A.drdTax)+' + executor tax '+m$(A.execTax)+' (income '+m$(A.execIncTax)+' + payroll/SE '+m$(A.execSE)+') + estate tax '+m$(estTax)+' + real-estate cap-gains '+m$(reCapTax)+' = '+m$(grandTotal)+'. Estate remaining for heirs = '+m$(estateValue)+' − '+m$(grandTotal)+' = '+m$(Math.max(0,estateValue-grandTotal))+'. One-year household snapshot (grantor final 1040 + estate tax) — confirm with your CPA.');
   const flpVal=(S.properties||[]).filter(p=>/rental|commercial|vacation/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
   const resVal=(S.properties||[]).filter(p=>/personal residence/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
-  let removed=0; (S.customStructures||[]).forEach(cs=>{ if(cs.k==='ilit') removed+= +t.deathBenefit||0; else if(cs.k==='flp') removed+=0.30*flpVal; else if(cs.k==='qprt') removed+=resVal; });
+  const structKeys=new Set([...(S.customStructures||[]).map(c=>c.k), ...Object.keys(S.outcome||{}).filter(k=>S.outcome[k])]);   // structures toggled in the Strategy tab OR added to the Estate Map
+  let removed=0;
+  if(structKeys.has('ilit')) removed+= +t.deathBenefit||0;                                 // ILIT keeps the death benefit out of the taxable estate
+  if(structKeys.has('idgt')) removed+=flpVal; else if(structKeys.has('flp')) removed+=0.30*flpVal;   // IDGT gifts rentals out (full value); FLP alone ≈ 30% valuation discount
+  if(structKeys.has('qprt')) removed+=resVal;                                              // QPRT moves the residence out
   const afterEstate=Math.max(0,estateValue-removed), afterTax=Math.max(0,afterEstate-exTot)*TAXC.estRate, estSaved=estTax-afterTax;
   set('r_total_after', m$(afterTax));
-  note('r_total_saved', removed>0?('saves ≈ '+m$(estSaved)+' (removes ~'+m$(removed)+')'):'add FLP / ILIT / QPRT to project');
+  note('r_total_saved', removed>0?('saves ≈ '+m$(estSaved)+' (removes ~'+m$(removed)+')'):'toggle ILIT / FLP / QPRT / IDGT in the Strategy tab to project');
 }
 function buildTaxSummaryMD(){
   ensureTax(); computeTax(); const t=S.tax, g=id=>document.getElementById(id)?document.getElementById(id).textContent:'—';
