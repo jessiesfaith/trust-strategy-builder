@@ -15,6 +15,8 @@ Single-page, client-side estate/trust/entity **planning & attorney-prep** organi
 ## Layout (tabs via `switchTab(key)`)
 `.wrap > section.block` blocks are shown/hidden per tab. Tab order in `renderTopTabs()`:
 **Overview · Tax Estimator · Distribution · Strategy · (per-trust tabs) · + New trust.**
+The left nav (`#topTabs`) is pinned just below the sticky header via `syncNavTop()` (re-measured on
+window resize; falls back to static, row-wrapped below 760px).
 
 - **Overview** — `#essentials` (always shown) + collapsible sections: `#snapshot` Strategy Snapshot,
   `#assets` Asset Summary, `#mindmap` Estate Map (live diagram), `#details` Planning Detail (accordions),
@@ -23,13 +25,23 @@ Single-page, client-side estate/trust/entity **planning & attorney-prep** organi
 - **Tax Estimator** (`#taxconsider` + `#taxest`, shown together on the `tax` tab) — `renderTax()` builds the
   Tax Considerations framework (numbered subsections collapsible via `toggleTC`/`tcOpen`); `renderTaxEstimator()`
   builds the estimator inputs; `computeTax()` fills all result spans (it does NOT call `ensureTax()` itself —
-  `render()` and the tab switch run `ensureTax()` first).
+  `render()` and the tab switch run `ensureTax()` first). The Estate card splits the income-tax deduction
+  into a capital-gains line (`r_est_lessinc_cg`) and an ordinary/rental/executor line (`r_est_lessinc_other`);
+  the Rental income & executor card shows a "Total tax (this section)" (`r_pnl_tottax` = your P&L income tax +
+  executor income tax + executor payroll/SE). The 4-metric headline is **Total estate value · Grand total tax
+  due · Estate tax with added structures** (projected from the Strategy-tab toggles) **· Estate remaining for
+  heirs**.
 - **Distribution** (`#dist`) — `renderDistribution()` / `computeDistribution()`. Beneficiary list (% allocation
   + timing), reserves (executor %, property mgmt, taxes/debts, **grandchildren milestone funding**), and
-  milestone life-insurance distributions. Distributable = `netAfterAllTaxes().net − reserves`.
-- **Strategy** (`#outcome`) — `renderOutcome()` / `computeOutcome()`. Toggle structures
-  (trust/ILIT/FLP/QPRT/IDGT) → No-planning vs Your-setup comparison (estate tax, cap gains, property tax,
-  net to heirs) + a charitable CLAT/own-NFP break-even calculator (`computeCharity`).
+  milestone life-insurance distributions. Distributable = `netAfterAllTaxes().net − reserves`. When the
+  grandchildren card is on, the child count defaults to and is floored at 1 (a blank count no longer zeroes
+  the reserve).
+- **Strategy** (`#outcome`) — `renderOutcome()` / `computeOutcome()`. The life-insurance death-benefit input
+  lives here (feeds the gross estate + the ILIT comparison). Toggle structures (trust/ILIT/FLP/QPRT/IDGT) →
+  No-planning vs Your-setup comparison (estate tax, cap gains, property tax, net to heirs) + a charitable
+  CLAT/own-NFP break-even calculator (`computeCharity`). These toggles also drive the Tax Estimator headline
+  "Estate tax with added structures" — ILIT removes the death benefit, IDGT removes full rental value, FLP ≈
+  30% discount, QPRT removes the residence.
 
 ## Tax engine — key functions
 - `ensureTax()` — defaults `S.tax`; **auto-syncs** the taxable estate to live assets (`estateAuto`) and the
@@ -37,9 +49,21 @@ Single-page, client-side estate/trust/entity **planning & attorney-prep** organi
   spousal-doubling `dual` from marital status.
 - `estateFromAssets()` — single source for the asset-based estate (used by `renderTax` AND `ensureTax`, so the
   Tax Estimator and Tax Considerations never drift).
-- `netAfterAllTaxes()` — **single source of truth** for "net to heirs" = estate − federal estate tax − entered
-  capital-gains tax − real-estate capital-gains tax. Used by the Estate-tax card ("Net to heirs after all
-  taxes"), the headline ("Estate remaining for heirs"), and the Distribution base — they always reconcile.
+- `rentalPnl()` — single source for the rental P&L: gross = Σ per-property `annualRent`; subtracts the
+  executor/management salary (a fixed deductible expense, charged even at a loss), Σ per-property
+  `annualExpenses` (operating expenses, excl. property tax), and the current rental property tax
+  (assessed × rate). Returns an `actual` P&L, a `reassessed`-to-market variant, and a floored `taxable`.
+  There is no manual "Gross rental income" input — gross is entirely per-property.
+- `annualIncomeTax()` — single source for one year of during-life income tax (used by the headline, the
+  Estate card's income-tax lines, and the Distribution base). Covers the grantor's 1040 (ordinary + net
+  rental P&L + cap-gains/dividends − QBI − retirement), the corporate DRD, and the executor/management
+  salary taxed as the recipient's **own** income (a standalone Single filer: income tax + payroll/SE).
+  **QBI = net rental P&L** (no manual QBI input); 20% deduction, phased to $0 if SSTB above the §199A cap.
+- `netAfterAllTaxes()` — **single source of truth** for net available to heirs = total estate value
+  (assets + life-insurance death benefit) − federal estate tax − real-estate capital-gains tax − one year
+  of all income-side tax (`annualIncomeTax().total`). It is the Distribution base; the Estate-tax card
+  ("Net to heirs after all taxes") and the Tax Estimator headline ("Estate remaining for heirs") compute
+  the same figure inline, so all three reconcile.
 - `reCapInfo()` / `reCapTaxOn(g)` — capital-gains tax on a real-estate gain, stacked above ordinary + entered
   long-term gains (federal LTCG + CA state; NIIT not included — noted in the UI).
 - Real-estate capital gains are managed **only** in the Real estate card (not the Capital gains card); they're
@@ -49,12 +73,16 @@ Single-page, client-side estate/trust/entity **planning & attorney-prep** organi
   `TAXY` (per-year brackets/limits) / `TAXC` (rates) / `STATE_TAX`.
 
 ## State shape (`S`, in localStorage)
-`profile`, `people[]`, `properties[]` (incl. `basis`, `assessed`), `bankAccounts[]`, `brokerageAccounts[]`,
-`llcs[]`, `subTrusts[]`, `customTrusts[]`/`trustNotes`, `customStructures[]`, `tax{...}` (filing/year/state,
-ordinary/ltgain/…, estate+estateAuto, exemption+exemptionAuto, dual, deathBenefit/inILIT, profit/salary/qbi/
-sstb/drd…, age/seComp, ret401/retIra/retSimple/retSep, propTaxRate), `beneficiaries[]`, `insDist[]`,
+`profile`, `people[]`, `properties[]` (incl. `basis`, `assessed`, `annualRent`, `annualExpenses`),
+`bankAccounts[]`, `brokerageAccounts[]`, `llcs[]`, `subTrusts[]`, `customTrusts[]`/`trustNotes`,
+`customStructures[]`, `tax{...}` (filing/year/state, ordinary/ltgain/…, estate+estateAuto,
+exemption+exemptionAuto, dual, deathBenefit, sstb/drd…, `execSal` — the management/executor salary the
+rental P&L deducts and that is taxed as the executor's own income — age/seComp,
+ret401/retIra/retSimple/retSep, propTaxRate), `beneficiaries[]`, `insDist[]`,
 `reserves{execPct,propMgmt,taxDebt}`, `gk{...}` (grandchildren funding), `outcome{...}` + `charity{...}`
-(Strategy tab), `review`. `ensureTax()`/`ensureDist()`/`ensureOutcome()` backfill defaults.
+(Strategy tab), `review`. `ensureTax()`/`ensureDist()`/`ensureOutcome()` backfill defaults. QBI and gross
+rental are **derived, not inputs** (QBI = net rental P&L; gross = Σ per-property `annualRent`) and ILIT is
+the Strategy tab's `outcome.ilit`, so the old `qbi`/`rentalGross`/`inILIT` tax defaults were removed.
 
 ## Conventions / guardrails
 - `vercel.json` = `{ "cleanUrls": true }`; `.vercelignore` keeps only `index.html` + `vercel.json`.

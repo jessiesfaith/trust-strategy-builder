@@ -2,9 +2,10 @@
 
 Single self-contained `index.html` — an **estate / trust / entity strategy and attorney-prep tool**
 (Fast Insights). It helps a user organize people, roles, real estate, cash/bank accounts, brokerage
-and retirement accounts, LLC options, sub-trusts, and executor/trustee protection planning **before**
-meeting with an attorney. Runs entirely in the browser (nothing is uploaded; state is saved to
-`localStorage`).
+and retirement accounts, LLC options, sub-trusts, and executor/trustee protection planning, and to
+estimate taxes (income / capital-gains / estate / SE), plan beneficiary distributions, and model
+planning structures **before** meeting with an attorney. Runs entirely in the browser (nothing is
+uploaded; state is saved to `localStorage`).
 
 > **Planning and organization only.** This tool does not provide legal, tax, investment, banking,
 > lending, or insurance advice, and it does not create legal documents. It does not replace an estate
@@ -17,7 +18,19 @@ meeting with an attorney. Runs entirely in the browser (nothing is uploaded; sta
 - **Estate Formation Essentials** — six always-visible summary cards (who/charge/receives/assets/structure/reviews).
 - **Strategy Snapshot** — possible review flags derived from your inputs (never "recommended final structure").
 - **Asset Summary** cards with add / view-details.
-- **Dynamic Mermaid mind map + ownership flowchart** that update as data changes.
+- **Dynamic Estate Map** — an SVG mind map + ownership map that update as data changes (with a Mermaid
+  code export).
+- **Tax Estimator tab** — federal + state income / capital-gains / estate / SE tax, with a rental P&L
+  summed from per-property annual rent and operating expenses (QBI = net rental P&L), a management /
+  executor salary modeled as a deductible expense and taxed to the executor, a property-tax / step-up
+  card, and a 4-metric headline (total estate value · grand total tax due · estate tax with added
+  structures · estate remaining for heirs).
+- **Distribution tab** — beneficiary % allocation + timing, milestone life-insurance distributions, and
+  reserves (incl. a grandchildren milestone-funding reserve), starting from the true net after all taxes.
+- **Strategy tab** — enter the life-insurance death benefit and toggle revocable trust / ILIT / FLP /
+  QPRT / IDGT to compare no-planning vs. your setup; the toggles also drive the Tax Estimator's
+  estate-tax-with-structures projection (an ILIT removes the death benefit from the estate). Includes a
+  charitable break-even calculator.
 - **Collapsible detail sections** — People & Roles, Profile, Real Estate, Brokerage, Cash/Bank, LLC,
   Sub-Trusts, Executor/Trustee Protection Plan, Professional Questions, Attorney/Entity intake.
 - **Full CRUD** — add / edit / duplicate / remove, plus clear-form, clear-all, reset-to-sample, and

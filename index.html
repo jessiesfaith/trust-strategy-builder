@@ -200,26 +200,6 @@
   .mm-full-canvas{flex:1;overflow:auto;padding:24px;display:flex;align-items:flex-start;justify-content:center}
   .mm-full-canvas svg{width:min(1500px,96%);height:auto;transform-origin:top center;margin:0 auto}
   .mm-zoom{display:flex;align-items:center;gap:4px}
-  /* Native mind-map tree (readable bubble/dot layout) */
-  .mindtree{display:flex;flex-direction:column;gap:14px}
-  .mt-root{align-self:flex-start;background:var(--indigo);color:var(--accent-ink);font-weight:600;padding:6px 18px;border-radius:999px;font-size:18px;font-family:'Cormorant Garamond',Georgia,serif}
-  .mt-cols{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
-  .mt-branch{flex:1 1 210px;min-width:200px;max-width:300px;border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:12px 13px;display:flex;flex-direction:column;gap:5px}
-  .mt-branch.active{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}
-  .mt-branch.option{border-style:dashed;border-color:var(--amber)}
-  .mt-head{font-weight:700;font-size:14.5px;color:var(--ink);display:flex;align-items:center;gap:8px;margin-bottom:3px}
-  .mt-head .d{width:10px;height:10px;border-radius:50%;background:var(--indigo);flex:none}
-  .mt-branch.active .mt-head .d{background:var(--green)}
-  .mt-branch.option .mt-head .d{background:var(--amber)}
-  .mt-node{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);padding:3px 0;line-height:1.35}
-  .mt-node::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--muted);flex:none}
-  .mt-node.sub{margin-left:16px;font-size:13.5px;color:var(--muted)}
-  .mt-node.sub::before{width:5px;height:5px;background:var(--line)}
-  .mm-full-canvas .mindtree{transform-origin:top center;width:100%}
-  .mm-full-canvas .mt-branch{flex-basis:260px;min-width:240px;max-width:360px;padding:16px}
-  .mm-full-canvas .mt-head{font-size:17px}
-  .mm-full-canvas .mt-node{font-size:16px}
-  .mm-full-canvas .mt-root{font-size:23px}
 
   /* Report memo */
   .memo{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
@@ -268,9 +248,7 @@
 
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c1c1c;color:var(--ink);border:1px solid var(--indigo);padding:10px 16px;border-radius:10px;font-size:14.5px;z-index:99;opacity:0;transition:.2s;pointer-events:none}
   .toast.show{opacity:1}
-  .pill-count{font-size:12.5px;background:var(--indigo-soft);color:var(--indigo-ink);padding:2px 8px;border-radius:99px;font-weight:700}
   hr.soft{border:0;border-top:1px solid var(--line);margin:14px 0}
-  code.inline{background:var(--panel2);padding:1px 6px;border-radius:5px;font-size:13.5px}
   pre.code{background:#000;color:#e8e6df;padding:14px;border-radius:11px;overflow:auto;font-size:13.5px;line-height:1.5;max-height:320px;border:1px solid var(--line)}
   /* Private login gate */
   .login-gate{position:fixed;inset:0;z-index:1000;background:#0a0a0a;display:flex;align-items:center;justify-content:center;padding:20px}
@@ -388,7 +366,7 @@
           <span>Potential options <span class="badge b-amber" style="padding:2px 6px">to discuss</span></span>
         </label>
         <button class="btn-soft btn-xs" onclick="openStructurePalette()" title="Add an entity/trust structure where it's available in your state">+ Add structure</button>
-        <button class="btn-ghost btn-xs" id="mmResetBtn" onclick="resetMMLayout()" title="Snap all dots back to the auto layout">↺ Reset layout</button>
+        <button class="btn-ghost btn-xs" onclick="resetMMLayout()" title="Snap all dots back to the auto layout">↺ Reset layout</button>
         <button class="btn-soft btn-xs" onclick="openMMFull()">⛶ Full screen</button>
         <button class="btn-ghost btn-xs" onclick="scrollToId('export')">View Mermaid code</button>
       </div>
@@ -2012,7 +1990,7 @@ function seTaxCalc(net){ const base=Math.max(0,net)*0.9235; return Math.min(base
 function ensureTax(){
   S.tax=S.tax||{};
   if(S.tax.year===undefined) S.tax.year='2026';
-  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,deathBenefit:2000000,inILIT:true,qbi:150000,sstb:false,rentalGross:200000,execSal:140000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000,ret401:'',retIra:'',retSimple:'',retSep:'',propTaxRate:1.1};
+  const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,deathBenefit:2000000,sstb:false,execSal:140000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000,ret401:'',retIra:'',retSimple:'',retSep:'',propTaxRate:1.1};
   for(const k in d){ if(S.tax[k]===undefined) S.tax[k]=d[k]; }
   if(S.tax.dual===undefined) S.tax.dual=/married/i.test((S.profile&&S.profile.maritalStatus)||'');   // exemption doubling follows marital status (user can still toggle the checkbox)
   if(S.tax.exemptionAuto===undefined) S.tax.exemptionAuto=true;
@@ -2041,9 +2019,9 @@ function renderTaxEstimator(){
   const inSty='font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%';
   const inp=(k,ph,id)=>`<input ${id?`id="${id}" `:''}type="text" inputmode="decimal" value="${esc(groupNum(t[k]))}" oninput="fmtNumField(this);updTax('${k}',unfmtNum(this.value))" style="${inSty}" placeholder="${ph||''}">`;
   const fld=(lab,k,id)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label>${inp(k,'',id)}</div>`;
-  const estateFld=`<div class="field" style="margin-bottom:8px"><label>Taxable estate ($)</label><input id="tax_estate" type="text" inputmode="decimal" value="${esc(groupNum(t.estate))}" oninput="fmtNumField(this);updEstate(this.value)" style="${inSty}"></div>`;
+  const estateFld=`<div class="field" style="margin-bottom:8px"><label>Taxable estate ($)</label><input type="text" inputmode="decimal" value="${esc(groupNum(t.estate))}" oninput="fmtNumField(this);updEstate(this.value)" style="${inSty}"></div>`;
   const estateHint=`<div class="muted" id="estateHint" style="font-size:12px;margin:-4px 0 8px">${t.estateAuto?('Auto-synced from your assets ('+m$(estateFromAssets().net)+') — matches the net estate on Tax Considerations.'):'<span style="color:#c89a2d">Manual override.</span> <a href="#" onclick="event.preventDefault();resyncEstate()" style="color:var(--indigo)">↻ Use asset total</a>'}</div>`;
-  const exemptionFld=`<div class="field" style="margin-bottom:8px"><label>Exemption / person ($)</label><input id="tax_exemption" type="text" inputmode="decimal" value="${esc(groupNum(t.exemption))}" oninput="fmtNumField(this);updExemption(this.value)" style="${inSty}"></div>`;
+  const exemptionFld=`<div class="field" style="margin-bottom:8px"><label>Exemption / person ($)</label><input type="text" inputmode="decimal" value="${esc(groupNum(t.exemption))}" oninput="fmtNumField(this);updExemption(this.value)" style="${inSty}"></div>`;
   const exemptionHint=`<div class="muted" id="exemptionHint" style="font-size:12px;margin:-4px 0 8px">${t.exemptionAuto?('Auto-set to the '+esc(t.year)+' federal exemption ('+m$((curY()&&curY().exemption)||0)+'/person) — same figure Tax Considerations uses.'):'<span style="color:#c89a2d">Manual override.</span> <a href="#" onclick="event.preventDefault();resyncExemption()" style="color:var(--indigo)">↻ Use current-year</a>'}</div>`;
   const chk=(lab,k)=>`<label class="field chk" style="margin-bottom:8px"><input type="checkbox" ${t[k]?'checked':''} onchange="updTax('${k}',this.checked)" style="width:auto"> ${lab}</label>`;
   const res=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" style="${big?'font-size:17px':''}">—</span></div>`;
@@ -2078,7 +2056,7 @@ function renderTaxEstimator(){
       ${card('Rental income &amp; executor salary', `<div class="form-grid">${fld('Management / executor salary ($)','execSal')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px"><b>Gross rent &amp; operating expenses come from the per-property fields in Real Estate</b> (enter them on each property). Rental is passive (no SE tax); the salary is a fixed deductible expense charged even with no profit. The executor reports the salary as their own income (below).</div>${res('Gross rental income','r_pnl_gross')}${res('Less management / executor salary','r_pnl_sal')}${res('Less operating expenses (from properties)','r_pnl_opex')}${res('Less property tax (rental, current)','r_pnl_proptax')}${res('Net rental P&amp;L','r_pnl_net',1)}${res('Net rental P&amp;L if reassessed to market','r_pnl_net_reassessed')}<div class="muted" style="font-size:11px;margin:6px 0 2px;text-transform:uppercase;letter-spacing:.06em">Taxes this generates</div>${res('Your income tax on the P&amp;L','r_pnl_tax')}${res('Executor — income tax on salary','r_exec_inc')}${res('Executor — payroll/SE tax on salary','r_exec_se')}${res('Total tax (this section)','r_pnl_tottax',1)}<div class="legal-foot" id="r_pnl_note"></div>`)}
       ${card('Business income — QBI (§199A)', `${res('Qualified business income (= net rental P&amp;L)','r_qbi_amount')}${chk('Specified service business (SSTB)','sstb')}${res('20% deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
-      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp','tax_seComp')}</div>
+      ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp')}</div>
         <div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Enter what you plan to contribute to each (the ${esc(t.year)} max is shown for reference). Pre-tax contributions reduce your taxable income.</div>
         <div class="form-grid">
           ${fld('401(k) contribution ($) · max '+m$(max401),'ret401')}
@@ -2129,7 +2107,8 @@ function computeTax(){
   const afterEstateTax=Math.max(0,estateValue-estTax);
   set('r_est_net', m$(afterEstateTax)); set('r_est_net_math', m$(estateValue)+' − '+m$(estTax)+' = '+m$(afterEstateTax));
   const netHeirs=Math.max(0,afterEstateTax-reCapTax-A.total);
-  set('r_est_lessre', reCapTax>0?('– '+m$(reCapTax)):m$(reCapTax)); const incCG=Math.min(A.investTax,A.total), incOther=Math.max(0,A.total-incCG); set('r_est_lessinc_cg', incCG>0?('– '+m$(incCG)):m$(0)); set('r_est_lessinc_other', incOther>0?('– '+m$(incOther)):m$(0));   // cap-gains share capped at the floored total so neither line goes negative; both still sum to A.total set('r_est_netheirs', m$(netHeirs));
+  set('r_est_lessre', reCapTax>0?('– '+m$(reCapTax)):m$(reCapTax)); const incCG=Math.min(A.investTax,A.total), incOther=Math.max(0,A.total-incCG); set('r_est_lessinc_cg', incCG>0?('– '+m$(incCG)):m$(0)); set('r_est_lessinc_other', incOther>0?('– '+m$(incOther)):m$(0));   // cap-gains share capped at the floored total so neither line goes negative; both still sum to A.total
+  set('r_est_netheirs', m$(netHeirs));
   note('r_est_note', 'Life insurance in an ILIT or a step-up at death can each reduce this — see Strategy & confirm with your CPA.');
   // retirement — saved value from the shared helper; contribution limits & over-warnings are display-only
   const age=+t.age||0, comp=+t.seComp||0, R=Y.ret, cu=age>=50;
@@ -2458,64 +2437,6 @@ function buildMindmap(){
   return m;
 }
 
-function buildFlow(){
-  const flp=(S.llcs||[]).find(l=>/flp|family limited/i.test((l.name||'')+' '+(l.notes||'')));
-  const idgt=(S.subTrusts||[]).find(s=>/idgt|intentionally defective/i.test(s.type||''));
-  const rentals=(S.properties||[]).filter(x=>/rental|commercial|vacation/i.test(x.type||''));
-  const active=[]; // active estate-freeze nodes -> green
-  let f='flowchart TD\n';
-  f+='  User['+mmSafe(S.profile.grantor||'Grantor')+'] --> Trust[Revocable Living Trust]\n';
-  // Pour-over will is part of the ACTIVE plan (pairs with the revocable trust)
-  f+='  User --> Will[Pour-Over Will]\n  Will -. pours stray assets .-> Trust\n';
-  let i=0;
-  (S.properties||[]).filter(x=>/personal residence/i.test(x.type||'')).forEach(x=>{ i++; f+='  Trust --> R'+i+'['+mmSafe(x.name)+']\n'; });
-  (S.brokerageAccounts||[]).filter(x=>!/retire|ira|401/i.test(x.kind||'')).forEach(x=>{ i++; f+='  Trust --> B'+i+'['+mmSafe(x.institution+' Brokerage')+']\n'; });
-  f+='  Trust --> Cash[Trust Cash Account]\n';
-  // Rentals — via FLP (data, active freeze) or generic LLC option
-  if(flp && rentals.length){
-    f+='  User -. general partner control .-> FLP[Family Limited Partnership FLP]\n'; active.push('FLP');
-    let pi=0; rentals.forEach(x=>{ pi++; f+='  FLP --> FP'+pi+'['+mmSafe(x.name)+']\n'; });
-    if(idgt){
-      f+='  User -. gift + installment-sale of LP interests .-> IDGT[IDGT estate freeze - grantor pays its tax]\n'; active.push('IDGT');
-      f+='  FLP -. limited-partner interests .-> IDGT\n';
-      f+='  IDGT --> OutEst[Future growth OUT of taxable estate]\n'; active.push('OutEst');
-      f+='  IDGT --> IBene[Children / descendants]\n'; active.push('IBene');
-    }
-  } else {
-    let li=0; rentals.forEach(x=>{ li++; f+='  Trust --> LLC'+li+'[LLC Option]\n  LLC'+li+' --> P'+li+'['+mmSafe(x.name)+']\n  LLC'+li+' --> LB'+li+'[LLC Bank Account]\n'; });
-  }
-  // Sub-trusts under the revocable trust (exclude the IDGT — it is NOT owned by the revocable trust)
-  let si=0;
-  (S.subTrusts||[]).filter(s=>!/idgt|intentionally defective/i.test(s.type||'')).forEach(x=>{ si++; f+='  Trust --> ST'+si+'['+mmSafe(x.type)+']\n'; });
-  // Fiduciaries
-  const succ=(S.people||[]).find(x=>/successor/i.test(x.role||''));
-  f+='  Trustee['+mmSafe(succ?succ.name:'Successor Trustee')+'] --> Trust\n';
-  f+='  Trustee --> Pros[Attorney / CPA / Property Manager]\n';
-  const exec=(S.people||[]).find(x=>/executor/i.test(x.role||''));
-  f+='  Exec['+mmSafe(exec?exec.name:'Executor')+'] --> Estate[Probate Estate if any]\n  Estate --> Trust\n';
-  // Potential options — alternatives NOT in the active plan, boxed as "to discuss"
-  if(showAdvanced){
-    f+='  subgraph OPT [Potential Options - to discuss]\n';
-    f+='    ILIT[ILIT Life Insurance Trust - estate tax]\n    Policy[Life Insurance Policy]\n    Bene[Beneficiaries / Heirs]\n';
-    f+='    LivIrr[Living Irrevocable Trust - estate tax]\n';
-    f+='    CLAT[CLAT Charitable Lead Annuity Trust - charitable + estate]\n    NFP[NFP / Private Foundation]\n';
-    if(!idgt && !flp){ f+='    IDGTo[IDGT Grantor Trust - estate + income tax]\n    FLPo[FLP Family Limited Partnership - estate tax]\n    FamAssets[Family Real Estate / Business]\n'; }
-    else if(!idgt){ f+='    IDGTo[IDGT Grantor Trust - estate + income tax]\n'; }
-    else if(!flp){ f+='    FLPo[FLP Family Limited Partnership - estate tax]\n'; }
-    f+='  end\n';
-    f+='  User --> ILIT\n  ILIT --> Policy\n  Policy --> Bene\n  User --> LivIrr\n  User --> CLAT\n  CLAT --> NFP\n  CLAT --> Bene\n';
-    if(!idgt && !flp){ f+='  User --> IDGTo\n  IDGTo --> FLPo\n  FLPo --> FamAssets\n'; }
-    else if(!idgt){ f+='  User --> IDGTo\n  FLP -. LP interests .-> IDGTo\n'; }
-    else if(!flp){ f+='  User --> FLPo\n  FLPo -. LP interests .-> IDGT\n'; }
-    f+='  style OPT fill:#15120a,stroke:#c89a2d,stroke-width:1px,stroke-dasharray:5 4,color:#d2a23a\n';
-  }
-  if(active.length){
-    f+='  classDef active fill:#0e1a0c,stroke:#00c805,stroke-width:1.5px,color:#fafaf7;\n';
-    f+='  class '+[...new Set(active)].join(',')+' active;\n';
-  }
-  return f;
-}
-
 function renderMermaid(){
   const canvas=document.getElementById('mmCanvas');
   const leg=document.getElementById('mmStatusLegend'), det=document.getElementById('mmDetail');
@@ -2585,7 +2506,7 @@ function switchMMFull(w){
 }
 function zoomMMFull(d){
   mmFullZoom = d===0 ? 1 : Math.min(3, Math.max(0.4, mmFullZoom + d*0.2));
-  const el=document.querySelector('#mmFullCanvas svg, #mmFullCanvas .mindtree'); if(el) el.style.transform='scale('+mmFullZoom+')';
+  const el=document.querySelector('#mmFullCanvas svg'); if(el) el.style.transform='scale('+mmFullZoom+')';
 }
 async function renderMMFull(){
   const c=document.getElementById('mmFullCanvas');

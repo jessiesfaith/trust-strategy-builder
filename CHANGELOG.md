@@ -4,6 +4,57 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Cleanup & handoff: dead-code removal + "Net to heirs" display fix
+
+- **Fixed a display bug.** The Estate-tax card's **"Net to heirs after all taxes"** row — and the same
+  line in the downloaded tax summary — was permanently blank ("—"). When the income-tax line was split
+  into capital-gains vs. the rest, the `set('r_est_netheirs', m$(netHeirs))` call had been merged onto the
+  end of a `//` comment and silently stopped executing. Restored it to its own statement; the row now
+  shows the figure and reconciles **exactly** with the headline "Estate remaining for heirs" and the
+  Distribution base (all = `netAfterAllTaxes().net`; verified at $30,877,603 on the sample scenario).
+- **Removed verified-dead code** (each confirmed unreferenced before removal):
+  - the orphaned **"Native mind-map tree" CSS family** (`.mindtree` + `.mt-*`, ~20 rules) left over from a
+    pre-SVG renderer — the diagram now renders via `buildOwnershipSVG()` / `buildMindmapHTML()`;
+  - the unused **`.pill-count`** and **`code.inline`** CSS rules;
+  - the unused **`buildFlow()`** Mermaid-flowchart builder (~57 lines) — the Ownership Map renders as SVG
+    and the Mermaid export uses `buildMindmap()`;
+  - three dead **`ensureTax()` default seeds** (`qbi`, `rentalGross`, `inILIT`) — all superseded by
+    derived values (QBI = net rental P&L; gross = Σ per-property rent) or the Strategy tab (`S.outcome.ilit`);
+  - four never-read **DOM-id attributes** (`tax_estate`, `tax_exemption`, `tax_seComp`, `mmResetBtn`) — the
+    fields/buttons stay; only the unused ids were dropped;
+  - the dead `.mindtree` fallback inside the full-screen-zoom `querySelector`.
+- Handoff docs (HANDOFF / CLAUDE / README) refreshed to match current behavior. No console errors; all
+  four tabs render and reconcile.
+
+## 2026-06-17 — Per-property rental P&L, QBI from net rental, executor salary, Strategy→Estimator flow, sticky nav
+
+- **Gross rental income now sums per-property "Annual rent."** Added two per-property fields in Real
+  Estate — "Annual rent / gross income ($)" (`annualRent`) and "Annual operating expenses — excl. property
+  tax ($)" (`annualExpenses`). The Rental income card's gross is now Σ per-property `annualRent` (the manual
+  "Gross rent" input and its fallback were removed). The property meta line shows "rent $X/yr".
+- **Rental P&L = gross − executor salary − operating expenses − current rental property tax**, with a
+  "Net rental P&L if reassessed to market" example line. `rentalPnl()` is the single source.
+- **QBI is now the net rental P&L** (no separate "Qualified business income" input). The QBI card label
+  reads "Qualified business income (= net rental P&L)"; deduction = 20% × max(0, net rental P&L), phased to
+  $0 if SSTB above the §199A income cap.
+- **Estate card "Less income tax" split into two lines** — "capital gains & dividends" (`r_est_lessinc_cg`)
+  and "ordinary / rental / executor" (`r_est_lessinc_other`), capped so neither goes negative and both sum
+  to the annual income-tax total.
+- **New "Total tax (this section)" row** in the Rental income & executor card (`r_pnl_tottax` = your income
+  tax on the P&L + executor income tax + executor payroll/SE).
+- **Executor / management salary** is a fixed deductible rental expense (charged even with no profit) and is
+  taxed as the recipient's own income — a standalone Single filer (income tax + payroll/SE), via
+  `annualIncomeTax()`.
+- **Strategy-tab structure toggles now drive the Tax Estimator headline "Estate tax with added structures"**
+  (ILIT removes the death benefit; IDGT removes full rental value; FLP ≈ 30% discount; QPRT removes the
+  residence). The life-insurance death-benefit input now lives on the Strategy tab (feeds the gross estate
+  + ILIT comparison). Headline metrics are now: Total estate value · Grand total tax due · Estate tax with
+  added structures · Estate remaining for heirs.
+- **Sticky/pinned left nav** — `syncNavTop()` pins the side nav just under the sticky header (re-measured on
+  resize; static below 760px).
+- **Grandchildren milestone reserve count defaults to 1** (a blank/zero count no longer zeroes the reserve
+  when the card is on).
+
 ## 2026-06-17 — Tax Estimator: card swap, QBI deductible total, editable retirement
 
 - **Swapped the LLC-vs-S-corp and Life-insurance cards** (LLC now first/left, Life-insurance second/right).
