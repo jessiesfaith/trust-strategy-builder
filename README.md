@@ -23,8 +23,24 @@ uploaded; state is saved to `localStorage`).
 - **Tax Estimator tab** — federal + state income / capital-gains / estate / SE tax, with a rental P&L
   summed from per-property annual rent and operating expenses (QBI = net rental P&L; modeled at FMV-reassessed property tax, rental-business properties only), a management /
   executor salary modeled as a deductible expense and taxed to the executor, a property-tax / step-up
-  card, and a 4-metric headline (total estate value · grand total tax due · estate tax with added
+  card, a **Cash card** (gift-now vs pass-at-death — the choice rolls into the taxed estate total), and a
+  4-metric headline (total estate value · grand total tax due · estate tax with added
   structures · estate remaining after taxes).
+- **Property tab** — per-property trust & tax-strategy scenarios: an 8-column table (purchase price /
+  assessed / current & FMV-reassessed property tax / FMV / cap gain-loss / cap-gains tax), a deed/title
+  comparison (trust vs beneficiary vs gifted) with the Fed + CA/FTB step-up callout, an FLP + IDGT
+  installment-sale ("loan") freeze model, and a rental P&L card.
+- **Financial tab** — retirement / brokerage / cash: step-up vs IRD, gross-estate inclusion, income tax
+  to heirs, and the trust strategies for each (flagged for gross-estate impact).
+- **Charity tab** — CLAT / CRT / private foundation / DAF / outright: an interactive deduction &
+  estate-impact calculator (lifetime vs at-death) plus a vehicle comparison; encodes the gross-vs-taxable
+  rule and the §2036 grantor-retained-CRT caveat.
+- **Estate Roll-up tab** — the gross-estate centerpiece: every strategy sorted into 3 buckets (reduces the
+  gross estate / reduces only the taxable estate / reduces only estate tax or after-tax value), a headline
+  waterfall, and the master **probate avoidable-vs-not-avoidable list** + by-asset table.
+- **Probate notes + code references** — a probate callout on every relevant tab (where probate bites and
+  whether the planned move removes the asset), and a collapsible Probate · IRC · FTB/R&T **code-reference
+  footer** at the bottom of every tab, with inline citations next to the notes.
 - **Distribution tab** — beneficiary % allocation + timing, milestone life-insurance distributions, and
   itemized reserves (incl. milestone life-insurance distributions and a grandchildren milestone-funding reserve), starting from the true net after all taxes.
 - **Strategy tab** — enter the life-insurance death benefit and toggle revocable trust / ILIT / FLP /

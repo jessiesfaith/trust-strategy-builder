@@ -170,5 +170,15 @@ the Strategy tab's `outcome.ilit`, so the old `qbi`/`rentalGross`/`inILIT` tax d
 - The **insurance premium** to fund a policy must be entered from a carrier illustration (not derivable).
 - Strategy-tab structure removals (FLP 30% discount, IDGT gifts asset value out, etc.) are simplified,
   internally-consistent estimates — not a substitute for modeling by professionals.
+- The **Charity calculator** approximates a CLAT lead / CRT remainder present value as a flat percentage
+  (`charPct`) of the contribution — the real PV depends on the §7520 rate and term (enter from an actuarial
+  run). The FLP/IDGT freeze uses a flat appreciation rate and discount; both are illustrative.
+- **Probate** dollar thresholds (small-estate limits) are the April-2025 figures and are CPI-adjusted every
+  3 years (Prob. Code §890; next April 1, 2028) — verify the current Judicial Council DE-300. The CA TOD-deed
+  statute is scheduled to sunset Jan 1, 2032.
 
-No known defects at handoff (2026-06-17). All four tabs render and reconcile; console clean.
+No known defects at handoff (2026-06-18). All tabs (Overview · Tax Estimator · Property · Financial · Charity ·
+Estate Roll-up · Distribution · Strategy) render and reconcile; the cash gift flows consistently into the taxed
+estate across tabs; code-reference footers (collapsed) and probate notes are on every tab; console clean. The new
+tax/legal substance was researched + adversarially verified (IRC / CA Probate / CA R&T–FTB) and the new code
+passed an adversarial review + a verified cleanup pass.

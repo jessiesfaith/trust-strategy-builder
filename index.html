@@ -1860,10 +1860,11 @@ function ensureOutcome(){
 function updOutcome(k,v){ ensureOutcome(); S.outcome[k]=v; save(); computeOutcome(); }
 function updDeathBenefit(v){ S.tax.deathBenefit=unfmtNum(v); save(); computeOutcome(); }   // life-insurance input lives on the Strategy tab; feeds the estate value + ILIT comparison
 /* Rental / operating P&L: gross − executor salary (a fixed expense, charged even with no profit) − rental property tax (modeled at FMV-reassessed value — the estate's go-forward basis after a Prop 19 death reassessment; the current-assessed figure is shown only as a reference line). A net loss is suspended for the income-tax base. Single source for the rental figures. */
+/* rental-business filter (Rental / Commercial / Vacation) — single top-level helper reused across tabs. Land / Other parcels (ground-lease land, a Schedule-A personal property) are excluded; their property tax is broken out separately in the Real Estate card. */
+const isRental=p=>/rental|commercial|vacation/i.test(p.type||'');
 function rentalPnl(){
   ensureTax(); const t=S.tax, rate=Math.max(0,+t.propTaxRate||0)/100;
-  const isR=p=>/rental|commercial|vacation/i.test(p.type||'');   // rental P&L = rental-business properties only (Rental / Commercial / Vacation). Land / Other parcels (ground-lease land, a Schedule-A personal property) are excluded — their property tax is broken out separately in the Real Estate card.
-  const rentals=(S.properties||[]).filter(isR);
+  const rentals=(S.properties||[]).filter(isRental);
   const propNow=rentals.reduce((a,p)=>{ const v=+(p.value||0), as=(+(p.assessed||0))||(+(p.basis||0))||v; return a+as*rate; },0);
   const propReassessed=rentals.reduce((a,p)=>a+(+(p.value||0))*rate,0);
   const propRent=rentals.reduce((a,p)=>a+Math.max(0,+(p.annualRent||0)),0);          // Σ per-property annual rent
@@ -2000,7 +2001,7 @@ function computeOutcome(){
   const exTot=(+t.exemption||0)*(t.dual?2:1), rate=Math.max(0,+t.propTaxRate||0)/100;
   const estate=Math.max(0,(+t.estate||0)-giftedOutTotal()), db=+t.deathBenefit||0;   // estate base less any lifetime cash gift (Tax Estimator), so Strategy reconciles
   const props=S.properties||[];
-  const isRental=p=>/rental|commercial|vacation/i.test(p.type||''), isRes=p=>/personal residence/i.test(p.type||'');
+  const isRes=p=>/personal residence/i.test(p.type||'');
   const val=p=>+(p.value||0), gain=p=>{const v=+(p.value||0),b=+(p.basis||0);return b>0?Math.max(0,v-b):0;}, assess=p=>{const v=+(p.value||0);return (+(p.assessed||0))||(+(p.basis||0))||v;};
   const sum=(f,g)=>props.filter(f).reduce((a,p)=>a+g(p),0);
   const flpVal=sum(isRental,val), resVal=sum(isRes,val), rentalGain=sum(isRental,gain), resGain=sum(isRes,gain);
@@ -2295,7 +2296,6 @@ function downloadTaxSummary(){ const blob=new Blob([buildTaxSummaryMD()],{type:'
    Reuses the single-source tax helpers (rentalPnl / reCapInfo / reCapTaxOn / annualIncomeTax) so every figure
    reconciles with the Tax Estimator. The per-property capital-gains tax is stacked sequentially above the
    ordinary base + entered gains, so the column sums exactly to reCapInfo().tax. */
-const isRental=p=>/rental|commercial|vacation/i.test(p.type||'');
 function ensureProp(){
   if(!S.prop||typeof S.prop!=='object') S.prop={};
   const p=S.prop;
@@ -2946,9 +2946,9 @@ function computeRollup(){
   const t=S.tax, o=S.outcome, r=S.rollup;
   const exTot=(+t.exemption||0)*(t.dual?2:1), db=+t.deathBenefit||0;
   const props=S.properties||[];
-  const isR=p=>/rental|commercial|vacation/i.test(p.type||''), isRes=p=>/personal residence/i.test(p.type||'');
+  const isRes=p=>/personal residence/i.test(p.type||'');
   const val=p=>+(p.value||0);
-  const rentalVal=props.filter(isR).reduce((a,p)=>a+val(p),0), resVal=props.filter(isRes).reduce((a,p)=>a+val(p),0);
+  const rentalVal=props.filter(isRental).reduce((a,p)=>a+val(p),0), resVal=props.filter(isRes).reduce((a,p)=>a+val(p),0);
   const grossEstate=estateFromAssets().gross+db;
   const gift=Math.max(0,+unfmtNum(r.gift)||0), retCharity=Math.max(0,+unfmtNum(r.retCharity)||0);
   const ch=r.useCharity?charityPlanEffect():{gross:0,taxable:0,amt:0,vehicle:'',timing:''};
