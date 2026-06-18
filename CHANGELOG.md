@@ -4,6 +4,22 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Distribution reserves (life-insurance + itemized), grandchildren totals, "Estate remaining after taxes"
+
+- **Milestone life-insurance distributions are now reserved from the estate.** The amount allocated in
+  "Life-insurance distributions by milestone" is added to the reserves total, so it's set aside before the
+  general beneficiary split — fixing a prior double-count where the death benefit could be both earmarked
+  *and* included in the general distributable. The Reserves card now **itemizes every component** (executor/
+  trustee, property mgmt, taxes/debts, grandchildren milestone funding, life-insurance distributions) summing
+  to Total reserves. (Reconciliation is unaffected: only `distributable` changes — the "Estate remaining after
+  taxes" base is still `netAfterAllTaxes().net`.)
+- **Grandchildren milestone funding shows all-children totals.** Added "× count" total lines for insurance
+  premiums, cash milestones, and IRA funding (which sum to the reserve), plus explicit **"Total death benefit
+  (all grandchildren)"** and **"Total reserved from the estate"** lines.
+- **Renamed "Net to heirs after all taxes" and the headline "Estate remaining for heirs" → "Estate remaining
+  after taxes"** — consistently across the Estate card row, the headline metric, the headline note, and the
+  downloaded tax summary.
+
 ## 2026-06-17 — Cleanup & handoff: dead-code removal + "Net to heirs" display fix
 
 - **Fixed a display bug.** The Estate-tax card's **"Net to heirs after all taxes"** row — and the same

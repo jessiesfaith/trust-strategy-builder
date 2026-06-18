@@ -29,13 +29,15 @@ window resize; falls back to static, row-wrapped below 760px).
   into a capital-gains line (`r_est_lessinc_cg`) and an ordinary/rental/executor line (`r_est_lessinc_other`);
   the Rental income & executor card shows a "Total tax (this section)" (`r_pnl_tottax` = your P&L income tax +
   executor income tax + executor payroll/SE). The 4-metric headline is **Total estate value · Grand total tax
-  due · Estate tax with added structures** (projected from the Strategy-tab toggles) **· Estate remaining for
-  heirs**.
+  due · Estate tax with added structures** (projected from the Strategy-tab toggles) **· Estate remaining
+  after taxes**.
 - **Distribution** (`#dist`) — `renderDistribution()` / `computeDistribution()`. Beneficiary list (% allocation
-  + timing), reserves (executor %, property mgmt, taxes/debts, **grandchildren milestone funding**), and
-  milestone life-insurance distributions. Distributable = `netAfterAllTaxes().net − reserves`. When the
-  grandchildren card is on, the child count defaults to and is floored at 1 (a blank count no longer zeroes
-  the reserve).
+  + timing) and reserves — executor %, property mgmt, taxes/debts, **grandchildren milestone funding**, and
+  **milestone life-insurance distributions** (the allocated death benefit is earmarked, so it's reserved from
+  the estate before the general split) — each itemized and summing to Total reserves. Distributable =
+  `netAfterAllTaxes().net − reserves`. When the grandchildren card is on, the child count defaults to and is
+  floored at 1 (a blank count no longer zeroes the reserve); the card shows per-child amounts and
+  all-children (× count) totals.
 - **Strategy** (`#outcome`) — `renderOutcome()` / `computeOutcome()`. The life-insurance death-benefit input
   lives here (feeds the gross estate + the ILIT comparison). Toggle structures (trust/ILIT/FLP/QPRT/IDGT) →
   No-planning vs Your-setup comparison (estate tax, cap gains, property tax, net to heirs) + a charitable
@@ -61,9 +63,9 @@ window resize; falls back to static, row-wrapped below 760px).
   **QBI = net rental P&L** (no manual QBI input); 20% deduction, phased to $0 if SSTB above the §199A cap.
 - `netAfterAllTaxes()` — **single source of truth** for net available to heirs = total estate value
   (assets + life-insurance death benefit) − federal estate tax − real-estate capital-gains tax − one year
-  of all income-side tax (`annualIncomeTax().total`). It is the Distribution base; the Estate-tax card
-  ("Net to heirs after all taxes") and the Tax Estimator headline ("Estate remaining for heirs") compute
-  the same figure inline, so all three reconcile.
+  of all income-side tax (`annualIncomeTax().total`). It is the Distribution base; the Estate-tax card and
+  the Tax Estimator headline (both labeled "Estate remaining after taxes") compute the same figure inline,
+  so all three reconcile.
 - `reCapInfo()` / `reCapTaxOn(g)` — capital-gains tax on a real-estate gain, stacked above ordinary + entered
   long-term gains (federal LTCG + CA state; NIIT not included — noted in the UI).
 - Real-estate capital gains are managed **only** in the Real estate card (not the Capital gains card); they're

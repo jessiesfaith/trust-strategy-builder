@@ -1660,7 +1660,7 @@ function renderDistribution(){
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
       <div class="grid g3">
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Net after all taxes</div><div id="r_dist_aftertax" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">estate − estate tax − cap gains</div></div>
-        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Less reserves</div><div id="r_dist_reserves" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">executor + property mgmt + taxes/debts + grandkids funding</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Less reserves</div><div id="r_dist_reserves" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">executor + property mgmt + taxes/debts + grandkids funding + life-insurance distributions</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Distributable to beneficiaries</div><div id="r_dist_distributable" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">split by the allocations below</div></div>
       </div>
       <div class="legal-foot" id="r_dist_taxnote"></div>
@@ -1677,6 +1677,10 @@ function renderDistribution(){
         ${resFld('Taxes &amp; debts reserve ($)','taxDebt','')}
       </div>
       <div class="kv"><span class="k">Executor / trustee comp</span><span class="v" id="r_res_exec">—</span></div>
+      <div class="kv"><span class="k">Property management fund</span><span class="v" id="r_res_prop">—</span></div>
+      <div class="kv"><span class="k">Taxes &amp; debts reserve</span><span class="v" id="r_res_taxdebt">—</span></div>
+      <div class="kv"><span class="k">Grandchildren milestone funding</span><span class="v" id="r_res_gk">—</span></div>
+      <div class="kv"><span class="k">Life-insurance milestone distributions</span><span class="v" id="r_res_ins">—</span></div>
       <div class="kv"><span class="k" style="font-weight:700">Total reserves</span><span class="v" id="r_res_total" style="font-size:16px">—</span></div>
       <div class="legal-foot">Executor/trustee compensation varies by state and the will/trust terms (often a small % of the estate) — confirm with your attorney. Property-management and tax/debt reserves are planning placeholders.</div>
     `)}
@@ -1697,8 +1701,12 @@ function renderDistribution(){
       <div class="kv"><span class="k">Cash milestones / child (college + age 25 + home)</span><span class="v" id="r_gk_cash">—</span></div>
       <div class="kv"><span class="k">IRA funding / child (annual × years)</span><span class="v" id="r_gk_ira">—</span></div>
       <div class="kv"><span class="k">Per-child total set aside</span><span class="v" id="r_gk_perkid">—</span></div>
-      <div class="kv"><span class="k">Death benefit those premiums buy — all children</span><span class="v" id="r_gk_insface">—</span></div>
-      <div class="kv"><span class="k" style="font-weight:700">Reserved from the estate (premiums + disbursements × children)</span><span class="v" id="r_gk_reserve" style="font-size:16px">—</span></div>
+      <div class="muted" style="font-size:11px;margin:7px 0 2px;text-transform:uppercase;letter-spacing:.06em">Totals — all grandchildren (× count)</div>
+      <div class="kv"><span class="k">Total insurance premiums</span><span class="v" id="r_gk_prem_tot">—</span></div>
+      <div class="kv"><span class="k">Total cash milestones</span><span class="v" id="r_gk_cash_tot">—</span></div>
+      <div class="kv"><span class="k">Total IRA funding</span><span class="v" id="r_gk_ira_tot">—</span></div>
+      <div class="kv"><span class="k" style="font-weight:700">Total death benefit (all grandchildren)</span><span class="v" id="r_gk_insface" style="font-size:16px">—</span></div>
+      <div class="kv"><span class="k" style="font-weight:700">Total reserved from the estate (premiums + disbursements × children)</span><span class="v" id="r_gk_reserve" style="font-size:16px">—</span></div>
       <div class="legal-foot" id="r_gk_note"></div>
       <div class="legal-foot"><b>Structure to discuss (not advice):</b> for an estate above the exemption, an <b>ILIT</b> owning a policy on the <b>grantor's life</b> keeps the death benefit OUT of the taxable estate — fund premiums with annual-exclusion gifts (Crummey). A <b>survivorship / second-to-die</b> policy is usually cheapest if married. A <b>grantor-OWNED</b> policy is pulled INTO the taxable estate (40% tax). Policies on the <b>grandkids' own lives</b> mainly lock in their insurability / cash value — a different goal. Enter the premium from a carrier illustration; confirm with your attorney, CPA &amp; insurance advisor.</div>`
       :'<div class="muted" style="font-size:14px">Off — check the box to set aside, from the estate, the insurance premiums plus per-grandchild milestone gifts (college, age 25, first home, IRAs) before distribution. IRA funding assumes the child has earned income.</div>'}
@@ -1728,13 +1736,17 @@ function computeDistribution(){
   const gkInsFace=Math.max(0,+unfmtNum(g.insFace)||0);
   const gkPerKid=gkPrem+gkCash+gkIra;                                                                       // reserve the premiums + disbursements (not the face)
   const gkReserve=gkOn?gkPerKid*count:0;
-  const totalReserves=execAmt+propMgmt+taxDebt+gkReserve;
+  // life-insurance distributions by milestone — allocated from the death benefit; earmarked, so reserved from the estate before the general beneficiary split
+  const db=+S.tax.deathBenefit||0; const ins=S.insDist||[]; let insAlloc=0;
+  ins.forEach(e=>{ const amt=e.basis==='pct'?db*Math.max(0,+unfmtNum(e.pct)||0)/100:Math.max(0,+unfmtNum(e.amount)||0); insAlloc+=amt; set('ins_amt_'+e.id,m$(amt)); });
+  const totalReserves=execAmt+propMgmt+taxDebt+gkReserve+insAlloc;
   const distributable=Math.max(0,afterTax-totalReserves);
   set('r_dist_aftertax',m$(afterTax)); set('r_dist_reserves',m$(totalReserves)); set('r_dist_distributable',m$(distributable));
-  set('r_dist_taxnote','Net after all taxes = '+m$(N.estate)+' estate − '+m$(N.estTax)+' estate tax − '+m$(N.reCapTax)+' real-estate cap-gains − '+m$(N.annual)+' income tax (1 yr).'+(gkReserve>0?(' Less '+m$(gkReserve)+' grandchildren milestone funding (in reserves).'):''));
-  set('r_res_exec',m$(execAmt)); set('r_res_total',m$(totalReserves));
+  set('r_dist_taxnote','Net after all taxes = '+m$(N.estate)+' estate − '+m$(N.estTax)+' estate tax − '+m$(N.reCapTax)+' real-estate cap-gains − '+m$(N.annual)+' income tax (1 yr). Reserves ('+m$(totalReserves)+') include executor/trustee, property mgmt, taxes/debts'+(gkReserve>0?', grandchildren milestone funding':'')+(insAlloc>0?', and life-insurance milestone distributions':'')+'.');
+  set('r_res_exec',m$(execAmt)); set('r_res_prop',m$(propMgmt)); set('r_res_taxdebt',m$(taxDebt)); set('r_res_gk',m$(gkReserve)); set('r_res_ins',m$(insAlloc)); set('r_res_total',m$(totalReserves));
   if(gkOn){
     set('r_gk_prem',m$(gkPrem)); set('r_gk_cash',m$(gkCash)); set('r_gk_ira',m$(gkIra)); set('r_gk_perkid',m$(gkPerKid));
+    set('r_gk_prem_tot',m$(gkPrem*count)); set('r_gk_cash_tot',m$(gkCash*count)); set('r_gk_ira_tot',m$(gkIra*count));
     set('r_gk_insface',m$(gkInsFace*count)); set('r_gk_reserve',m$(gkReserve));
     set('r_gk_note','Per child: premiums '+m$(gkPrem)+' + cash '+m$(gkCash)+' + IRA '+m$(gkIra)+' = '+m$(gkPerKid)+', × '+count+' = '+m$(gkReserve)+' set aside from the estate (to pay the premiums and the milestone disbursements). Those premiums fund a '+m$(gkInsFace*count)+' total death benefit. '+(gkPrem===0?'Enter the annual premium from a carrier illustration. ':'')+'IRA funding requires the child to have earned income.');
   }
@@ -1754,9 +1766,7 @@ function computeDistribution(){
   if(pe){ pe.textContent=(Math.round(pctTotal*10)/10)+'% allocated'; pe.style.color=Math.abs(pctTotal-100)<0.05?'var(--green)':'#c89a2d'; }
   const ue=document.getElementById('r_dist_unalloc');
   if(ue) ue.textContent=Math.abs(pctTotal-100)<0.05?'✓ Fully allocated (100%).':(pctTotal<100?('Unallocated: '+m$(distributable*(100-pctTotal)/100)+' ('+(Math.round((100-pctTotal)*10)/10)+'%) — shares don\'t total 100%.'):('⚑ Over-allocated by '+(Math.round((pctTotal-100)*10)/10)+'% — shares exceed 100%.'));
-  // insurance
-  const db=+S.tax.deathBenefit||0; const ins=S.insDist||[]; let insAlloc=0;
-  ins.forEach(e=>{ const amt=e.basis==='pct'?db*Math.max(0,+unfmtNum(e.pct)||0)/100:Math.max(0,+unfmtNum(e.amount)||0); insAlloc+=amt; set('ins_amt_'+e.id,m$(amt)); });
+  // insurance — db / ins / insAlloc were computed above (insAlloc is included in totalReserves)
   set('r_ins_db',m$(db)); set('r_ins_alloc',m$(insAlloc));
   const re=document.getElementById('r_ins_remain'); const remain=db-insAlloc;
   if(re){ re.textContent=(remain>=0?('Unallocated death benefit: '+m$(remain)):('⚑ Over-allocated by '+m$(-remain)+' — exceeds the death benefit.')); re.style.color=remain<-0.5?'#c89a2d':'var(--muted)'; }
@@ -1921,7 +1931,7 @@ function computeOutcome(){
   const propBase=sum(()=>true,val)*rate;                     // no planning: everything reassessed to market
   const propStruct=ptOf(isRental,o.flp||o.idgt)+ptOf(isRes,o.qprt)+ptOf(p=>!isRental(p)&&!isRes(p),false);
   const gross=estate+db;                                     // total passing to heirs (insurance included)
-  const netBase=Math.max(0,gross-estTaxBase-capBase-income), netStruct=Math.max(0,gross-estTaxStruct-capStruct-income);   // net to heirs = estate − estate tax − cap-gains − one year of income tax (reconciles with the Tax Estimator's "Estate remaining for heirs")
+  const netBase=Math.max(0,gross-estTaxBase-capBase-income), netStruct=Math.max(0,gross-estTaxStruct-capStruct-income);   // net to heirs = estate − estate tax − cap-gains − one year of income tax (reconciles with the Tax Estimator's "Estate remaining after taxes")
   const sheltered=estateBase-estateStruct;
   set('o_estate_base',m$(estateBase)); set('o_estate_struct',m$(estateStruct)+(sheltered>0?(' (−'+m$(sheltered)+')'):''));
   set('o_esttax_base',m$(estTaxBase)); set('o_esttax_struct',m$(estTaxStruct));
@@ -2045,14 +2055,14 @@ function renderTaxEstimator(){
         <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Total estate value</div><div id="r_total_estatevalue" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">assets + life insurance</div></div>
         <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Grand total tax due</div><div id="r_total_grand" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">income + estate + real-estate cap-gains (1 yr)</div></div>
         <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px" id="r_total_saved">toggle ILIT / FLP / QPRT / IDGT in the Strategy tab to project</div></div>
-        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate remaining for heirs</div><div id="r_total_remaining" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">estate value − grand total tax</div></div>
+        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate remaining after taxes</div><div id="r_total_remaining" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">estate value − grand total tax</div></div>
       </div>
       <div class="legal-foot" id="r_annual_note"></div>
       <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts ILIT (death benefit), FLP (~30% discount), QPRT (residence) and IDGT (full rental value) removals — illustrative, attorney/CPA review.</div>
     </div>
     <div class="grid g2">
       ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}<div class="legal-foot">Tax on the gains &amp; dividends entered here. <b>Real-estate capital gains are handled in the Real estate card below</b> (from each property's value − cost basis). Confirm with your CPA.</div>`)}
-      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('+ Life-insurance death benefit','r_est_db')}${res('= Total estate value (incl. life ins.)','r_est_value')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}<div class="muted" id="r_est_net_math" style="font-size:11.5px;margin:-4px 0 6px;text-align:right"></div>${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Less income tax — capital gains &amp; dividends','r_est_lessinc_cg')}${res('Less income tax — ordinary / rental / executor','r_est_lessinc_other')}${res('Net to heirs after all taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('+ Life-insurance death benefit','r_est_db')}${res('= Total estate value (incl. life ins.)','r_est_value')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}<div class="muted" id="r_est_net_math" style="font-size:11.5px;margin:-4px 0 6px;text-align:right"></div>${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Less income tax — capital gains &amp; dividends','r_est_lessinc_cg')}${res('Less income tax — ordinary / rental / executor','r_est_lessinc_other')}${res('Estate remaining after taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
       ${card('Rental income &amp; executor salary', `<div class="form-grid">${fld('Management / executor salary ($)','execSal')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px"><b>Gross rent &amp; operating expenses come from the per-property fields in Real Estate</b> (enter them on each property). Rental is passive (no SE tax); the salary is a fixed deductible expense charged even with no profit. The executor reports the salary as their own income (below).</div>${res('Gross rental income','r_pnl_gross')}${res('Less management / executor salary','r_pnl_sal')}${res('Less operating expenses (from properties)','r_pnl_opex')}${res('Less property tax (rental, current)','r_pnl_proptax')}${res('Net rental P&amp;L','r_pnl_net',1)}${res('Net rental P&amp;L if reassessed to market','r_pnl_net_reassessed')}<div class="muted" style="font-size:11px;margin:6px 0 2px;text-transform:uppercase;letter-spacing:.06em">Taxes this generates</div>${res('Your income tax on the P&amp;L','r_pnl_tax')}${res('Executor — income tax on salary','r_exec_inc')}${res('Executor — payroll/SE tax on salary','r_exec_se')}${res('Total tax (this section)','r_pnl_tottax',1)}<div class="legal-foot" id="r_pnl_note"></div>`)}
       ${card('Business income — QBI (§199A)', `${res('Qualified business income (= net rental P&amp;L)','r_qbi_amount')}${chk('Specified service business (SSTB)','sstb')}${res('20% deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
@@ -2122,7 +2132,7 @@ function computeTax(){
   set('r_total_estatevalue', m$(estateValue));
   set('r_total_grand', m$(grandTotal));
   set('r_total_remaining', m$(Math.max(0,estateValue-grandTotal)));
-  note('r_annual_note', 'Grand total tax due = your income tax '+m$(A.yourIncomeTax)+' (ordinary '+m$(A.ordTax)+' + net rental P&L '+m$(A.pnlTax)+' + cap-gains & dividends '+m$(A.investTax)+' − QBI '+m$(A.qsaved)+(A.retSaved>0?(' − retirement '+m$(A.retSaved)):'')+') + corporate DRD '+m$(A.drdTax)+' + executor tax '+m$(A.execTax)+' (income '+m$(A.execIncTax)+' + payroll/SE '+m$(A.execSE)+') + estate tax '+m$(estTax)+' + real-estate cap-gains '+m$(reCapTax)+' = '+m$(grandTotal)+'. Estate remaining for heirs = '+m$(estateValue)+' − '+m$(grandTotal)+' = '+m$(Math.max(0,estateValue-grandTotal))+'. One-year household snapshot (grantor final 1040 + estate tax) — confirm with your CPA.');
+  note('r_annual_note', 'Grand total tax due = your income tax '+m$(A.yourIncomeTax)+' (ordinary '+m$(A.ordTax)+' + net rental P&L '+m$(A.pnlTax)+' + cap-gains & dividends '+m$(A.investTax)+' − QBI '+m$(A.qsaved)+(A.retSaved>0?(' − retirement '+m$(A.retSaved)):'')+') + corporate DRD '+m$(A.drdTax)+' + executor tax '+m$(A.execTax)+' (income '+m$(A.execIncTax)+' + payroll/SE '+m$(A.execSE)+') + estate tax '+m$(estTax)+' + real-estate cap-gains '+m$(reCapTax)+' = '+m$(grandTotal)+'. Estate remaining after taxes = '+m$(estateValue)+' − '+m$(grandTotal)+' = '+m$(Math.max(0,estateValue-grandTotal))+'. One-year household snapshot (grantor final 1040 + estate tax) — confirm with your CPA.');
   const flpVal=(S.properties||[]).filter(p=>/rental|commercial|vacation/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
   const resVal=(S.properties||[]).filter(p=>/personal residence/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
   const structKeys=new Set([...(S.customStructures||[]).map(c=>c.k), ...Object.keys(S.outcome||{}).filter(k=>S.outcome[k])]);   // structures toggled in the Strategy tab OR added to the Estate Map
@@ -2142,10 +2152,10 @@ function buildTaxSummaryMD(){
   s+=`- Total estate value (assets + life insurance): **${g('r_total_estatevalue')}**\n`;
   s+=`- Grand total tax due (income + estate + real-estate cap-gains, 1 yr): **${g('r_total_grand')}**\n`;
   s+=`- Estate tax with added structures: **${g('r_total_after')}** — ${g('r_total_saved')}\n`;
-  s+=`- Estate remaining for heirs (estate value − grand total tax): **${g('r_total_remaining')}**\n\n`;
+  s+=`- Estate remaining after taxes (estate value − grand total tax): **${g('r_total_remaining')}**\n\n`;
   s+='## Capital gains & dividends (entered gains)\n'+`- Federal ${g('r_cg_fed')} · State ${g('r_cg_ca')} · NIIT ${g('r_cg_niit')} · **Total ${g('r_cg_tot')}**\n\n`;
   s+='## Real estate — property tax & capital gains\n'+`- Annual property tax (current) ${g('r_pt_now')} · if reassessed to market ${g('r_pt_reassessed')} · potential increase/yr ${g('r_pt_increase')}\n`+`- Real-estate unrealized gain ${g('r_su_gain')} · capital-gains tax if sold (no step-up) ${g('r_su_avoided')}\n\n`;
-  s+='## Estate\n'+`- Total estate value (incl. life insurance) ${g('r_est_value')} · Federal estate tax ${g('r_est_tax')} · ${g('r_est_ca')} · Net to heirs after all taxes ${g('r_est_netheirs')}\n\n`;
+  s+='## Estate\n'+`- Total estate value (incl. life insurance) ${g('r_est_value')} · Federal estate tax ${g('r_est_tax')} · ${g('r_est_ca')} · Estate remaining after taxes ${g('r_est_netheirs')}\n\n`;
   s+='## Rental income & executor salary\n'+`- Net rental P&L ${g('r_pnl_net')} · your income tax ${g('r_pnl_tax')} · executor income tax ${g('r_exec_inc')} · executor payroll/SE ${g('r_exec_se')}\n\n`;
   s+='## Business income — QBI (§199A)\n'+`- 20% deduction ${g('r_qbi_ded')} · federal tax saved ${g('r_qbi_saved')}\n\n`;
   s+='## Corporate DRD\n'+`- ${g('r_drd_pct')} deductible ${g('r_drd_ded')} · taxable @21% ${g('r_drd_tax')}\n\n`;
