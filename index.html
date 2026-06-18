@@ -1892,6 +1892,7 @@ function renderOutcome(){
         <div><b>Estate value</b> <span class="muted" style="font-size:11px">(incl. life ins.)</span></div><div style="${col}" id="o_estate_base">—</div><div style="${col}" id="o_estate_struct">—</div>
         <div><b>Federal estate tax</b></div><div style="${col}" id="o_esttax_base">—</div><div style="${col}" id="o_esttax_struct">—</div>
         <div><b>Capital-gains tax (heirs)</b></div><div style="${col}" id="o_cap_base">—</div><div style="${col}" id="o_cap_struct">—</div>
+        <div><b>Income tax (1 yr)</b></div><div style="${col}" id="o_inc_base">—</div><div style="${col}" id="o_inc_struct">—</div>
         <div><b>Property tax / yr (after death)</b></div><div style="${col}" id="o_prop_base">—</div><div style="${col}" id="o_prop_struct">—</div>
         <div style="border-top:1px solid var(--line);padding-top:6px"><b>Net to heirs</b></div><div style="border-top:1px solid var(--line);padding-top:6px;${col};font-size:16px" id="o_net_base">—</div><div style="border-top:1px solid var(--line);padding-top:6px;${col};font-size:16px;color:var(--green)" id="o_net_struct">—</div>
       </div>
@@ -1933,21 +1934,24 @@ function computeOutcome(){
   const estTaxBase=Math.max(0,estateBase-exTot)*TAXC.estRate, estTaxStruct=Math.max(0,estateStruct-exTot)*TAXC.estRate;
   // capital gains: $0 at death (step-up); gifting out (IDGT rentals / QPRT residence) → carryover → tax on that gain
   const giftedGain=(o.idgt?rentalGain:0)+(o.qprt?resGain:0);
-  const capBase=0, capStruct=reCapTaxOn(giftedGain);
+  const reTax=reCapInfo().tax, income=annualIncomeTax().total;   // realized RE cap-gains + one year of all income-side tax — the same figures the Tax Estimator subtracts
+  const capBase=reTax;                                           // no planning: gains realized (date-of-death step-up not confirmed)
+  const capStruct=o.trust?reCapTaxOn(giftedGain):reTax;          // a revocable trust confirms the step-up ($0 on held assets); only gifted-out assets keep a carryover gain
   // property tax after death: per asset, reassessed to market unless an entity/trust holds it
   const ptOf=(f,avoided)=>sum(f,p=>(avoided?assess(p):val(p)))*rate;
   const propBase=sum(()=>true,val)*rate;                     // no planning: everything reassessed to market
   const propStruct=ptOf(isRental,o.flp||o.idgt)+ptOf(isRes,o.qprt)+ptOf(p=>!isRental(p)&&!isRes(p),false);
   const gross=estate+db;                                     // total passing to heirs (insurance included)
-  const netBase=Math.max(0,gross-estTaxBase-capBase), netStruct=Math.max(0,gross-estTaxStruct-capStruct);
+  const netBase=Math.max(0,gross-estTaxBase-capBase-income), netStruct=Math.max(0,gross-estTaxStruct-capStruct-income);   // net to heirs = estate − estate tax − cap-gains − one year of income tax (reconciles with the Tax Estimator's "Estate remaining for heirs")
   const sheltered=estateBase-estateStruct;
   set('o_estate_base',m$(estateBase)); set('o_estate_struct',m$(estateStruct)+(sheltered>0?(' (−'+m$(sheltered)+')'):''));
   set('o_esttax_base',m$(estTaxBase)); set('o_esttax_struct',m$(estTaxStruct));
-  set('o_cap_base',m$(capBase)+' · step-up'); set('o_cap_struct',m$(capStruct)+(capStruct>0?' · carryover':' · step-up'));
+  set('o_cap_base',capBase>0?(m$(capBase)+' · if sold'):(m$(capBase)+' · step-up')); set('o_cap_struct',capStruct>0?(m$(capStruct)+' · carryover'):(m$(capStruct)+' · step-up'));
+  set('o_inc_base',m$(income)); set('o_inc_struct',m$(income));
   set('o_prop_base',m$(propBase)); set('o_prop_struct',m$(propStruct));
   set('o_net_base',m$(netBase)); set('o_net_struct',m$(netStruct));
   const delta=netStruct-netBase;
-  set('o_summary', (delta>=0?('Your setup leaves heirs ≈ '+m$(delta)+' more'):('Your setup leaves heirs ≈ '+m$(-delta)+' less'))+' than no planning — estate tax cut '+m$(estTaxBase-estTaxStruct)+(capStruct>capBase?(', less '+m$(capStruct-capBase)+' new capital-gains tax from gifting out'):'')+(propStruct<propBase?(', and avoids '+m$(propBase-propStruct)+'/yr of property-tax reassessment'):'')+'.');
+  set('o_summary', (delta>=0?('Your setup leaves heirs ≈ '+m$(delta)+' more'):('Your setup leaves heirs ≈ '+m$(-delta)+' less'))+' than no planning — estate tax cut '+m$(estTaxBase-estTaxStruct)+(capStruct>capBase?(', less '+m$(capStruct-capBase)+' new capital-gains tax from gifting out'):(capBase>capStruct?(', plus '+m$(capBase-capStruct)+' capital-gains saved by confirming the step-up'):''))+(propStruct<propBase?(', and avoids '+m$(propBase-propStruct)+'/yr of property-tax reassessment'):'')+'.');
   const reInfo=reCapInfo();
   set('o_capnote', reInfo.reGain>0
     ? ('Real-estate unrealized gain ≈ <b>'+m$(reInfo.reGain)+'</b>. <b>Kept in your estate</b> (revocable trust), the step-up at death erases it — <b>$0</b> capital-gains tax. <b>Gifted out</b> via an IDGT/SLAT to cut estate tax, it takes carryover basis and heirs owe ≈ <b>'+m$(reInfo.tax)+'</b> when they sell. A <b>CRT</b> can sell appreciated assets tax-deferred and spread the gain. Confirm the right mix with your CPA.')
