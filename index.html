@@ -1590,7 +1590,7 @@ function ensureDist(){
   if(!S.gk||typeof S.gk!=='object') S.gk={};
   const g=S.gk;
   if(g.on===undefined) g.on=false;
-  if(g.count===undefined) g.count='';
+  if(g.count===undefined) g.count='1';
   if(g.insFace===undefined) g.insFace='250000';
   if(g.college===undefined) g.college='10000';
   if(g.age25===undefined) g.age25='10000';
@@ -1730,7 +1730,7 @@ function computeDistribution(){
   const execPct=Math.min(100,Math.max(0,+unfmtNum(r.execPct)||0)), propMgmt=Math.max(0,+unfmtNum(r.propMgmt)||0), taxDebt=Math.max(0,+unfmtNum(r.taxDebt)||0);
   const execAmt=afterTax*execPct/100;
   // grandchildren milestone funding
-  const g=S.gk; const gkOn=!!g.on, count=Math.max(0,Math.round(+unfmtNum(g.count)||0));
+  const g=S.gk; const gkOn=!!g.on; let count=Math.max(0,Math.round(+unfmtNum(g.count)||0)); if(gkOn&&count<1) count=1;   // a grandchildren reserve implies ≥1 grandchild — a blank count no longer zeroes the reserve total
   const gkCash=Math.max(0,+unfmtNum(g.college)||0)+Math.max(0,+unfmtNum(g.age25)||0)+Math.max(0,+unfmtNum(g.home)||0);
   const gkIra=Math.max(0,+unfmtNum(g.iraAnnual)||0)*Math.max(0,Math.round(+unfmtNum(g.iraYears)||0));
   const gkPrem=Math.max(0,+unfmtNum(g.premAnnual)||0)*Math.max(0,Math.round(+unfmtNum(g.premYears)||0));   // total premiums / child the estate funds
@@ -1787,11 +1787,21 @@ function ensureOutcome(){
 }
 function updOutcome(k,v){ ensureOutcome(); S.outcome[k]=v; save(); computeOutcome(); }
 function updDeathBenefit(v){ S.tax.deathBenefit=unfmtNum(v); save(); computeOutcome(); }   // life-insurance input lives on the Strategy tab; feeds the estate value + ILIT comparison
+/* Rental / operating P&L: gross − executor salary (a fixed expense, charged even with no profit) − rental property tax (current assessed; reassessed-to-market variant for the example line). A net loss is suspended for the income-tax base. Single source for the rental figures. */
+function rentalPnl(){
+  ensureTax(); const t=S.tax, rate=Math.max(0,+t.propTaxRate||0)/100;
+  const isR=p=>/rental|commercial|vacation/i.test(p.type||'');
+  const propNow=(S.properties||[]).filter(isR).reduce((a,p)=>{ const v=+(p.value||0), as=(+(p.assessed||0))||(+(p.basis||0))||v; return a+as*rate; },0);
+  const propReassessed=(S.properties||[]).filter(isR).reduce((a,p)=>a+(+(p.value||0))*rate,0);
+  const gross=+t.rentalGross||0, sal=+t.execSal||0;
+  const actual=gross-sal-propNow, reassessed=gross-sal-propReassessed;
+  return {gross, sal, propNow, propReassessed, actual, reassessed, taxable:Math.max(0,actual)};
+}
 function updCharity(k,v){ ensureOutcome(); S.charity[k]=v; save(); computeCharity(); }
 /* capital-gains tax on the real-estate unrealized gain (federal LTCG + state, stacked on ordinary) */
 function reCapInfo(){
   ensureTax(); const t=S.tax, Y=curY(), f=t.filing||'MFJ', ltBr=Y.ltcg[f];
-  const ord=(+t.ordinary||0)+Math.max(0,(+t.rentalGross||0)-(+t.execSal||0)), oLt=+t.ltgain||0, qd=+t.qdiv||0, st=+t.stgain||0, od=+t.odiv||0;   // ordinary base incl. net rental P&L
+  const ord=(+t.ordinary||0)+rentalPnl().taxable, oLt=+t.ltgain||0, qd=+t.qdiv||0, st=+t.stgain||0, od=+t.odiv||0;   // ordinary base incl. taxable net rental P&L
   const reGain=(S.properties||[]).reduce((a,p)=>{const v=+(p.value||0),b=+(p.basis||0);return a+(b>0?Math.max(0,v-b):0);},0);
   const fed=ltcgStack(ord,oLt+reGain+qd,ltBr)-ltcgStack(ord,oLt+qd,ltBr);
   const state=stateTax(ord+oLt+reGain+st+qd+od)-stateTax(ord+oLt+st+qd+od);
@@ -1801,7 +1811,7 @@ function reCapInfo(){
 function reCapTaxOn(g){
   if(!(g>0)) return 0;
   ensureTax(); const t=S.tax, Y=curY(), f=t.filing||'MFJ', ltBr=Y.ltcg[f];
-  const ord=(+t.ordinary||0)+Math.max(0,(+t.rentalGross||0)-(+t.execSal||0)), oLt=+t.ltgain||0, qd=+t.qdiv||0, st=+t.stgain||0, od=+t.odiv||0;   // ordinary base incl. net rental P&L
+  const ord=(+t.ordinary||0)+rentalPnl().taxable, oLt=+t.ltgain||0, qd=+t.qdiv||0, st=+t.stgain||0, od=+t.odiv||0;   // ordinary base incl. taxable net rental P&L
   const fed=ltcgStack(ord,oLt+g+qd,ltBr)-ltcgStack(ord,oLt+qd,ltBr);
   const state=stateTax(ord+oLt+g+st+qd+od)-stateTax(ord+oLt+st+qd+od);
   return Math.max(0,fed+state);
@@ -1818,8 +1828,8 @@ function netAfterAllTaxes(){
 function annualIncomeTax(){
   ensureTax(); const t=S.tax, Y=curY(), f=t.filing||'MFJ', fedBr=Y.fed[f], ltBr=Y.ltcg[f];
   const ord=+t.ordinary||0, lt=+t.ltgain||0, st=+t.stgain||0, qd=+t.qdiv||0, od=+t.odiv||0;
-  // Rental / operating P&L — passive (no SE), net of the executor/management salary (a deductible expense)
-  const rentalGross=+t.rentalGross||0, execSal=+t.execSal||0, netRental=Math.max(0,rentalGross-execSal);   // floored at 0 — salary above gross rental is a passive loss, generally suspended (not netted against other income) for a high-income grantor
+  // Rental / operating P&L — passive (no SE): gross − executor salary (a fixed expense, charged even with no profit) − rental property tax; a net loss is suspended for the income-tax base
+  const R=rentalPnl(), rentalGross=R.gross, execSal=R.sal, netRental=R.taxable;
   const ordBase=ord+netRental;                                              // grantor's ordinary-income base (final 1040)
   const ordTax=progTax(ord,fedBr)+stateTax(ord);                            // tax on Other ordinary income (first layer)
   const pnlTax=(progTax(ordBase,fedBr)+stateTax(ordBase))-ordTax;           // incremental income tax on the net rental P&L
@@ -1829,7 +1839,7 @@ function annualIncomeTax(){
   const invest=lt+st+qd+od, niit=Math.max(0,Math.min(invest,ordBase+invest-TAXC.niit[f]))*0.038;
   const investTax=fedCG+stCG+niit;
   // QBI — a Specified Service business above the income cap is fully phased out
-  const qbi=+t.qbi||0, sstbCap=f==='MFJ'?483900:241950, qbiPhasedOut=t.sstb&&(ordBase+qbi)>sstbCap;
+  const qbi=+t.qbi||0, sstbCap=(Y.sstbCap&&Y.sstbCap[f])||(f==='MFJ'?494600:247300), qbiPhasedOut=t.sstb&&(ordBase+qbi)>sstbCap;   // year-indexed §199A SSTB phase-out ceiling
   const ded=qbiPhasedOut?0:qbi*0.20, qsaved=qbiPhasedOut?0:ded*margRate(ordBase+qbi,fedBr);
   // retirement — pre-tax contributions reduce the ordinary base
   const c401=Math.max(0,+unfmtNum(t.ret401)||0), cIra=Math.max(0,+unfmtNum(t.retIra)||0), cSimple=Math.max(0,+unfmtNum(t.retSimple)||0), cSep=Math.max(0,+unfmtNum(t.retSep)||0);
@@ -1844,7 +1854,7 @@ function annualIncomeTax(){
   // grantor's final-1040 income tax (floored at 0), then corporate DRD + the executor's own tax (whole-household)
   const yourIncomeTax=Math.max(0,ordTax+pnlTax+investTax-qsaved-retSaved);
   const total=yourIncomeTax+drdTax+execTax;
-  return {ord, rentalGross, execSal, netRental, ordTax, pnlTax, fedCG, stCG, niit, investTax, qbi, ded, qsaved, qbiPhasedOut, sstbCap, drdPct, drded, drdTax, preTaxRet, retSaved, execIncTax, execSE, execTax, yourIncomeTax, total};
+  return {ord, rentalGross, execSal, netRental, netRentalActual:R.actual, netRentalReassessed:R.reassessed, rentalPropNow:R.propNow, ordTax, pnlTax, fedCG, stCG, niit, investTax, qbi, ded, qsaved, qbiPhasedOut, sstbCap, drdPct, drded, drdTax, preTaxRet, retSaved, execIncTax, execSE, execTax, yourIncomeTax, total};
 }
 function renderOutcome(){
   ensureOutcome(); ensureTax();
@@ -1945,12 +1955,12 @@ const TAXY={
     fed:{ Single:[[0,.10],[11925,.12],[48475,.22],[103350,.24],[197300,.32],[250525,.35],[626350,.37]],
           MFJ:[[0,.10],[23850,.12],[96950,.22],[206700,.24],[394600,.32],[501050,.35],[751600,.37]] },
     ltcg:{ Single:[[0,0],[48350,.15],[533400,.20]], MFJ:[[0,0],[96700,.15],[600050,.20]] },
-    ssBase:176100, exemption:13990000, ret:{k401:23500,k401c:7500,ira:7000,irac:1000,simple:16500,simplec:3500,sepMax:70000} },
+    ssBase:176100, exemption:13990000, sstbCap:{Single:247300,MFJ:494600}, ret:{k401:23500,k401c:7500,ira:7000,irac:1000,simple:16500,simplec:3500,sepMax:70000} },
   '2026':{
     fed:{ Single:[[0,.10],[12400,.12],[50400,.22],[105700,.24],[201775,.32],[256225,.35],[640600,.37]],
           MFJ:[[0,.10],[24800,.12],[100800,.22],[211100,.24],[403550,.32],[512450,.35],[768700,.37]] },
     ltcg:{ Single:[[0,0],[49450,.15],[545500,.20]], MFJ:[[0,0],[98900,.15],[615300,.20]] },
-    ssBase:184500, exemption:15000000, ret:{k401:24500,k401c:8000,ira:7500,irac:1100,simple:17000,simplec:4000,sepMax:71000} }
+    ssBase:184500, exemption:15000000, sstbCap:{Single:253500,MFJ:507000}, ret:{k401:24500,k401c:8000,ira:7500,irac:1100,simple:17000,simplec:4000,sepMax:71000} }
 };
 function curY(){ return TAXY[(S.tax&&S.tax.year)||'2026']; }
 // State income tax (estimates). Most states tax cap gains/dividends as ordinary income.
@@ -2041,8 +2051,8 @@ function renderTaxEstimator(){
     </div>
     <div class="grid g2">
       ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}<div class="legal-foot">Tax on the gains &amp; dividends entered here. <b>Real-estate capital gains are handled in the Real estate card below</b> (from each property's value − cost basis). Confirm with your CPA.</div>`)}
-      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('+ Life-insurance death benefit','r_est_db')}${res('= Total estate value (incl. life ins.)','r_est_value')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Less income tax (1 yr, all)','r_est_lessinc')}${res('Net to heirs after all taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
-      ${card('Rental income &amp; executor salary', `<div class="form-grid">${fld('Rental / operating income — gross ($)','rentalGross')}${fld('Management / executor salary ($)','execSal')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Rental is passive (no SE tax). The salary is a deductible expense — your net rental P&amp;L is what's taxed on your return. The executor reports the salary as their own income (shown below).</div>${res('Net rental P&amp;L (gross − salary)','r_pnl_net')}${res('Your income tax on the rental P&amp;L','r_pnl_tax')}${res('Executor — income tax on salary','r_exec_inc')}${res('Executor — payroll/SE tax on salary','r_exec_se',1)}<div class="legal-foot" id="r_pnl_note"></div>`)}
+      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('+ Life-insurance death benefit','r_est_db')}${res('= Total estate value (incl. life ins.)','r_est_value')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}<div class="muted" id="r_est_net_math" style="font-size:11.5px;margin:-4px 0 6px;text-align:right"></div>${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Less income tax (1 yr, all)','r_est_lessinc')}${res('Net to heirs after all taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Rental income &amp; executor salary', `<div class="form-grid">${fld('Rental / operating income — gross ($)','rentalGross')}${fld('Management / executor salary ($)','execSal')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Rental is passive (no SE tax). The salary is a fixed deductible expense (charged even with no profit); rental property tax (current assessed) is also deducted. The executor reports the salary as their own income (below).</div>${res('Gross rental income','r_pnl_gross')}${res('Less management / executor salary','r_pnl_sal')}${res('Less property tax (rental, current)','r_pnl_proptax')}${res('Net rental P&amp;L','r_pnl_net',1)}${res('Net rental P&amp;L if reassessed to market','r_pnl_net_reassessed')}${res('Your income tax on the P&amp;L','r_pnl_tax')}${res('Executor — income tax on salary','r_exec_inc')}${res('Executor — payroll/SE tax on salary','r_exec_se')}<div class="legal-foot" id="r_pnl_note"></div>`)}
       ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi','tax_qbi')}${chk('Specified service business (SSTB)','sstb')}${res('Est. federal tax saved','r_qbi_saved')}${res('Total deductible from income (20% of QBI)','r_qbi_ded',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
       ${card('Retirement contributions', `<div class="form-grid">${fld('Your age','age')}${fld('Self-employed net comp ($)','seComp','tax_seComp')}</div>
@@ -2080,9 +2090,9 @@ function computeTax(){
   (S.properties||[]).forEach(p=>{ const v=+(p.value||0), a=(+(p.assessed||0))||(+(p.basis||0))||v; assessedSum+=a; marketSum+=v; });
   const propTaxNow=assessedSum*ptr, propTaxReassessed=marketSum*ptr, reassessInc=Math.max(0,propTaxReassessed-propTaxNow);
   set('r_pt_now',m$(propTaxNow)); set('r_pt_reassessed',m$(propTaxReassessed)); set('r_pt_increase',m$(reassessInc));
-  // rental income & executor salary card (from the shared helper)
-  set('r_pnl_net',m$(A.netRental)); set('r_pnl_tax',m$(A.pnlTax)); set('r_exec_inc',m$(A.execIncTax)); set('r_exec_se',m$(A.execSE));
-  note('r_pnl_note','Rental is passive — no self-employment tax. The '+m$(A.execSal)+' management/executor salary is a deductible expense, so your net rental P&L = '+m$(A.rentalGross)+' − '+m$(A.execSal)+' = '+m$(A.netRental)+' (taxed on your return).'+((A.execSal>A.rentalGross)?(' The '+m$(A.execSal-A.rentalGross)+' of salary above gross rental is a passive loss — generally suspended (not netted against other income) until you have passive income or sell.'):'')+' The executor reports the '+m$(A.execSal)+' as their own income — income tax '+m$(A.execIncTax)+' + payroll/SE '+m$(A.execSE)+' (estimated standalone, single filer). Real-estate-professional status or substantial services can change this — CPA review.');
+  // rental income & executor salary card (from the shared helper) — gross − salary − rental property tax, with a reassessed-property-tax example line
+  set('r_pnl_gross',m$(A.rentalGross)); set('r_pnl_sal',A.execSal>0?('– '+m$(A.execSal)):m$(0)); set('r_pnl_proptax',A.rentalPropNow>0?('– '+m$(A.rentalPropNow)):m$(0)); set('r_pnl_net',m$(A.netRentalActual)); set('r_pnl_net_reassessed',m$(A.netRentalReassessed)); set('r_pnl_tax',m$(A.pnlTax)); set('r_exec_inc',m$(A.execIncTax)); set('r_exec_se',m$(A.execSE));
+  note('r_pnl_note','Rental is passive — no self-employment tax. Net rental P&L = gross '+m$(A.rentalGross)+' − salary '+m$(A.execSal)+' − rental property tax '+m$(A.rentalPropNow)+' = '+m$(A.netRentalActual)+'. The salary is a fixed expense, charged even with no profit; if it pushes the P&L negative, that rental loss is generally suspended (not netted against other income) until you have passive income or sell. If the property reassesses to market the property tax rises and the P&L becomes '+m$(A.netRentalReassessed)+'. The executor reports the '+m$(A.execSal)+' as their own income — income tax '+m$(A.execIncTax)+' + payroll/SE '+m$(A.execSE)+' (standalone single filer). CPA review.');
   // QBI card (from the shared helper)
   set('r_qbi_ded',m$(A.ded)); set('r_qbi_saved',m$(A.qsaved));
   note('r_qbi_note', A.qbiPhasedOut?('Service business above ~'+m$(A.sstbCap)+' — QBI deduction phased out to $0 (SSTB), so no income-tax saving applied. CPA review.'):'Wage/UBIA limits may apply above the threshold — CPA review.');
@@ -2094,10 +2104,10 @@ function computeTax(){
   set('r_est_db', m$(db)); set('r_est_value', m$(estateValue)); set('r_est_taxable', m$(taxable));
   set('r_est_tax', estTax>0?('– '+m$(estTax)):m$(estTax)); set('r_est_ca', STATE_ESTATE_TAX.includes(t.state)?('⚑ '+t.state+' has a state estate/inheritance tax — CPA review'):'$0 (no state estate tax)');
   const afterEstateTax=Math.max(0,estateValue-estTax);
-  set('r_est_net', m$(afterEstateTax));
+  set('r_est_net', m$(afterEstateTax)); set('r_est_net_math', m$(estateValue)+' − '+m$(estTax)+' = '+m$(afterEstateTax));
   const netHeirs=Math.max(0,afterEstateTax-reCapTax-A.total);
   set('r_est_lessre', reCapTax>0?('– '+m$(reCapTax)):m$(reCapTax)); set('r_est_lessinc', A.total>0?('– '+m$(A.total)):m$(A.total)); set('r_est_netheirs', m$(netHeirs));
-  note('r_est_note', (taxable>0?('Above exemption '+m$(taxable)+' × 40% = '+m$(estTax)+'. '):('At/below the '+m$(exTot)+' exemption — no federal estate tax. '))+'Total estate value = assets '+m$(+t.estate||0)+' + life insurance '+m$(db)+' = '+m$(estateValue)+'; after estate tax = '+m$(afterEstateTax)+'; net to heirs = '+m$(afterEstateTax)+' − '+m$(reCapTax)+' (real-estate cap-gains) − '+m$(A.total)+' (one year of all income-side tax) = '+m$(netHeirs)+'. Life insurance in an ILIT or a step-up at death can each reduce this — see Strategy & confirm with your CPA.');
+  note('r_est_note', 'Life insurance in an ILIT or a step-up at death can each reduce this — see Strategy & confirm with your CPA.');
   // retirement — saved value from the shared helper; contribution limits & over-warnings are display-only
   const age=+t.age||0, comp=+t.seComp||0, R=Y.ret, cu=age>=50;
   const k401max=R.k401+(cu?R.k401c:0), iraMax=R.ira+(cu?R.irac:0), simpleMax=R.simple+(cu?R.simplec:0), sepMax=Math.min(comp*0.25,R.sepMax);
