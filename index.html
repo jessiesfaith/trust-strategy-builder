@@ -1888,11 +1888,12 @@ function renderOutcome(){
     ${card('Which structures are in place?', STRUCT_DEFS.map(chk).join(''))}
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
       <div style="display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:6px 12px;align-items:center;font-size:14px">
-        <div></div><div class="muted" style="${col};text-transform:uppercase;font-size:11px;letter-spacing:.06em">No planning</div><div class="muted" style="${col};text-transform:uppercase;font-size:11px;letter-spacing:.06em">Your setup</div>
+        <div></div><div class="muted" style="${col};text-transform:uppercase;font-size:11px;letter-spacing:.06em">Unplanned</div><div class="muted" style="${col};text-transform:uppercase;font-size:11px;letter-spacing:.06em">Planned</div>
         <div><b>Estate value</b> <span class="muted" style="font-size:11px">(incl. life ins.)</span></div><div style="${col}" id="o_estate_base">—</div><div style="${col}" id="o_estate_struct">—</div>
         <div><b>Federal estate tax</b></div><div style="${col}" id="o_esttax_base">—</div><div style="${col}" id="o_esttax_struct">—</div>
         <div><b>Capital-gains tax (heirs)</b></div><div style="${col}" id="o_cap_base">—</div><div style="${col}" id="o_cap_struct">—</div>
         <div><b>Income tax (1 yr)</b></div><div style="${col}" id="o_inc_base">—</div><div style="${col}" id="o_inc_struct">—</div>
+        <div style="border-top:1px solid var(--line);padding-top:6px"><b>Total tax</b> <span class="muted" style="font-size:11px">(estate + cap-gains + income)</span></div><div style="border-top:1px solid var(--line);padding-top:6px;${col}" id="o_tot_base">—</div><div style="border-top:1px solid var(--line);padding-top:6px;${col}" id="o_tot_struct">—</div>
         <div><b>Property tax / yr (after death)</b></div><div style="${col}" id="o_prop_base">—</div><div style="${col}" id="o_prop_struct">—</div>
         <div style="border-top:1px solid var(--line);padding-top:6px"><b>Net to heirs</b></div><div style="border-top:1px solid var(--line);padding-top:6px;${col};font-size:16px" id="o_net_base">—</div><div style="border-top:1px solid var(--line);padding-top:6px;${col};font-size:16px;color:var(--green)" id="o_net_struct">—</div>
       </div>
@@ -1948,10 +1949,11 @@ function computeOutcome(){
   set('o_esttax_base',m$(estTaxBase)); set('o_esttax_struct',m$(estTaxStruct));
   set('o_cap_base',capBase>0?(m$(capBase)+' · if sold'):(m$(capBase)+' · step-up')); set('o_cap_struct',capStruct>0?(m$(capStruct)+' · carryover'):(m$(capStruct)+' · step-up'));
   set('o_inc_base',m$(income)); set('o_inc_struct',m$(income));
+  set('o_tot_base',m$(estTaxBase+capBase+income)); set('o_tot_struct',m$(estTaxStruct+capStruct+income));
   set('o_prop_base',m$(propBase)); set('o_prop_struct',m$(propStruct));
   set('o_net_base',m$(netBase)); set('o_net_struct',m$(netStruct));
   const delta=netStruct-netBase;
-  set('o_summary', (delta>=0?('Your setup leaves heirs ≈ '+m$(delta)+' more'):('Your setup leaves heirs ≈ '+m$(-delta)+' less'))+' than no planning — estate tax cut '+m$(estTaxBase-estTaxStruct)+(capStruct>capBase?(', less '+m$(capStruct-capBase)+' new capital-gains tax from gifting out'):(capBase>capStruct?(', plus '+m$(capBase-capStruct)+' capital-gains saved by confirming the step-up'):''))+(propStruct<propBase?(', and avoids '+m$(propBase-propStruct)+'/yr of property-tax reassessment'):'')+'.');
+  set('o_summary', (delta>=0?('Planning leaves heirs ≈ '+m$(delta)+' more'):('Planning leaves heirs ≈ '+m$(-delta)+' less'))+' than unplanned — estate tax cut '+m$(estTaxBase-estTaxStruct)+(capStruct>capBase?(', less '+m$(capStruct-capBase)+' new capital-gains tax from gifting out'):(capBase>capStruct?(', plus '+m$(capBase-capStruct)+' capital-gains saved by confirming the step-up'):''))+(propStruct<propBase?(', and avoids '+m$(propBase-propStruct)+'/yr of property-tax reassessment'):'')+'.');
   const reInfo=reCapInfo();
   set('o_capnote', reInfo.reGain>0
     ? ('Real-estate unrealized gain ≈ <b>'+m$(reInfo.reGain)+'</b>. <b>Kept in your estate</b> (revocable trust), the step-up at death erases it — <b>$0</b> capital-gains tax. <b>Gifted out</b> via an IDGT/SLAT to cut estate tax, it takes carryover basis and heirs owe ≈ <b>'+m$(reInfo.tax)+'</b> when they sell. A <b>CRT</b> can sell appreciated assets tax-deferred and spread the gain. Confirm the right mix with your CPA.')
