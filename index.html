@@ -424,6 +424,39 @@
     <div id="propertyBody"><!-- rendered --></div>
   </section>
 
+  <!-- FINANCIAL ASSETS — retirement / brokerage / cash (its own tab) -->
+  <section class="block" id="financial" style="display:none">
+    <div class="section-head">
+      <span class="eyebrow">Financial assets</span>
+      <h2>Retirement · Brokerage · Cash</h2>
+      <span class="muted" style="font-size:14px">Step-up vs IRD, gross-estate inclusion, and the trust strategies for each — flagged for gross-estate impact. Planning estimates, not advice.</span>
+      <button class="btn-soft btn-xs" style="margin-left:auto" onclick="renderFinancial();toast('Recalculated')">↻ Recalculate</button>
+    </div>
+    <div id="financialBody"><!-- rendered --></div>
+  </section>
+
+  <!-- CHARITY — CLAT / CRT / PF / DAF tax strategy (its own tab) -->
+  <section class="block" id="charity" style="display:none">
+    <div class="section-head">
+      <span class="eyebrow">Charitable strategy</span>
+      <h2>Charitable Tax Strategy</h2>
+      <span class="muted" style="font-size:14px">CLAT · CRT · private foundation · DAF · outright — income-tax deduction, estate impact, and gross-estate vs taxable-estate effect. Planning estimates, not advice.</span>
+      <button class="btn-soft btn-xs" style="margin-left:auto" onclick="renderCharityTab();toast('Recalculated')">↻ Recalculate</button>
+    </div>
+    <div id="charityBody"><!-- rendered --></div>
+  </section>
+
+  <!-- ESTATE ROLL-UP — gross-estate reduction (its own tab) -->
+  <section class="block" id="rollup" style="display:none">
+    <div class="section-head">
+      <span class="eyebrow">Roll-up</span>
+      <h2>Gross-Estate Roll-up</h2>
+      <span class="muted" style="font-size:14px">Every strategy classified: does it reduce the <b>gross</b> estate, only the <b>taxable</b> estate, or only estate tax / after-tax value? Totals roll into the right bucket. Planning estimates, not advice.</span>
+      <button class="btn-soft btn-xs" style="margin-left:auto" onclick="renderRollup();toast('Recalculated')">↻ Recalculate</button>
+    </div>
+    <div id="rollupBody"><!-- rendered --></div>
+  </section>
+
   <!-- DISTRIBUTION PLAN (its own tab) -->
   <section class="block" id="dist" style="display:none">
     <div class="section-head">
@@ -910,7 +943,7 @@ function allTrusts(){ return TRUSTS.concat(S.customTrusts||[]); }
 function trustByKey(k){ return allTrusts().find(t=>t.k===k); }
 function renderTopTabs(){
   const el=document.getElementById('topTabs'); if(!el) return;
-  const main=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'},{k:'property',n:'Property'},{k:'dist',n:'Distribution'},{k:'outcome',n:'Strategy'}];
+  const main=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'},{k:'property',n:'Property'},{k:'financial',n:'Financial'},{k:'charity',n:'Charity'},{k:'rollup',n:'Estate Roll-up'},{k:'dist',n:'Distribution'},{k:'outcome',n:'Strategy'}];
   const btn=t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`;
   // Primary tabs stay pinned at the top; the trust tabs (which can grow long) scroll below them.
   el.innerHTML=`<div class="toptabs-main">${main.map(btn).join('')}</div>`
@@ -939,13 +972,17 @@ function deleteTrust(k){
 }
 function switchTab(key){
   currentTab=key;
-  const isOv=key==='overview', isTax=key==='tax', isProp=key==='property', isDist=key==='dist', isOutcome=key==='outcome', isTrust=!isOv&&!isTax&&!isProp&&!isDist&&!isOutcome;
+  const isOv=key==='overview', isTax=key==='tax', isProp=key==='property', isFin=key==='financial', isChar=key==='charity', isRoll=key==='rollup', isDist=key==='dist', isOutcome=key==='outcome';
+  const isTrust=!isOv&&!isTax&&!isProp&&!isFin&&!isChar&&!isRoll&&!isDist&&!isOutcome;
   document.querySelectorAll('.toptab').forEach(b=>b.classList.toggle('active',b.dataset.tab===key));
-  // The Tax Estimator, Property, Distribution Plan, and Strategy Outcome each live in their own tab; every other .wrap section belongs to Overview.
+  // The Tax Estimator, Property, Financial, Charity, Roll-up, Distribution, and Strategy each live in their own tab; every other .wrap section belongs to Overview.
   document.querySelectorAll('.wrap > *').forEach(el=>{
     if(el.id==='tab-trust') return;                       // trust panel handled below
     if(el.id==='taxest'||el.id==='taxconsider'){ el.style.display=isTax?'':'none'; return; }
     if(el.id==='property'){ el.style.display=isProp?'':'none'; return; }
+    if(el.id==='financial'){ el.style.display=isFin?'':'none'; return; }
+    if(el.id==='charity'){ el.style.display=isChar?'':'none'; return; }
+    if(el.id==='rollup'){ el.style.display=isRoll?'':'none'; return; }
     if(el.id==='dist'){ el.style.display=isDist?'':'none'; return; }
     if(el.id==='outcome'){ el.style.display=isOutcome?'':'none'; return; }
     el.style.display=isOv?'':'none';
@@ -954,6 +991,9 @@ function switchTab(key){
   if(isTrust) renderTrustPanel(key);
   if(isTax) renderTaxEstimator();
   if(isProp) renderProperty();
+  if(isFin) renderFinancial();
+  if(isChar) renderCharityTab();
+  if(isRoll) renderRollup();
   if(isDist) renderDistribution();
   if(isOutcome) renderOutcome();
   window.scrollTo(0,0);
@@ -1096,6 +1136,9 @@ function render(){
   renderTax();
   renderTaxEstimator();
   renderProperty();
+  renderFinancial();
+  renderCharityTab();
+  renderRollup();
   renderDistribution();
   renderOutcome();
   renderExport();
@@ -2322,6 +2365,22 @@ function renderProperty(){
     + card('Tax impact by deed / title — gifted vs beneficiary vs trust', scenarioTable)
     + card('Advanced strategy — FLP + IDGT installment-sale ("loan") freeze', flpCard)
     + card('Rental income — P&amp;L &amp; tax impact', rentalCard)
+    + refFooter([
+        {c:'IRC sec 1014',s:'Property acquired from a decedent takes a date-of-death FMV basis (step-up); California (FTB) conforms.'},
+        {c:'IRC sec 1014(b)(6)',s:'Both halves of California community property step up at the first spouse’s death.'},
+        {c:'IRC sec 1015',s:'Property gifted during life takes the donor’s carryover basis — no step-up.'},
+        {c:'IRC sec 1(h) / sec 1411',s:'Long-term capital-gains rates (top 20%) plus the 3.8% net investment income tax on a sale during life.'},
+        {c:'Rev. Rul. 85-13',s:'A sale to your own grantor trust (IDGT) is disregarded for income tax — no gain on the installment sale.'},
+        {c:'IRC sec 2702',s:'Special valuation rules; the QPRT is the personal-residence exception.'},
+        {c:'IRC sec 2704',s:'Limits family-entity (FLP) lack-of-control/marketability valuation discounts.'},
+        {c:'Cal. Rev. & Tax. Code sec 60-62',s:'Defines a “change in ownership” that triggers property-tax reassessment.'},
+        {c:'Cal. Rev. & Tax. Code sec 62(a)(2)',s:'Transfers to a legal entity that keep proportional ownership are excluded from reassessment (the FLP/LLC angle).'},
+        {c:'Cal. Rev. & Tax. Code sec 64',s:'Later transfers of entity interests don’t reassess the real property unless one person gains >50% control.'},
+        {c:'Cal. Rev. & Tax. Code sec 63.2 (Prop 19)',s:'Limits the parent-child reassessment exclusion to a family home the child occupies, with a value cap; investment property is reassessed.'},
+        {c:'Cal. Rev. & Tax. Code sec 110.1 (Prop 13)',s:'Base-year value: assessed value tracks acquisition cost until a change in ownership.'},
+        {c:'Cal. Rev. & Tax. Code sec 18031',s:'California (FTB) conforms to the IRC sec 1014 basis step-up for state income tax.'},
+        {c:'Cal. Prob. Code sec 5600 et seq.',s:'Revocable transfer-on-death (beneficiary) deed for real property.'}
+      ])
     + `<div class="legal-foot" style="margin-top:6px">⚠️ Scenarios, discounts, and projections here are an organizer to discuss with your attorney &amp; CPA — they do not create or change any legal document, and they don't constitute tax advice.</div>`;
   computeProperty();
 }
@@ -2398,6 +2457,461 @@ function computeProperty(){
     set('rt_aftertax', m$(Math.max(0, R.reassessed - A.pnlTax)));
     set('rt_note','Rental is passive — no SE tax on the P&L itself. Modeled at FMV-reassessed property tax (the go-forward basis after a death reassessment; an FLP/IDGT can avoid that — see above). Net P&L = gross '+m$(R.gross)+' − operating expenses '+m$(R.opEx)+' − property tax '+m$(R.propReassessed)+' − management salary '+m$(R.sal)+' = '+m$p(R.reassessed)+'. QBI = the net P&L ('+m$(A.qbi)+'); the executor reports the salary as their own income ('+m$(A.execTax)+' income + SE). A net loss is generally suspended (not netted against other income) until you have passive income or sell. CPA review.');
   }
+}
+
+/* ============================================================================
+   Financial assets · Charity · Gross-estate roll-up
+   Tax/legal substance below was researched + adversarially verified (IRC / CA
+   Probate / CA Rev. & Tax. — FTB). Citations are stored with "sec" and rendered
+   as the section symbol via cc(). Planning/illustrative only — not legal/tax advice.
+   ============================================================================ */
+/* citation / prose formatter: "IRC sec 2033" -> "IRC §2033"; escapes HTML. */
+function cc(s){ return esc(String(s==null?'':s)).replace(/\bsec\s+/g,'§'); }
+/* group a {c,s}[] citation list into a Probate · IRC · FTB/R&T references footer */
+function refFooter(cites, title){
+  const seen=new Set(), g={fed:[],prob:[],ftb:[],corp:[]};
+  (cites||[]).forEach(r=>{ if(!r||!r.c||seen.has(r.c)) return; seen.add(r.c);
+    if(/^Cal\. Prob/i.test(r.c)) g.prob.push(r);
+    else if(/^Cal\. Rev|Rev\. ?& ?Tax|FTB/i.test(r.c)) g.ftb.push(r);
+    else if(/^Cal\. Corp/i.test(r.c)) g.corp.push(r);
+    else g.fed.push(r);   // IRC / Treas. Reg. / Rev. Rul. / case law
+  });
+  const blk=(label,arr)=> arr.length?`<div style="margin-top:10px"><div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--indigo-ink);font-weight:700;margin-bottom:4px">${label}</div>${arr.map(r=>`<div style="border-bottom:1px dashed var(--line);padding:6px 0"><div style="font-weight:700;font-size:13.5px;color:var(--ink)">${cc(r.c)}</div><div class="muted" style="font-size:13px">${cc(r.s)}</div></div>`).join('')}</div>`:'';
+  return `<div class="card pad" style="margin-top:14px;background:var(--panel2)">
+    <h3 style="font-size:15px;margin-bottom:2px;color:var(--indigo-ink)">${title||'Code references — Probate · IRC · FTB / R&amp;T'}</h3>
+    <div class="muted" style="font-size:12.5px">Plain-language summaries for orientation only — these are not the statutes and not legal advice. Read the official Internal Revenue Code (irs.gov), the California Probate / Corporations Code and Revenue &amp; Taxation Code (leginfo.ca.gov), and confirm with your attorney &amp; CPA. Section numbers and dollar limits change.</div>
+    ${blk('Internal Revenue Code (IRC) &amp; federal authority',g.fed)}
+    ${blk('California Probate Code',g.prob)}
+    ${blk('California Revenue &amp; Taxation Code (FTB / property tax)',g.ftb)}
+    ${blk('California Corporations Code',g.corp)}
+  </div>`;
+}
+/* small inline citation chip used next to notes */
+function ic(c){ return `<span style="display:inline-block;font-size:11px;font-weight:600;color:var(--indigo-ink);background:var(--indigo-soft);border-radius:5px;padding:0 5px;margin-left:2px;white-space:nowrap">${cc(c)}</span>`; }
+/* yes/no/partial gross-estate badge */
+function grossBadge(v){ const m={yes:['b-green','Reduces gross estate'],partial:['b-amber','Partial — reduces gross estate'],no:['b-red','Does NOT reduce gross estate']}; const x=m[v]||m.no; return `<span class="badge ${x[0]}">${x[1]}</span>`; }
+
+/* ---- Financial assets: verified treatment (retirement / brokerage / cash) ---- */
+const FIN_ASSETS={
+  retirement:{
+    label:'Retirement (Traditional IRA · 401(k)/403(b) · Roth)',
+    stepUp:'no',
+    stepUpNote:'NO basis step-up. A Traditional IRA/401(k) is Income in Respect of a Decedent (IRD) — pre-tax dollars expressly excluded from the death-basis adjustment (IRC sec 1014(c)); the deferred income tax passes through to your beneficiary (IRC sec 691(a)). A Roth gets no step-up either, but needs none — qualified distributions are already income-tax-free (IRC sec 408A(d)).',
+    inclusion:'The FULL date-of-death balance is in your gross estate at FMV under IRC sec 2033 (also sec 2039 for survivor/annuity features) — regardless of whether the beneficiary is a spouse, trust, charity, foundation, or CRT. The beneficiary choice never removes it from the gross estate.',
+    incomeAtDeath:'Traditional: ordinary income to the beneficiary as withdrawn (IRD, IRC sec 691) — and the FTB taxes it as ordinary income too (no CA capital-gains break). In a large estate the same dollars face BOTH 40% federal estate tax AND ordinary income tax; IRC sec 691(c) gives a partial income-tax deduction for the estate tax paid, softening but not erasing the double hit. Roth: income-tax-free to heirs (IRC sec 408A(d)).',
+    strategies:[
+      {trust:'Do NOT retitle into a revocable living trust during life',gross:'no',tax:'Re-registering an IRA out of your own name is a full taxable distribution of the entire pre-tax balance (ordinary income, federal + FTB) that year — a catastrophic, avoidable mistake. Keep it in your name; at most name a (see-through) trust as the DEATH beneficiary.',cites:[{c:'IRC sec 408(d) / sec 691(a)',s:'Re-registering an IRA out of the individual owner is a taxable distribution of the entire balance, taxed as ordinary income.'},{c:'IRC sec 2038',s:'Revocable-trust assets stay in your gross estate because you can revoke or amend.'}]},
+      {trust:'See-through trust as DEATH beneficiary (conduit or accumulation)',gross:'no',tax:'A control tool (spendthrift, special-needs, remarriage protection), not an estate-reduction tool — full balance still in sec 2033 and still IRD/ordinary income (sec 691). Accumulation trap: distributions retained inside the trust are taxed at the compressed trust brackets (top rate at a very low threshold) plus CA fiduciary tax. Must meet the see-through rules of Treas. Reg. sec 1.401(a)(9)-4.',cites:[{c:'Treas. Reg. sec 1.401(a)(9)-4',s:'Requirements for a see-through (look-through) trust beneficiary; conduit vs accumulation.'},{c:'IRC sec 401(a)(9)',s:'RMDs and the SECURE Act 10-year payout for most non-spouse beneficiaries.'},{c:'IRC sec 641 / sec 1(e)',s:'Income accumulated in a trust is taxed at compressed brackets reaching the top rate at a very low level.'}]},
+      {trust:'Charity / private foundation / CRT as death beneficiary',gross:'no',tax:'The BEST asset to leave to charity: a tax-exempt charity receives the IRD with NO income tax (sec 691), and the estate gets an offsetting estate-tax charitable deduction (sec 2055) — but the full value is STILL in the gross estate (sec 2033). Cuts income tax + estate TAX, never the gross estate. A testamentary CRT spreads the income to heirs over time (sec 664) as a post-SECURE-Act stretch substitute.',cites:[{c:'IRC sec 2033',s:'Full retirement balance is in the gross estate even with a charitable beneficiary.'},{c:'IRC sec 2055',s:'Charitable bequest of the account generates an estate-tax deduction (reduces taxable, not gross, estate).'},{c:'IRC sec 691(a)',s:'IRD passing to a tax-exempt charity is not subject to income tax.'},{c:'IRC sec 664(c)',s:'A CRT is income-tax-exempt; it receives the IRD tax-free and spreads payouts to heirs.'}]},
+      {trust:'Lifetime Roth conversion (coordinated strategy)',gross:'partial',tax:'The closest thing to gross-estate help for retirement: the Roth balance still counts in the gross estate (sec 2033), but the conversion income tax you PAY during life removes that cash from your estate and pre-pays your heirs’ income tax — Roth dollars then pass income-tax-free (sec 408A(d)). Pair with leaving Traditional dollars to charity.',cites:[{c:'IRC sec 408A(d)(3)',s:'A Roth conversion is taxed as ordinary income in the conversion year.'},{c:'IRC sec 408A(d)',s:'Qualified Roth distributions, including to beneficiaries after death, are income-tax-free.'},{c:'IRC sec 2033',s:'The Roth balance is still in the gross estate; the benefit is the conversion tax leaving the estate.'}]}
+    ],
+    flags:[
+      'GROSS ESTATE: essentially NO strategy reduces it for retirement — the full date-of-death balance is always in the gross estate (IRC sec 2033), whoever the beneficiary is.',
+      'DO NOT retitle a retirement account into a living trust during life — it is a full taxable distribution that year.',
+      'NO STEP-UP: Traditional IRA/401(k) is IRD (sec 1014(c)), taxed as ordinary income to heirs and by the FTB; in a large estate it can face BOTH 40% estate tax AND ordinary income tax (sec 691(c) only partly offsets).',
+      'SECURE Act: most non-spouse beneficiaries must empty the account within 10 years (sec 401(a)(9)).',
+      'BEST PRACTICE: leave Traditional retirement to charity (no income tax + estate deduction), leave step-up assets to family, and consider Roth conversions so the tax paid leaves the estate.'
+    ],
+    cites:[{c:'IRC sec 2031 / sec 2033',s:'Gross estate includes the full retirement balance at FMV regardless of beneficiary.'},{c:'IRC sec 1014(c)',s:'IRD (Traditional IRA/401(k)) is excluded from the date-of-death basis step-up.'},{c:'IRC sec 691(a)',s:'Inherited retirement distributions are IRD, taxed as ordinary income to the beneficiary.'},{c:'IRC sec 691(c)',s:'The IRD beneficiary may deduct the federal estate tax attributable to the IRD, partly offsetting the double tax.'},{c:'IRC sec 401(a)(9)',s:'RMDs and the SECURE Act 10-year payout rule; eligible designated beneficiaries are excepted.'},{c:'Treas. Reg. sec 1.401(a)(9)-4',s:'See-through trust beneficiary rules; conduit vs accumulation trusts.'},{c:'IRC sec 408A(d)',s:'Roth conversions are taxed now; qualified Roth distributions (incl. to heirs) are income-tax-free.'},{c:'IRC sec 2055',s:'Charitable bequest of the account creates an estate-tax deduction (taxable, not gross, estate).'},{c:'Cal. Rev. & Tax. Code sec 17071 et seq.',s:'California (FTB) taxes inherited Traditional IRA/401(k) distributions as ordinary income; no CA capital-gains break, no CA estate tax.'}]
+  },
+  brokerageCash:{
+    label:'Taxable brokerage & cash / bank',
+    stepUp:'yes',
+    stepUpNote:'Brokerage securities get a full date-of-death step-up to FMV (IRC sec 1014), erasing unrealized capital gain for heirs; CA/FTB conforms (sec 18031). California community property gets a 100% DOUBLE step-up at the first spouse’s death (IRC sec 1014(b)(6)) — a reason to hold appreciated assets as community property. Cash/bank: step-up is moot (no built-in gain). CRITICAL: step-up is a basis/income-tax benefit only — it does NOT shrink the gross estate (both are in at full FMV under sec 2031/2033).',
+    inclusion:'All securities and cash/bank balances you own at death are in the gross estate at FMV (IRC sec 2033). Assets in a revocable trust are also pulled back under IRC sec 2038 (retained power to revoke).',
+    incomeAtDeath:'Brokerage: sec 1014 step-up erases the lifetime capital gain (NOT IRD) — heirs selling soon after death owe little/no income tax. Cash: nothing to step up. Note NIIT (IRC sec 1411, 3.8%) drags on dividends/interest/gains while alive and inside an estate/non-grantor trust; a CRT avoids it inside the trust.',
+    strategies:[
+      {trust:'Revocable trust / TOD / POD titling',gross:'no',tax:'Probate-avoidance only. You still own and control the assets, so they are fully in the gross estate (sec 2033; sec 2038 for the revocable trust). No estate-tax saving. Upside: securities keep the sec 1014 step-up (and the CA community-property double step-up if titled as community property).',cites:[{c:'IRC sec 2038',s:'Revocable-trust assets are in the gross estate.'},{c:'IRC sec 2033',s:'TOD/POD assets are owned at death and fully included at FMV.'},{c:'Cal. Prob. Code sec 5500',s:'California allows transfer-on-death (TOD) registration of securities, passing them outside probate.'},{c:'IRC sec 1014(b)(6)',s:'Both halves of CA community property step up at the first spouse’s death.'}]},
+      {trust:'CRT seeded with concentrated low-basis stock',gross:'partial',tax:'Diversify a concentrated position with NO immediate capital-gains tax (the sec 664 trust is tax-exempt) + a current income-tax deduction for the remainder (sec 170) + an income stream. The asset leaves the estate only if a NON-grantor holds the income interest; if YOU keep the lifetime payout, sec 2036 values the corpus back into the gross estate (offset by the sec 2055/2056 deduction at the taxable stage). Often paired with an ILIT to replace value for heirs.',cites:[{c:'IRC sec 664(c)',s:'A CRT is income-tax-exempt — sells appreciated stock with no immediate capital-gains tax.'},{c:'IRC sec 170',s:'Income-tax deduction for the present value of the charitable remainder.'},{c:'IRC sec 2036',s:'A retained lifetime income interest values the corpus back into the gross estate.'},{c:'IRC sec 1411',s:'Capital gains inside the tax-exempt CRT escape the 3.8% NIIT.'}]},
+      {trust:'IDGT — installment sale of brokerage assets',gross:'yes',tax:'Sell appreciating securities (or seed cash) to an irrevocable grantor trust for a note; future growth escapes the estate and only the frozen note stays in (sec 2033). The sale is income-tax-free (Rev. Rul. 85-13) and your paying the trust’s tax is a further tax-free transfer. Trade-off: carryover basis (sec 1015) — no step-up.',cites:[{c:'Rev. Rul. 85-13',s:'A sale to your own grantor trust is disregarded for income tax — no gain.'},{c:'IRC sec 2033',s:'Only the frozen note, not the post-sale appreciation, is in the gross estate.'},{c:'IRC sec 1015',s:'Securities transferred during life take carryover basis (no step-up).'},{c:'IRC sec 671',s:'The grantor is taxed on trust income, so paying it further reduces the estate tax-free.'}]},
+      {trust:'Outright lifetime gift of cash or securities',gross:'yes',tax:'The lever that actually removes cash/securities from the gross estate — a completed gift means you no longer own it (sec 2033), and future growth is out too. Cash is the cleanest gift (no basis downside). Gifted appreciated securities take carryover basis (sec 1015) — heirs lose the step-up. Uses annual exclusion / lifetime exemption.',cites:[{c:'IRC sec 2033',s:'A completed lifetime gift is no longer owned at death — excluded from the gross estate.'},{c:'IRC sec 1015',s:'Gifted securities take carryover basis (cash has no gain).'},{c:'IRC sec 2503(b)',s:'Annual-exclusion gifts pass free of gift tax and outside the estate.'},{c:'IRC sec 2010',s:'The unified credit shelters lifetime gifts up to the ~$15M (2026) exemption.'}]}
+    ],
+    flags:[
+      'STEP-UP IS NOT ESTATE REDUCTION: sec 1014 is income-tax only — brokerage and cash are still in the gross estate at full FMV (sec 2031/2033).',
+      'REVOCABLE TRUST / TOD / POD do NOT reduce the gross estate — probate-avoidance only (you still own/control until death).',
+      'TO REMOVE brokerage/cash from the gross estate you must give it away (completed gift) or sell it to an IDGT — only an irrevocable transfer that surrenders ownership works.',
+      'STEP-UP vs EXCLUSION TRADE-OFF: gifting appreciated stock out forfeits the step-up (carryover basis, sec 1015). Favor exclusion for high-growth assets; keep low-growth assets for the step-up.',
+      'CASH IS THE CLEANEST GIFT (no gain to lose). CALIFORNIA: no state estate tax; hold appreciated assets as community property for the 100% double step-up (sec 1014(b)(6)).'
+    ],
+    cites:[{c:'IRC sec 1014',s:'Property from a decedent takes date-of-death FMV basis (step-up); CA/FTB conforms.'},{c:'IRC sec 1014(b)(6)',s:'Both halves of CA community property step up at the first spouse’s death.'},{c:'IRC sec 2031',s:'Gross estate = FMV of all included property at death.'},{c:'IRC sec 2033',s:'Gross estate includes securities, cash, and bank balances owned at death.'},{c:'IRC sec 2038',s:'Revocable-trust assets are pulled back into the gross estate.'},{c:'IRC sec 1015',s:'Gifted property takes carryover basis — no step-up.'},{c:'IRC sec 1411',s:'3.8% NIIT on investment income above thresholds; not at the CRT level.'},{c:'Rev. Rul. 85-13',s:'A sale to your own grantor trust is disregarded for income tax.'},{c:'Cal. Prob. Code sec 5500',s:'California allows TOD registration of securities (outside probate).'},{c:'Cal. Rev. & Tax. Code sec 18031',s:'California (FTB) conforms to the IRC sec 1014 step-up for state income tax.'}]
+  }
+};
+
+/* ---- Charitable vehicles: verified comparison ---- */
+const CHARITY_VEHICLES=[
+  {key:'clat',abbr:'CLAT',name:'Charitable Lead Annuity Trust',gross:'partial',
+   deduct:'Grantor (inter vivos): up-front income-tax deduction for the PV of the charitable lead stream (sec 170(f)(2)(B)), but you are then taxed on all trust income each year. Non-grantor / testamentary: no personal deduction — the trust deducts what it pays charity (sec 642(c), no AGI cap).',
+   agi:'Grantor CLAT up-front deduction is “for the use of” charity: 30% AGI cash / 20% appreciated, 5-yr carryforward. Non-grantor uses the uncapped trust-level sec 642(c) deduction.',
+   estate:'Inter vivos: a completed gift — only the (often near-zero) remainder uses gift exemption; sec 2522 shields the lead. Testamentary: assets are IN the gross estate, with a sec 2055(e)(2)(B) deduction for the lead annuity. Strongest when sec 7520 rates are low.',
+   grossNote:'TIMING DECIDES IT. Inter vivos (lifetime) CLAT REMOVES the funded assets + future appreciation from the GROSS estate (sec 2031/2033). Testamentary CLAT does NOT — assets are in the gross estate; only the TAXABLE estate is reduced by the sec 2055 deduction. The remainder returns to your HEIRS (unlike a CRT).',
+   cites:[{c:'IRC sec 170(f)(2)(B)',s:'Income-tax deduction for the PV of a guaranteed-annuity lead interest — grantor CLAT only.'},{c:'IRC sec 642(c)',s:'A non-grantor CLAT deducts amounts actually paid to charity, with no AGI ceiling.'},{c:'IRC sec 2055(e)(2)(B)',s:'Testamentary CLAT estate deduction requires a guaranteed-annuity (or fixed-% unitrust) lead interest.'},{c:'IRC sec 2522(c)(2)(B)',s:'Gift-tax charitable deduction for the lead annuity of an inter vivos CLAT.'},{c:'IRC sec 7520',s:'IRS hurdle rate: lower rates enlarge the charitable lead and shrink the gift to heirs.'}]},
+  {key:'crt',abbr:'CRT',name:'Charitable Remainder Trust (CRAT/CRUT)',gross:'partial',
+   deduct:'Up-front partial income-tax deduction for the PV of the charitable REMAINDER (sec 170), computed with the sec 7520 rate; smaller because you keep the income interest.',
+   agi:'Public-charity/DAF remainder: 60% AGI cash / 30% appreciated. Private-foundation remainder: 30% / 20%. 5-yr carryforward.',
+   estate:'Inter vivos with grantor-retained income: sec 2036 values the corpus back into the gross estate (often in full), offset by sec 2055 (and sec 2056 for a spousal interest) at the taxable stage. Testamentary: in the gross estate, remainder deducted under sec 2055.',
+   grossNote:'A grantor-retained-income CRT does NOT reduce the GROSS estate — sec 2036 pulls the corpus back; the sec 2055/2056 offsets reduce only the TAXABLE estate. Its real wins are income-tax: capital-gains deferral inside the sec 664-exempt trust + a current sec 170 deduction. Gross-estate removal needs a NON-grantor to hold the income interest.',
+   cites:[{c:'IRC sec 664',s:'Defines CRATs/CRUTs and their income-tax-exempt status.'},{c:'IRC sec 664(d)(1)/(d)(2)',s:'Payout 5%-50%; charitable remainder must be ≥ 10% of initial value.'},{c:'IRC sec 664(c)',s:'A CRT sells appreciated assets with no immediate capital-gains tax.'},{c:'IRC sec 170',s:'Up-front deduction for the PV of the charitable remainder.'},{c:'IRC sec 2036',s:'A retained lifetime income interest values the corpus back into the gross estate (often in full).'},{c:'IRC sec 2055',s:'Estate deduction for the charitable remainder — reduces the taxable, not gross, estate.'},{c:'IRC sec 2056',s:'A surviving-spouse income interest qualifies for the marital deduction (sec 2056(b)(8)).'},{c:'Rev. Rul. 77-374',s:'A CRAT must also pass the 5% probability-of-exhaustion test.'}]},
+  {key:'pf',abbr:'PF',name:'Private Foundation',gross:'partial',
+   deduct:'Sec 170 deduction for lifetime gifts. Publicly traded stock: full FMV. Most OTHER appreciated property (real estate, closely held stock, art): limited to COST BASIS, not FMV (sec 170(e)(1)(B)(ii)) — a key drawback vs a public charity/DAF.',
+   agi:'Lower ceilings: 30% AGI cash / 20% appreciated, 5-yr carryforward (sec 170(b)(1)(C)/(D)).',
+   estate:'Lifetime gift removes assets from the gross estate. A bequest is in the gross estate, offset by the sec 2055 deduction. Ongoing 5% annual payout (sec 4942).',
+   grossNote:'Reduces the GROSS estate ONLY if funded during life (completed gift, sec 2522). A bequest at death stays in the gross estate (sec 2033), offset by the sec 2055 deduction (taxable estate only). Donor/family keep governance, not beneficial ownership.',
+   cites:[{c:'IRC sec 501(c)(3)',s:'Exempt charitable organization status.'},{c:'IRC sec 509(a)',s:'A 501(c)(3) that is not a public charity is a private foundation.'},{c:'IRC sec 170(b)(1)(C)/(D)',s:'Lower AGI ceilings: 30% cash, 20% appreciated.'},{c:'IRC sec 170(e)(1)(B)(ii)',s:'Most appreciated non-public property to a PF is deductible only at basis.'},{c:'IRC sec 4940',s:'1.39% excise tax on the foundation’s net investment income.'},{c:'IRC sec 4941',s:'Prohibits/taxes self-dealing with disqualified persons (donor/family).'},{c:'IRC sec 4942',s:'Mandatory 5% annual distribution; 30% excise tax on a shortfall.'},{c:'IRC sec 2055',s:'A bequest to the foundation is offset by the estate charitable deduction (taxable estate only).'}]},
+  {key:'daf',abbr:'DAF',name:'Donor-Advised Fund',gross:'partial',
+   deduct:'Sec 170 deduction in the year of the gift to the sponsor. Long-term appreciated PUBLIC stock — and, via a public-charity sponsor, real estate — is deductible at full FMV with no capital-gains recognition.',
+   agi:'Best-tier public-charity limits: 60% AGI cash / 30% appreciated, 5-yr carryforward.',
+   estate:'Lifetime contribution is a completed gift, out of the gross estate. A death-time designation (will/IRA/insurance) is in the gross estate, offset by sec 2055.',
+   grossNote:'Reduces the GROSS estate ONLY if funded during life (completed transfer). A death-beneficiary designation stays in the gross estate (sec 2033), offset by sec 2055 (taxable estate only). Especially efficient to direct IRD/retirement assets to a DAF/charity at death.',
+   cites:[{c:'IRC sec 170(b)(1)',s:'Public-charity sponsor: 60% AGI cash / 30% appreciated.'},{c:'IRC sec 170(e)',s:'Long-term appreciated public stock (and, via a public sponsor, real estate) is FMV-deductible.'},{c:'IRC sec 4966-4967',s:'Defines DAFs; donor rights are advisory only.'},{c:'IRC sec 2055',s:'A death-time DAF designation is offset by the estate charitable deduction (taxable estate only).'},{c:'IRC sec 2031/2033',s:'A lifetime DAF gift leaves the gross estate; a death designation is included.'}]},
+  {key:'outright',abbr:'Outright',name:'Outright Gift to Public Charity',gross:'partial',
+   deduct:'Full sec 170 deduction in the year of the gift: FMV for cash and long-term appreciated public stock / real estate (no capital-gains recognition). Short-term/ordinary-income property is limited to basis.',
+   agi:'Top-tier: 60% AGI cash / 30% appreciated to a public charity, 5-yr carryforward.',
+   estate:'Lifetime gift removes the asset (and future growth) from the gross estate. A charitable bequest is in the gross estate but fully deductible under sec 2055 (unlimited).',
+   grossNote:'The cleanest illustration: a LIFETIME outright gift REMOVES the asset from the GROSS estate (sec 2031/2033). A TESTAMENTARY bequest does NOT — it is in the gross estate, offset by the unlimited sec 2055 deduction (TAXABLE estate only). Same end estate-tax result, different mechanism; only the lifetime gift shrinks the gross-estate figure. Value leaves the family (unlike a CLAT).',
+   cites:[{c:'IRC sec 170(c)',s:'Defines a qualifying charitable donee for the income-tax deduction.'},{c:'IRC sec 170(b)(1)(A)',s:'60% AGI ceiling for cash to public charities.'},{c:'IRC sec 170(b)(1)(C)',s:'30% AGI ceiling for long-term appreciated property (FMV-deductible).'},{c:'IRC sec 170(e)(1)',s:'FMV for long-term gain property; ordinary/short-term limited to basis.'},{c:'IRC sec 2055',s:'Unlimited estate charitable deduction for a bequest — reduces taxable, not gross, estate.'},{c:'IRC sec 170(f)(11)',s:'Non-cash gifts over $5,000 generally need a qualified appraisal.'}]}
+];
+
+/* ---- Master gross-estate classification (verified) — drives the roll-up buckets ---- */
+const GROSS_EXPLAINER='The GROSS estate (IRC sec 2031/2033) is the fair market value, at death, of EVERYTHING you own or control. It is not the taxable estate (gross minus deductions under sec 2053-2058 — debts, the marital deduction, the charitable deduction) and not the estate tax (taxable estate, minus the ~$15M/person 2026 exemption under sec 2010, times up to 40%). The single rule for what comes OUT of the gross estate: only a COMPLETED lifetime transfer in which you keep NO interest and NO control removes an asset — none of the string rules (sec 2036 retained enjoyment/income, sec 2037 reversion, sec 2038 power to revoke/amend, sec 2042 insurance ownership) may apply, and it must clear the 3-year sec 2035 lookback. If you still own it, benefit from it, can get it back, or control who gets it, it stays in at full FMV — no matter what the document is called. California has no state estate tax and conforms to the sec 1014 step-up (FTB), so assets kept in the estate get a basis step-up while assets gifted out keep carryover basis (sec 1015).';
+const ROLLUP_STRATEGIES=[
+  {key:'revocable_trust',name:'Revocable Living Trust',gross:'no',bucket:3,taxable:'no',income:'no',flag:'Does NOT reduce the gross OR taxable estate — assets stay 100% in (sec 2038). Avoids probate and keeps the step-up; not an estate-tax saver.',sec:'IRC sec 2038',
+   cites:[{c:'IRC sec 2038',s:'Assets you can alter/amend/revoke are included in your gross estate at full value.'},{c:'Cal. Prob. Code sec 15800',s:'While the settlor is competent, the trustee’s duties run to the settlor — confirming retained control.'},{c:'Cal. Prob. Code sec 10800, sec 10810',s:'A funded revocable trust avoids probate, saving statutory executor + attorney fees.'},{c:'IRC sec 1014',s:'Because assets stay in the estate, they take a date-of-death step-up.'}]},
+  {key:'ilit',name:'ILIT (life insurance)',gross:'yes',bucket:1,taxable:'yes',income:'no',flag:'REDUCES the gross estate — the death benefit is out (sec 2042). Watch the 3-year sec 2035 pull-back if you transfer an EXISTING policy.',sec:'IRC sec 2042',
+   cites:[{c:'IRC sec 2042',s:'Life-insurance proceeds are in your estate only if the insured holds incidents of ownership — an ILIT removes them.'},{c:'IRC sec 2035',s:'A transferred existing policy is pulled back if the insured dies within 3 years.'},{c:'IRC sec 2503(b); Crummey v. Comm’r',s:'Annual-exclusion gifts to fund premiums need Crummey withdrawal rights.'}]},
+  {key:'flp',name:'Family Limited Partnership',gross:'partial',bucket:1,taxable:'yes',income:'no',flag:'PARTIAL — only the valuation discount lowers the gross estate; interests you keep stay in (sec 2033). sec 2704 / sec 2036 can erase the discount.',sec:'IRC sec 2704 / sec 2033',
+   cites:[{c:'IRC sec 2033',s:'Interests you still own (GP + retained LP units) are in your gross estate at FMV.'},{c:'IRC sec 2704',s:'Limits lack-of-control/marketability discounts on transfers among family members.'},{c:'IRC sec 2036',s:'Retained enjoyment or ignored formalities pull the full undiscounted value back in.'},{c:'Cal. Corp. Code sec 15900 et seq.',s:'California’s Uniform Limited Partnership Act governs FLP formation.'}]},
+  {key:'qprt',name:'QPRT (residence)',gross:'partial',bucket:1,taxable:'yes',income:'no',flag:'PARTIAL / CONTINGENT — reduces the gross estate only if you OUTLIVE the term; die during it and sec 2036 pulls the whole home back. Loses the step-up.',sec:'IRC sec 2702 / sec 2036',
+   cites:[{c:'IRC sec 2702(a)(3); Treas. Reg. sec 25.2702-5',s:'Personal-residence-trust exception to the sec 2702 valuation rules (QPRT).'},{c:'IRC sec 2036',s:'If you die during the retained term, the full date-of-death home value is pulled back in.'},{c:'IRC sec 1014',s:'A successfully removed residence loses the date-of-death step-up (carryover basis).'}]},
+  {key:'idgt',name:'IDGT (gift / installment sale out)',gross:'yes',bucket:1,taxable:'yes',income:'no',flag:'REDUCES the gross estate — a completed gift/sale freezes the assets and ALL future growth out (an estate freeze). The grantor-trust “defect” must be income-tax only — avoid sec 2036/2038 powers.',sec:'Rev. Rul. 85-13',
+   cites:[{c:'Rev. Rul. 85-13',s:'A sale between a grantor and the grantor’s trust is ignored for income tax — no gain.'},{c:'IRC sec 671-679',s:'Grantor-trust rules tax trust income to the grantor without causing estate inclusion.'},{c:'IRC sec 2036, sec 2038',s:'Retained enjoyment or alter/amend powers pull the gifted assets back into the gross estate.'},{c:'IRC sec 2511',s:'A completed gift requires giving up dominion and control.'}]},
+  {key:'outright_gift',name:'Outright lifetime gift',gross:'yes',bucket:1,taxable:'yes',income:'no',flag:'REDUCES the gross estate — a completed gift removes the asset + future growth. Donee gets carryover basis (no step-up); sec 2035 grosses up gift tax paid in the last 3 years.',sec:'IRC sec 2501 / sec 2511',
+   cites:[{c:'IRC sec 2501; sec 2511',s:'A completed gift transfers dominion and control, removing the asset from your estate.'},{c:'IRC sec 2503(b)',s:'Annual-exclusion gifts (~$19,000/donee, 2026) use no lifetime exemption.'},{c:'IRC sec 2035',s:'Gift tax paid within 3 years of death is added back to the gross estate.'},{c:'IRC sec 1015',s:'The donee takes carryover basis — a lifetime gift forfeits the step-up.'}]},
+  {key:'clat_inter_vivos',name:'CLAT — inter vivos (lifetime-funded)',gross:'yes',bucket:1,taxable:'yes',income:'yes',flag:'REDUCES the gross estate because it is funded during LIFE (completed transfer). Remainder returns to heirs at low gift cost. Contrast the testamentary CLAT, which does not.',sec:'IRC sec 2033',
+   cites:[{c:'IRC sec 2033',s:'A completed lifetime gift is excluded from the gross estate — no longer owned at death.'},{c:'IRC sec 170(f)(2)',s:'A grantor CLAT yields a current income-tax deduction for the PV of the charitable lead.'},{c:'IRC sec 2522',s:'Gift-tax charitable deduction for the lead interest of a lifetime CLAT.'},{c:'IRC sec 7520',s:'Hurdle rate used to value the charitable annuity and the remainder to heirs.'}]},
+  {key:'crt',name:'CRT — grantor-retained income',gross:'no',bucket:2,taxable:'yes',income:'yes',flag:'Does NOT reduce the GROSS estate when you keep a lifetime income interest — sec 2036 values the corpus back in. Reduces the TAXABLE estate (sec 2055/2056) and defers capital gains + gives a current sec 170 deduction.',sec:'IRC sec 2036',
+   cites:[{c:'IRC sec 664',s:'Defines CRATs/CRUTs and their tax-exempt status.'},{c:'IRC sec 170',s:'Current income-tax deduction for the PV of the charitable remainder.'},{c:'IRC sec 2036',s:'A retained lifetime income interest values the corpus back into the gross estate (often in full).'},{c:'IRC sec 2055',s:'Estate deduction for the charitable remainder — reduces the taxable, not gross, estate.'},{c:'IRC sec 2056',s:'A surviving-spouse income interest qualifies for the marital deduction.'}]},
+  {key:'clat_testamentary',name:'CLAT — testamentary (death-funded)',gross:'no',bucket:2,taxable:'yes',income:'no',flag:'Does NOT reduce the gross estate — assets are in at death (sec 2033); the sec 2055 deduction reduces only the TAXABLE estate.',sec:'IRC sec 2055',
+   cites:[{c:'IRC sec 2031, sec 2033',s:'Assets funded into a trust at death are part of the gross estate at full FMV.'},{c:'IRC sec 2055',s:'Estate deduction for the PV of the charitable lead annuity — reduces the taxable estate.'},{c:'IRC sec 7520',s:'Valuation rate for the charitable lead annuity and the remainder to heirs.'}]},
+  {key:'private_foundation',name:'Private foundation',gross:'partial',bucket:1,taxable:'yes',income:'yes',flag:'PARTIAL — reduces the gross estate ONLY if funded during life (completed gift). A bequest at death stays in (sec 2033), offset by the sec 2055 deduction (taxable estate only).',sec:'IRC sec 170 / sec 2522',
+   cites:[{c:'IRC sec 170',s:'Income-tax deduction for lifetime gifts (lower PF AGI limits).'},{c:'IRC sec 2522',s:'Gift-tax charitable deduction for a completed lifetime transfer.'},{c:'IRC sec 2055',s:'A bequest is offset by the estate charitable deduction (taxable estate only).'},{c:'IRC sec 2033',s:'Assets bequeathed at death are in the gross estate until the deduction is applied.'}]},
+  {key:'daf',name:'Donor-advised fund',gross:'partial',bucket:1,taxable:'yes',income:'yes',flag:'PARTIAL — reduces the gross estate ONLY if funded during life (completed gift). A death designation stays in (sec 2033), offset by the sec 2055 deduction (taxable estate only).',sec:'IRC sec 170 / sec 2522',
+   cites:[{c:'IRC sec 170',s:'Income-tax deduction for lifetime gifts at public-charity AGI limits.'},{c:'IRC sec 2522',s:'Gift-tax charitable deduction for a completed lifetime contribution.'},{c:'IRC sec 2055',s:'A death-time designation is offset by the estate charitable deduction (taxable estate only).'},{c:'IRC sec 2033',s:'Assets directed to a DAF at death are in the gross estate until the deduction is applied.'}]},
+  {key:'retirement_charity_bene',name:'Retirement → charity at death',gross:'no',bucket:2,taxable:'yes',income:'yes',flag:'Does NOT reduce the gross estate — the account is in at death (sec 2033). It reduces the TAXABLE estate (sec 2055) and avoids IRD income tax (sec 691). The single best asset to leave to charity.',sec:'IRC sec 2033 / sec 691',
+   cites:[{c:'IRC sec 2033',s:'A retirement account you own at death is in the gross estate regardless of beneficiary.'},{c:'IRC sec 2055',s:'Estate charitable deduction for the portion to charity — reduces the taxable estate.'},{c:'IRC sec 691',s:'Retirement dollars are IRD; a tax-exempt charity beneficiary avoids that income tax.'}]},
+  {key:'brokerage_step_up',name:'Brokerage step-up (hold to death)',gross:'no',bucket:3,taxable:'no',income:'yes',flag:'Does NOT reduce the gross OR taxable estate — income-tax only. Inclusion (sec 2033) is exactly what triggers the sec 1014 step-up; gifting it away would forfeit that step-up.',sec:'IRC sec 1014 / sec 2033',
+   cites:[{c:'IRC sec 1014',s:'Property from a decedent takes a date-of-death FMV basis (step-up).'},{c:'IRC sec 2033',s:'The asset is in the gross estate at full FMV — that inclusion enables the step-up.'},{c:'IRC sec 1015',s:'A lifetime gift carries the donor’s basis instead, forfeiting the step-up.'},{c:'Cal. Rev. & Tax. Code sec 18031',s:'California (FTB) conforms to the sec 1014 step-up for state income tax.'}]}
+];
+
+/* ----- Financial assets tab ----- */
+function finBalances(){
+  const ret=(S.brokerageAccounts||[]).filter(b=>/retire|ira|401|403|roth/i.test((b.kind||'')+' '+(b.institution||''))).reduce((a,b)=>a+ +(b.balance||0),0);
+  const brk=(S.brokerageAccounts||[]).filter(b=>!/retire|ira|401|403|roth/i.test((b.kind||'')+' '+(b.institution||''))).reduce((a,b)=>a+ +(b.balance||0),0);
+  const cash=(S.bankAccounts||[]).reduce((a,b)=>a+ +(b.balance||0),0);
+  return {ret,brk,cash};
+}
+function renderFinancial(){
+  ensureTax();
+  const el=document.getElementById('financialBody'); if(!el) return;
+  const card=(title,body,sub)=>`<div class="card pad" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap"><h3 style="font-size:16px;color:var(--indigo-ink);margin:0">${title}</h3>${sub||''}</div>${body}</div>`;
+  const Lh=s=>`<th style="text-align:left;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)">${s}</th>`;
+  const Rh=s=>`<th style="text-align:right;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap">${s}</th>`;
+  const td=(h,extra)=>`<td style="padding:7px 8px;font-size:13.5px;border-bottom:1px solid var(--line);${extra||''}">${h}</td>`;
+  const rtd=(id)=>`<td id="${id}" style="text-align:right;padding:7px 8px;font-size:14px;border-bottom:1px solid var(--line);white-space:nowrap">—</td>`;
+  // summary table
+  const sumRow=(cls,label,stepup,inGross,inc)=>`<tr>${td('<b>'+label+'</b>')}${rtd('fin_bal_'+cls)}${td(stepup)}${td(inGross)}${td(inc)}</tr>`;
+  const summary=`<div style="overflow-x:auto;margin:2px 0"><table style="width:100%;border-collapse:collapse;min-width:760px">
+    <thead><tr>${Lh('Asset class')}${Rh('Balance')}${Lh('Step-up at death?')}${Lh('In gross estate?')}${Lh('Income tax to heirs')}</tr></thead>
+    <tbody>
+      ${sumRow('ret','Retirement (IRA/401k/Roth)','<b style="color:var(--red)">No</b> — IRD '+ic('IRC sec 1014(c)'),'<b>Yes, full value</b> '+ic('IRC sec 2033'),'Ordinary income (Traditional) '+ic('IRC sec 691'))}
+      ${sumRow('brk','Taxable brokerage','<b style="color:var(--green)">Yes</b> '+ic('IRC sec 1014'),'<b>Yes, at FMV</b> '+ic('IRC sec 2033'),'Step-up erases the gain')}
+      ${sumRow('cash','Cash / bank','n/a — no built-in gain','<b>Yes, at FMV</b> '+ic('IRC sec 2033'),'None on principal')}
+      <tr>${td('<b>Total financial assets</b>','font-weight:700;border-top:2px solid var(--line);border-bottom:none')}${'<td id="fin_bal_total" style="text-align:right;padding:7px 8px;font-size:14px;font-weight:700;border-top:2px solid var(--line)">—</td>'}${td('','border-top:2px solid var(--line)')}${td('','border-top:2px solid var(--line)')}${td('','border-top:2px solid var(--line)')}</tr>
+    </tbody></table></div>
+    <div class="legal-foot">Balances are summed from <b>Overview → Brokerage &amp; Retirement</b> (retirement = accounts whose kind/name mentions IRA/401(k)/403(b)/Roth/retirement) and <b>Cash &amp; Bank</b>. None of these strategies reduce the <b>gross</b> estate unless you make a completed lifetime transfer — see the Roll-up tab.</div>`;
+  // per-asset detail
+  const detail=(a)=>{
+    const strat=a.strategies.map(s=>`<div class="ent"><div class="ent-top"><div style="min-width:0"><h4>${cc(s.trust)}</h4></div>${grossBadge(s.gross)}</div><div class="ent-meta" style="font-size:13.5px;margin-top:4px">${cc(s.tax)}</div><div class="legal-foot" style="margin-top:4px">${s.cites.map(x=>ic(x.c)).join(' ')}</div></div>`).join('');
+    const flags=a.flags.map(f=>`<li>${cc(f)}</li>`).join('');
+    return card(cc(a.label),`
+      <div class="grid g2" style="align-items:start">
+        <div class="card pad" style="background:var(--panel2)"><h4 style="font-size:14px;margin-bottom:6px;color:var(--indigo-ink)">Basis step-up at death</h4><div style="font-size:13.5px">${cc(a.stepUpNote)}</div></div>
+        <div class="card pad" style="background:var(--panel2)"><h4 style="font-size:14px;margin-bottom:6px;color:var(--indigo-ink)">Gross-estate inclusion &amp; income tax</h4><div style="font-size:13.5px">${cc(a.inclusion)}</div><div style="font-size:13.5px;margin-top:6px">${cc(a.incomeAtDeath)}</div></div>
+      </div>
+      <div style="margin-top:12px;font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600">Trust &amp; tax strategies</div>
+      ${strat}
+      <div class="card pad" style="margin-top:12px;border-color:var(--amber-line)"><h4 style="font-size:14px;margin-bottom:6px;color:var(--amber)">Key flags</h4><ul class="lite" style="font-size:13.5px">${flags}</ul></div>`);
+  };
+  const allCites=[].concat(FIN_ASSETS.retirement.cites,FIN_ASSETS.brokerageCash.cites);
+  el.innerHTML=`<div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Treatment below was verified against the IRC, CA Probate Code, and CA Rev. &amp; Tax. Code (FTB) but is simplified and illustrative. Confirm with your attorney &amp; CPA.</div></div>`
+    + card('Your financial assets at death — step-up, gross estate &amp; income tax', summary)
+    + detail(FIN_ASSETS.retirement)
+    + detail(FIN_ASSETS.brokerageCash)
+    + refFooter(allCites)
+    + `<div class="legal-foot" style="margin-top:6px">⚠️ Educational organizer — discuss titling, beneficiary designations, and any trust/CRT/charity strategy with your attorney &amp; CPA before acting.</div>`;
+  computeFinancial();
+}
+function computeFinancial(){
+  const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  const b=finBalances();
+  set('fin_bal_ret',m$(b.ret)); set('fin_bal_brk',m$(b.brk)); set('fin_bal_cash',m$(b.cash)); set('fin_bal_total',m$(b.ret+b.brk+b.cash));
+}
+
+/* ----- Charity tab ----- */
+function ensureCharityPlan(){
+  if(!S.charityPlan||typeof S.charityPlan!=='object') S.charityPlan={};
+  const c=S.charityPlan;
+  if(c.vehicle===undefined) c.vehicle='outright';
+  if(c.amount===undefined) c.amount='';
+  if(c.timing===undefined) c.timing='inter_vivos';   // inter_vivos | testamentary
+  if(c.asset===undefined) c.asset='cash';             // cash | appreciated
+  if(c.charPct===undefined) c.charPct='50';           // charitable portion % for split-interest trusts (CRT remainder / CLAT lead)
+  if(c.agi===undefined) c.agi='';
+  if(c.marg===undefined) c.marg='37';                 // marginal income-tax rate %
+  if(c.gainPct===undefined) c.gainPct='70';           // built-in gain % of the appreciated asset
+}
+function updCharityPlan(k,v){ ensureCharityPlan(); S.charityPlan[k]=v; save(); if(k==='vehicle'||k==='timing') renderCharityTab(); else computeCharityTab(); }
+const CHARITY_CALC={
+  outright:{fmv:true, agiCash:.60, agiApp:.30, split:false},
+  daf:     {fmv:true, agiCash:.60, agiApp:.30, split:false},
+  pf:      {fmv:false,agiCash:.30, agiApp:.20, split:false},
+  crt:     {fmv:true, agiCash:.60, agiApp:.30, split:true, splitLabel:'Charitable remainder %', portion:'remainder'},
+  clat:    {fmv:false,agiCash:.30, agiApp:.20, split:true, splitLabel:'Charitable lead %', portion:'lead'}
+};
+function renderCharityTab(){
+  ensureTax(); ensureCharityPlan();
+  const el=document.getElementById('charityBody'); if(!el) return;
+  const c=S.charityPlan;
+  const inSty='font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%';
+  const card=(title,body,sub)=>`<div class="card pad" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap"><h3 style="font-size:16px;color:var(--indigo-ink);margin:0">${title}</h3>${sub||''}</div>${body}</div>`;
+  const row=(lab,id,big)=>`<div class="kv"><span class="k">${lab}</span><span class="v" id="${id}" ${big?'style="font-size:16px"':''}>—</span></div>`;
+  const cfg=CHARITY_CALC[c.vehicle]||CHARITY_CALC.outright;
+  const sel=(k,opts)=>`<select onchange="updCharityPlan('${k}',this.value)" style="${inSty}">${opts.map(o=>`<option value="${o[0]}" ${c[k]===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select>`;
+  const numFld=(lab,k,ph)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label><input type="text" inputmode="decimal" value="${esc(groupNum(c[k]))}" oninput="fmtNumField(this);updCharityPlan('${k}',unfmtNum(this.value))" style="${inSty}" placeholder="${ph||''}"></div>`;
+  const pctFld=(lab,k)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label><input type="text" inputmode="decimal" value="${esc(c[k]||'')}" oninput="updCharityPlan('${k}',this.value)" style="${inSty}"></div>`;
+  // gross-vs-taxable explainer
+  const explain=`<div class="card pad" style="margin-bottom:14px;border-color:var(--green-line);background:var(--green-soft)">
+    <div class="badges" style="margin-bottom:6px"><span class="badge b-green">Lifetime gift = gross estate ↓</span><span class="badge b-amber">Bequest at death = taxable estate ↓ only</span></div>
+    <div style="font-size:14.5px"><b>The key distinction for your goal:</b> a charitable gift made <b>during life</b> (inter vivos) is a completed transfer that <b>removes the asset from your GROSS estate</b> ${ic('IRC sec 2031/2033')}. A charitable gift made <b>at death</b> (by will, trust, or beneficiary designation) stays IN the gross estate and instead gets an offsetting estate-tax charitable deduction ${ic('IRC sec 2055')} — reducing only the <b>TAXABLE</b> estate. Same estate-tax result, but only the lifetime gift shrinks the gross-estate figure. <b>CRT caveat:</b> if you keep the lifetime income interest, sec 2036 pulls the corpus back in — so a grantor-retained CRT reduces the taxable estate, not the gross.</div></div>`;
+  // calculator
+  const calc=card('Charitable strategy calculator',`
+    <div class="form-grid">
+      <div class="field" style="margin-bottom:8px"><label>Vehicle</label>${sel('vehicle',[['outright','Outright gift to public charity'],['daf','Donor-advised fund (DAF)'],['pf','Private foundation'],['crt','Charitable remainder trust (CRT)'],['clat','Charitable lead annuity trust (CLAT)']])}</div>
+      <div class="field" style="margin-bottom:8px"><label>Timing</label>${sel('timing',[['inter_vivos','During life (inter vivos)'],['testamentary','At death (testamentary)']])}</div>
+      ${numFld('Contribution / funding amount ($)','amount')}
+      <div class="field" style="margin-bottom:8px"><label>Asset given</label>${sel('asset',[['cash','Cash'],['appreciated','Long-term appreciated property']])}</div>
+      ${c.asset==='appreciated'?pctFld('Built-in gain (% of value)','gainPct'):''}
+      ${cfg.split?pctFld(cfg.splitLabel,'charPct'):''}
+      ${numFld('Your AGI ($) — for the deduction ceiling','agi')}
+      ${pctFld('Your marginal income-tax rate (%)','marg')}
+    </div>
+    <div class="muted" style="font-size:11px;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.06em">Income tax (lifetime gifts only)</div>
+    ${row('Charitable portion (deductible base)','ch2_portion')}
+    ${row('Income-tax charitable deduction (capped at AGI)','ch2_ded')}
+    ${row('Income tax saved (× marginal rate)','ch2_saved',1)}
+    ${row('Capital-gains tax avoided on the asset','ch2_capavoid')}
+    <div class="muted" style="font-size:11px;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.06em">Estate impact</div>
+    ${row('Reduction to GROSS estate','ch2_gross',1)}
+    ${row('Reduction to TAXABLE estate (sec 2055)','ch2_taxable')}
+    ${row('Federal estate tax saved (40%, above exemption)','ch2_esttax',1)}
+    <div id="ch2_flag" style="margin-top:8px"></div>
+    <div class="legal-foot" id="ch2_note"></div>
+  `,`<span class="badge b-gray">writes the Roll-up tab</span>`);
+  // comparison table
+  const Lh=s=>`<th style="text-align:left;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)">${s}</th>`;
+  const cmpRows=CHARITY_VEHICLES.map(v=>`<tr>
+      <td style="padding:7px 8px;font-size:13.5px;border-bottom:1px solid var(--line)"><b>${cc(v.abbr)}</b><div class="muted" style="font-size:12px">${cc(v.name)}</div></td>
+      <td style="padding:7px 8px;font-size:13px;border-bottom:1px solid var(--line)">${cc(v.deduct)}</td>
+      <td style="padding:7px 8px;font-size:13px;border-bottom:1px solid var(--line)">${cc(v.agi)}</td>
+      <td style="padding:7px 8px;font-size:13px;border-bottom:1px solid var(--line)">${grossBadge(v.gross)}<div class="muted" style="font-size:12.5px;margin-top:4px">${cc(v.grossNote)}</div></td>
+    </tr>`).join('');
+  const cmp=card('Vehicle comparison — deduction, limits &amp; gross-estate effect',`<div style="overflow-x:auto;margin:2px 0"><table style="width:100%;border-collapse:collapse;min-width:820px">
+    <thead><tr>${Lh('Vehicle')}${Lh('Income-tax deduction')}${Lh('AGI ceiling')}${Lh('Reduces gross estate?')}</tr></thead>
+    <tbody>${cmpRows}</tbody></table></div>
+    <div class="legal-foot">All five reduce estate tax; only LIFETIME (inter vivos) gifts reduce the <b>gross</b> estate. A grantor-retained CRT and any testamentary gift reduce only the <b>taxable</b> estate ${ic('IRC sec 2055')}.</div>`);
+  // detail cards
+  const detail=CHARITY_VEHICLES.map(v=>card(cc(v.abbr)+' — '+cc(v.name),`
+    <div class="grid g2" style="align-items:start">
+      <div class="card pad" style="background:var(--panel2)"><h4 style="font-size:13.5px;margin-bottom:4px;color:var(--indigo-ink)">Income-tax deduction</h4><div style="font-size:13.5px">${cc(v.deduct)}</div><div class="legal-foot">AGI: ${cc(v.agi)}</div></div>
+      <div class="card pad" style="background:var(--panel2)"><h4 style="font-size:13.5px;margin-bottom:4px;color:var(--indigo-ink)">Estate impact</h4><div style="font-size:13.5px">${cc(v.estate)}</div></div>
+    </div>
+    <div class="card pad" style="margin-top:10px;border-color:var(--green-line)"><div class="badges" style="margin-bottom:4px">${grossBadge(v.gross)}</div><div style="font-size:13.5px">${cc(v.grossNote)}</div><div class="legal-foot" style="margin-top:6px">${v.cites.map(x=>ic(x.c)).join(' ')}</div></div>
+  `)).join('');
+  const allCites=[].concat.apply([],CHARITY_VEHICLES.map(v=>v.cites));
+  el.innerHTML=`<div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Charitable-vehicle treatment was verified against the IRC and CA authority but is simplified (PV figures depend on the sec 7520 rate and term). Confirm with your attorney &amp; CPA.</div></div>`
+    + explain + calc + cmp
+    + `<div class="muted" style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:4px 0 8px">Vehicle detail</div>`
+    + detail
+    + refFooter(allCites)
+    + `<div class="legal-foot" style="margin-top:6px">⚠️ Charitable assets leave the family (except a CLAT remainder, which returns to heirs). Irrevocable and tax-sensitive — attorney &amp; CPA review.</div>`;
+  computeCharityTab();
+}
+/* returns the plan's {grossReduction, taxableReduction} for the Roll-up; single source */
+function charityPlanEffect(){
+  ensureCharityPlan(); const c=S.charityPlan, cfg=CHARITY_CALC[c.vehicle]||CHARITY_CALC.outright;
+  const amt=Math.max(0,+unfmtNum(c.amount)||0);
+  const portionPct=cfg.split?Math.min(100,Math.max(0,+unfmtNum(c.charPct)||0))/100:1;
+  const charPortion=amt*portionPct;                 // deductible / charitable portion
+  let gross=0, taxable=0;
+  if(amt>0){
+    if(c.vehicle==='crt'){ gross=0; taxable=charPortion; }                 // grantor-retained CRT: sec 2036 keeps corpus in gross; sec 2055 cuts taxable
+    else if(c.timing==='inter_vivos'){ gross=amt; taxable=0; }             // completed lifetime gift removes the whole asset from the gross estate
+    else { gross=0; taxable=charPortion; }                                 // testamentary: in gross, sec 2055 cuts taxable by the charitable portion
+  }
+  return {amt, charPortion, gross, taxable, vehicle:c.vehicle, timing:c.timing};
+}
+function computeCharityTab(){
+  ensureTax(); ensureCharityPlan();
+  const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  const t=S.tax, c=S.charityPlan, cfg=CHARITY_CALC[c.vehicle]||CHARITY_CALC.outright;
+  const amt=Math.max(0,+unfmtNum(c.amount)||0);
+  const agi=Math.max(0,+unfmtNum(c.agi)||0), marg=Math.min(1,Math.max(0,+unfmtNum(c.marg)||0)/100);
+  const appreciated=c.asset==='appreciated', gainPct=Math.min(1,Math.max(0,+unfmtNum(c.gainPct)||0)/100);
+  const E=charityPlanEffect();
+  // income-tax deduction (lifetime only)
+  let dedBase=0, capAvoid=0;
+  if(c.timing==='inter_vivos' && amt>0){
+    if(c.vehicle==='crt') dedBase=E.charPortion;                          // PV of remainder (approx via charitable %)
+    else if(c.vehicle==='clat') dedBase=E.charPortion;                    // grantor CLAT: PV of lead (approx)
+    else dedBase=cfg.fmv?amt:(appreciated?amt*(1-gainPct):amt);           // PF appreciated non-public ~ basis
+    // capital-gains avoided on appreciated assets the charity can sell tax-free (FMV vehicles)
+    if(appreciated && cfg.fmv) capAvoid=amt*gainPct*reCapRateApprox();
+  }
+  const agiCeil=appreciated?cfg.agiApp:cfg.agiCash;
+  const ded=agi>0?Math.min(dedBase,agi*agiCeil):dedBase;                  // capped at AGI ceiling if AGI entered (excess carries 5 yrs)
+  const saved=ded*marg;
+  set('ch2_portion', amt>0?(m$(E.charPortion)+(cfg.split?(' ('+(Math.round((E.charPortion/amt)*100))+'% of '+m$(amt)+')'):'')):'$0');
+  set('ch2_ded', c.timing==='inter_vivos'?m$(ded)+((agi>0&&dedBase>agi*agiCeil)?(' (capped; '+m$(dedBase-agi*agiCeil)+' carries 5 yrs)'):''):'$0 — testamentary (no income-tax deduction)');
+  set('ch2_saved', c.timing==='inter_vivos'?m$(saved):'$0');
+  set('ch2_capavoid', capAvoid>0?m$(capAvoid):(appreciated?(cfg.fmv?'$0':'limited — basis-only deduction'):'n/a (cash)'));
+  // estate
+  const exTot=(+t.exemption||0)*(t.dual?2:1);
+  const grossEstate=estateFromAssets().gross+(+t.deathBenefit||0);
+  const estTaxBefore=Math.max(0,grossEstate-exTot)*TAXC.estRate;
+  const estTaxAfter=Math.max(0,(grossEstate-E.gross)-exTot-E.taxable)*TAXC.estRate;
+  set('ch2_gross', E.gross>0?('– '+m$(E.gross)):'$0');
+  set('ch2_taxable', E.taxable>0?('– '+m$(E.taxable)):'$0');
+  set('ch2_esttax', m$(Math.max(0,estTaxBefore-estTaxAfter)));
+  // flag
+  const fe=document.getElementById('ch2_flag');
+  if(fe){ if(amt<=0){ fe.innerHTML=''; }
+    else if(E.gross>0){ fe.innerHTML='<span class="badge b-green">✓ This lifetime gift REDUCES your gross estate by '+m$(E.gross)+'</span>'; }
+    else { fe.innerHTML='<span class="badge b-red">Does NOT reduce your gross estate</span> <span class="muted" style="font-size:12.5px">— '+(c.vehicle==='crt'?'a grantor-retained CRT keeps the corpus in the gross estate (sec 2036); it cuts the taxable estate by '+m$(E.taxable):'a testamentary gift stays in the gross estate; it cuts the taxable estate by '+m$(E.taxable)+' (sec 2055)')+'.</span>'; }
+  }
+  set('ch2_note','Illustrative. PV of a CLAT lead / CRT remainder depends on the sec 7520 rate and term — enter the charitable % from an actuarial run. Income-tax deduction applies to LIFETIME gifts only and is capped at your AGI ceiling ('+Math.round(agiCeil*100)+'% for this asset), with a 5-year carryforward; testamentary gifts give an estate-tax (sec 2055), not income-tax, deduction. This plan feeds the Estate Roll-up tab. Confirm with your CPA.');
+}
+/* approximate marginal capital-gains rate (federal LTCG top + CA) for the charity cap-gains-avoided line */
+function reCapRateApprox(){ ensureTax(); const t=S.tax; const fed=0.20; const st=NO_TAX_STATES.includes(t.state||'California')?0:0.10; return fed+st; }
+
+/* ----- Estate roll-up tab ----- */
+function ensureRollup(){
+  ensureOutcome();
+  if(!S.rollup||typeof S.rollup!=='object') S.rollup={};
+  const r=S.rollup;
+  if(r.gift===undefined) r.gift='';            // outright lifetime gift amount (bucket 1)
+  if(r.retCharity===undefined) r.retCharity='';// retirement directed to charity at death (bucket 2)
+  if(r.useCharity===undefined) r.useCharity=true;
+}
+function updRollup(k,v){ ensureRollup(); S.rollup[k]=v; save(); computeRollup(); }
+function updRollupToggle(k,v){ ensureOutcome(); S.outcome[k]=v; save(); computeOutcome&&computeOutcome(); computeRollup(); }
+function renderRollup(){
+  ensureTax(); ensureRollup();
+  const el=document.getElementById('rollupBody'); if(!el) return;
+  const o=S.outcome, r=S.rollup;
+  const inSty='font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%';
+  const card=(title,body,sub)=>`<div class="card pad" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap"><h3 style="font-size:16px;color:var(--indigo-ink);margin:0">${title}</h3>${sub||''}</div>${body}</div>`;
+  const chk=(k,label)=>`<label class="field" style="margin-bottom:8px;display:flex;gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" ${o[k]?'checked':''} onchange="updRollupToggle('${k}',this.checked)" style="width:auto;margin-top:3px"><span style="font-size:13.5px">${label}</span></label>`;
+  const numFld=(lab,k,ph)=>`<div class="field" style="margin-bottom:8px"><label>${lab}</label><input type="text" inputmode="decimal" value="${esc(groupNum(r[k]))}" oninput="fmtNumField(this);updRollup('${k}',unfmtNum(this.value))" style="${inSty}" placeholder="${ph||''}"></div>`;
+  // headline
+  const headline=`<div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 14px">
+      <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Current gross estate</div><div id="ro_gross_now" style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:11.5px">assets at FMV + life insurance ${ic('IRC sec 2031/2033')}</div></div>
+      <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">− Gross-estate reductions</div><div id="ro_gross_cut" style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:11.5px">completed lifetime transfers (Bucket 1)</div></div>
+      <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">= Resulting gross estate</div><div id="ro_gross_after" style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:11.5px">what you are trying to lower</div></div>
+      <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Taxable estate</div><div id="ro_taxable" style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:11.5px">− exemption − sec 2055/2056 deductions (Bucket 2)</div></div>
+      <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Federal estate tax (40%)</div><div id="ro_esttax" style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:11.5px">taxable estate × 40% ${ic('IRC sec 2001')}</div></div>
+      <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Net estate after estate tax</div><div id="ro_net" style="font-size:22px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:11.5px">resulting gross − estate tax</div></div>
+    </div>
+    <div id="ro_answer" style="margin-top:10px;font-size:14px"></div>
+    <div class="legal-foot" id="ro_note"></div>
+  </div>`;
+  // controls
+  const controls=card('Strategies in play',`
+    <div class="muted" style="font-size:12.5px;margin:-2px 0 8px">These toggle the same structures as the Strategy tab. Set the charitable plan on the Charity tab; enter direct lifetime gifts and retirement-to-charity here.</div>
+    <div class="grid g2">
+      <div>${chk('ilit','<b>ILIT</b> holds the life insurance (removes the death benefit) '+ic('IRC sec 2042'))}
+        ${chk('flp','<b>FLP</b> holds the rentals (~30% valuation discount) '+ic('IRC sec 2704'))}
+        ${chk('qprt','<b>QPRT</b> for the residence (if you outlive the term) '+ic('IRC sec 2702'))}
+        ${chk('idgt','<b>IDGT</b> — gift/sell the rentals out (estate freeze) '+ic('Rev. Rul. 85-13'))}
+        ${chk('trust','<b>Revocable trust</b> (probate only — no estate reduction) '+ic('IRC sec 2038'))}
+      </div>
+      <div>${numFld('Outright lifetime gift of cash/securities ($)','gift','removed from gross estate')}
+        ${numFld('Retirement directed to charity at death ($)','retCharity','reduces taxable estate (sec 2055)')}
+        <label class="field" style="margin-bottom:8px;display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" ${r.useCharity?'checked':''} onchange="updRollup('useCharity',this.checked)" style="width:auto"> <span style="font-size:13.5px">Include the <b>Charity-tab</b> plan</span></label>
+        <div class="legal-foot" id="ro_charity_summary"></div>
+      </div>
+    </div>`);
+  const explain=`<div class="card pad" style="margin-bottom:14px;background:var(--panel2)"><h3 style="font-size:15px;margin-bottom:4px;color:var(--indigo-ink)">How to read this — the three buckets</h3><div style="font-size:13.5px">${cc(GROSS_EXPLAINER)}</div></div>`;
+  const buckets=`<div id="ro_bucket1"></div><div id="ro_bucket2"></div><div id="ro_bucket3"></div>`;
+  const allCites=[].concat.apply([],ROLLUP_STRATEGIES.map(s=>s.cites)).concat([{c:'IRC sec 2001',s:'Computes the federal estate tax on the taxable estate (top rate 40%).'},{c:'IRC sec 2010',s:'Unified credit / exemption (~$15,000,000 per person, 2026); 40% top rate.'},{c:'IRC sec 2053-2058',s:'Deductions (debts, expenses, marital, charitable) that turn the gross estate into the taxable estate.'},{c:'Cal. Rev. & Tax. Code sec 13302',s:'California imposes no state estate tax — federal estate tax is the only driver.'}]);
+  el.innerHTML=`<div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> The classification (gross vs taxable vs estate-tax-only) was adversarially verified against the IRC; the dollar projections are simplified and illustrative. Confirm with your attorney &amp; CPA.</div></div>`
+    + headline + controls + explain + buckets + refFooter(allCites)
+    + `<div class="legal-foot" style="margin-top:6px">⚠️ Reducing the gross estate means giving assets away during life — which forfeits the sec 1014 step-up (carryover basis) and, for charity, sends value out of the family. Below the federal exemption the lost step-up often outweighs the estate-tax saving. Weigh both with your attorney &amp; CPA.</div>`;
+  computeRollup();
+}
+function computeRollup(){
+  ensureTax(); ensureRollup();
+  const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
+  const html=(id,v)=>{const e=document.getElementById(id); if(e) e.innerHTML=v;};
+  const t=S.tax, o=S.outcome, r=S.rollup;
+  const exTot=(+t.exemption||0)*(t.dual?2:1), db=+t.deathBenefit||0;
+  const props=S.properties||[];
+  const isR=p=>/rental|commercial|vacation/i.test(p.type||''), isRes=p=>/personal residence/i.test(p.type||'');
+  const val=p=>+(p.value||0);
+  const rentalVal=props.filter(isR).reduce((a,p)=>a+val(p),0), resVal=props.filter(isRes).reduce((a,p)=>a+val(p),0);
+  const grossEstate=estateFromAssets().gross+db;
+  const gift=Math.max(0,+unfmtNum(r.gift)||0), retCharity=Math.max(0,+unfmtNum(r.retCharity)||0);
+  const ch=r.useCharity?charityPlanEffect():{gross:0,taxable:0,amt:0,vehicle:'',timing:''};
+  // ---- Bucket 1: reduces gross estate (completed lifetime transfers) ----
+  const b1=[];
+  if(o.ilit&&db>0) b1.push({name:'ILIT — life insurance out',amt:db,sec:'IRC sec 2042',part:false});
+  const rentalRemoved=o.idgt?rentalVal:(o.flp?0.30*rentalVal:0);
+  if(o.idgt&&rentalVal>0) b1.push({name:'IDGT — rentals gifted/sold out (full value)',amt:rentalVal,sec:'Rev. Rul. 85-13',part:false});
+  else if(o.flp&&rentalVal>0) b1.push({name:'FLP — ~30% valuation discount on rentals',amt:0.30*rentalVal,sec:'IRC sec 2704',part:true});
+  if(o.qprt&&resVal>0) b1.push({name:'QPRT — residence out (if you outlive the term)',amt:resVal,sec:'IRC sec 2702',part:true});
+  if(gift>0) b1.push({name:'Outright lifetime gift',amt:gift,sec:'IRC sec 2501/2511',part:false});
+  if(ch.gross>0) b1.push({name:'Charity plan (lifetime gift — '+(ch.vehicle||'')+')',amt:ch.gross,sec:'IRC sec 2031/2033',part:false});
+  const b1Total=b1.reduce((a,x)=>a+x.amt,0);
+  const resultingGross=Math.max(0,grossEstate-b1Total);
+  // ---- Bucket 2: reduces taxable estate only (asset stays in gross; sec 2055/2056 deduction) ----
+  const b2=[];
+  if(retCharity>0) b2.push({name:'Retirement → charity at death',amt:retCharity,sec:'IRC sec 2055 / sec 691'});
+  if(ch.taxable>0) b2.push({name:'Charity plan ('+(ch.vehicle==='crt'?'grantor-retained CRT':'testamentary')+')',amt:ch.taxable,sec:'IRC sec 2055'});
+  const b2Total=b2.reduce((a,x)=>a+x.amt,0);
+  const taxable=Math.max(0,resultingGross-exTot-b2Total);
+  const estTax=taxable*TAXC.estRate;
+  const netEstate=Math.max(0,resultingGross-estTax);
+  // ---- Bucket 3: estate-tax / after-tax / income-tax only ----
+  const b3=[];
+  if(o.trust) b3.push({name:'Revocable living trust',note:'Avoids probate + keeps the step-up; the assets stay 100% in the gross AND taxable estate.',sec:'IRC sec 2038'});
+  b3.push({name:'Brokerage / real-estate step-up (hold to death)',note:'Income-tax only — inclusion is what triggers the sec 1014 step-up; it does not change the gross or taxable estate.',sec:'IRC sec 1014'});
+  // headline
+  set('ro_gross_now',m$(grossEstate)); set('ro_gross_cut',b1Total>0?('– '+m$(b1Total)):'$0'); set('ro_gross_after',m$(resultingGross));
+  set('ro_taxable',m$(taxable)); set('ro_esttax',m$(estTax)); set('ro_net',m$(netEstate));
+  const nGross=b1.length, nOther=b2.length+(o.trust?1:0)+1;
+  html('ro_answer','<b>Answer to “how do I reduce my gross estate?”:</b> '+(b1Total>0?('<b style="color:var(--green)">'+nGross+'</b> strateg'+(nGross===1?'y':'ies')+' in play reduce your GROSS estate by <b style="color:var(--green)">'+m$(b1Total)+'</b> (from '+m$(grossEstate)+' to '+m$(resultingGross)+').'):'No gross-estate reductions are toggled yet — turn on ILIT / FLP / IDGT / QPRT, add an outright lifetime gift, or fund a charity DURING life.')+' '+(nOther>0?('<b style="color:var(--red)">'+nOther+'</b> other item'+(nOther===1?'':'s')+' do NOT reduce the gross estate (they cut the taxable estate, estate tax, or income tax) — see Buckets 2 &amp; 3.'):''));
+  set('ro_note','Gross estate ('+m$(grossEstate)+') = assets at FMV + life insurance, before debts (a sec 2053 deduction). Bucket 1 removes completed lifetime transfers ('+m$(b1Total)+'). Taxable estate = resulting gross '+m$(resultingGross)+' − exemption '+m$(exTot)+' − Bucket-2 deductions '+m$(b2Total)+' = '+m$(taxable)+'; × 40% = '+m$(estTax)+'. Below the exemption there may be no estate tax to save — weigh the lost step-up. Illustrative; confirm with your CPA.');
+  const chs=document.getElementById('ro_charity_summary');
+  if(chs) chs.textContent = ch.amt>0?('Charity plan: '+m$(ch.amt)+' via '+(ch.vehicle||'?')+' ('+(ch.timing==='inter_vivos'?'lifetime':'at death')+') → gross −'+m$(ch.gross)+', taxable −'+m$(ch.taxable)+'.'):'No charity plan set (Charity tab).';
+  // bucket tables
+  const Lh=s=>`<th style="text-align:left;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)">${s}</th>`;
+  const Rh=s=>`<th style="text-align:right;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line);white-space:nowrap">${s}</th>`;
+  const card=(title,body,border)=>`<div class="card pad" style="margin-bottom:14px${border?(';border-color:'+border):''}">${title}${body}</div>`;
+  const b1tbl=b1.length?`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:520px"><thead><tr>${Lh('Strategy')}${Rh('Removed from gross estate')}${Lh('Authority')}</tr></thead><tbody>${b1.map(x=>`<tr><td style="padding:7px 8px;font-size:13.5px;border-bottom:1px solid var(--line)">${cc(x.name)}${x.part?' <span class="badge b-amber" style="font-size:10px">partial</span>':''}</td><td style="text-align:right;padding:7px 8px;font-size:14px;border-bottom:1px solid var(--line);color:var(--green)">– ${m$(x.amt)}</td><td style="padding:7px 8px;font-size:13px;border-bottom:1px solid var(--line)">${ic(x.sec)}</td></tr>`).join('')}<tr><td style="padding:7px 8px;font-weight:700;border-top:2px solid var(--line)">Total reduction to gross estate</td><td style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid var(--line);color:var(--green)">– ${m$(b1Total)}</td><td style="border-top:2px solid var(--line)"></td></tr></tbody></table></div>`:'<div class="muted" style="font-size:13.5px">Nothing toggled that reduces the gross estate. Turn on ILIT / FLP / IDGT / QPRT, add an outright lifetime gift, or fund charity during life.</div>';
+  html('ro_bucket1',card('<div class="badges" style="margin-bottom:8px"><span class="badge b-green">Bucket 1 · Reduces the GROSS estate</span></div><div class="muted" style="font-size:12.5px;margin-bottom:8px">Completed lifetime transfers with no retained interest/control — the asset is no longer owned at death (sec 2031/2033).</div>',b1tbl,'var(--green-line)'));
+  const b2tbl=b2.length?`<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:520px"><thead><tr>${Lh('Strategy')}${Rh('Reduces taxable estate')}${Lh('Authority')}</tr></thead><tbody>${b2.map(x=>`<tr><td style="padding:7px 8px;font-size:13.5px;border-bottom:1px solid var(--line)">${cc(x.name)}</td><td style="text-align:right;padding:7px 8px;font-size:14px;border-bottom:1px solid var(--line)">– ${m$(x.amt)}</td><td style="padding:7px 8px;font-size:13px;border-bottom:1px solid var(--line)">${ic(x.sec)}</td></tr>`).join('')}<tr><td style="padding:7px 8px;font-weight:700;border-top:2px solid var(--line)">Total taxable-estate deduction</td><td style="text-align:right;padding:7px 8px;font-weight:700;border-top:2px solid var(--line)">– ${m$(b2Total)}</td><td style="border-top:2px solid var(--line)"></td></tr></tbody></table></div>`:'<div class="muted" style="font-size:13.5px">No taxable-estate-only items toggled (testamentary charity, grantor-retained CRT, or retirement-to-charity).</div>';
+  html('ro_bucket2',card('<div class="badges" style="margin-bottom:8px"><span class="badge b-amber">Bucket 2 · Reduces only the TAXABLE estate</span></div><div class="muted" style="font-size:12.5px;margin-bottom:8px">The asset STAYS in the gross estate at full FMV; a sec 2055 (charitable) or sec 2056 (marital) deduction nets it out on the way to the taxable estate. <b>These do NOT lower the gross-estate figure.</b></div>',b2tbl,'var(--amber-line)'));
+  const b3tbl=`<div>${b3.map(x=>`<div class="kv"><span class="k">${cc(x.name)} ${ic(x.sec)}</span><span class="v" style="font-weight:400;font-size:12.5px;text-align:right;max-width:60%">${cc(x.note)}</span></div>`).join('')}</div>`;
+  html('ro_bucket3',card('<div class="badges" style="margin-bottom:8px"><span class="badge b-red">Bucket 3 · Reduces only estate tax / after-tax / income tax</span></div><div class="muted" style="font-size:12.5px;margin-bottom:8px">No effect on either the gross OR the taxable estate — but still valuable (probate avoidance, basis step-up).</div>',b3tbl,'var(--red-line)'));
 }
 
 /* ---------- Export center ---------- */

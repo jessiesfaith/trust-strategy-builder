@@ -4,6 +4,39 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-18 — Financial · Charity · **Gross-Estate Roll-up** tabs (+ code-reference footers)
+
+Three new tabs, plus a Probate/IRC/FTB code-reference footer pattern. The tax/legal substance was
+researched and **adversarially verified** against the IRC, CA Probate Code, and CA Rev. & Tax. Code (FTB)
+in a multi-agent workflow; two corrections were applied (grantor-retained CRT does NOT reduce the gross
+estate per §2036; an inter-vivos CLAT citation fixed to §2033).
+
+- **Financial tab** (`#financial`, `renderFinancial`/`computeFinancial`/`finBalances`) — retirement /
+  brokerage / cash: a summary table (balance · step-up vs IRD · gross-estate inclusion · income tax to heirs)
+  + per-asset detail with trust strategies, each flagged for gross-estate impact, and key-flag callouts.
+  Surfaces the retirement truths: no step-up (IRD, §1014(c)/§691), always in the gross estate (§2033)
+  regardless of beneficiary, SECURE Act 10-yr rule, and never retitle into a living trust during life.
+- **Charity tab** (`#charity`, `renderCharityTab`/`computeCharityTab`/`charityPlanEffect`/`ensureCharityPlan`,
+  `S.charityPlan`) — an interactive calculator (vehicle × inter-vivos/testamentary × cash/appreciated →
+  income-tax deduction capped at the §170 AGI ceiling with 5-yr carryforward, capital-gains avoided,
+  gross-estate vs taxable-estate reduction, estate tax saved) + a 5-vehicle comparison (CLAT/CRT/PF/DAF/
+  outright) + per-vehicle detail. Encodes the gross-vs-taxable rule and the §2036 CRT caveat.
+- **Estate Roll-up tab** (`#rollup`, `renderRollup`/`computeRollup`/`ensureRollup`, `S.rollup`) — the
+  centerpiece for "how do I reduce my **gross** estate?": every strategy sorted into **3 buckets** —
+  Bucket 1 reduces the gross estate (completed lifetime transfers: ILIT/FLP-partial/QPRT/IDGT/outright
+  gift/lifetime charity), Bucket 2 reduces only the **taxable** estate (testamentary charity, grantor-
+  retained CRT, retirement→charity; asset stays in gross, §2055/§2056 deduction), Bucket 3 reduces only
+  estate tax / after-tax / income tax (revocable trust, brokerage step-up). Headline waterfall (gross →
+  resulting gross → taxable → 40% estate tax → net) + a plain-language answer counting how many strategies
+  do vs don't reduce the gross estate. Toggles share `S.outcome` with the Strategy tab; reads the Charity
+  plan; gross estate = `estateFromAssets().gross + deathBenefit`.
+- **Code-reference footers** — `refFooter()` groups a `{c,s}[]` list into Probate · IRC · FTB/R&T sections;
+  `cc()` renders "sec" as the section symbol; `ic()` is an inline citation chip; `grossBadge()` is the
+  yes/partial/no gross-estate flag. Added to Financial, Charity, Roll-up, and retrofitted to the Property
+  tab; inline citations sit next to the relevant notes.
+- Wired into `renderTopTabs()` (Overview · Tax Estimator · Property · Financial · Charity · Estate Roll-up ·
+  Distribution · Strategy), `switchTab()`, and `render()`. Console clean; math verified in preview.
+
 ## 2026-06-18 — New **Property** tab (per-property trust & tax-strategy scenarios)
 
 - **New "Property" tab** (`#property`, between Tax Estimator and Distribution) — `renderProperty()` /
