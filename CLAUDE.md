@@ -8,11 +8,11 @@ Generic workflow rules live in `~/.claude/CLAUDE.md` (they apply to every repo).
   **Overview** (people/roles, real estate, cash/bank, brokerage/retirement, LLCs, sub-trusts, Estate
   Map diagram, planning memo, executor/trustee protection — all collapsible), **Tax Estimator**
   (federal + state income/cap-gains/estate/SE/DRD/retirement; a per-property rental P&L — gross rent &
-  operating expenses summed from each property, net P&L drives QBI/§199A — plus a management/executor
+  operating expenses summed from each property, net P&L (rental-business types only, at FMV-reassessed property tax) drives QBI/§199A — plus a management/executor
   salary modeled as a deductible expense and taxed to the executor as a single filer; real-estate
-  property tax & cap gains; a 4-metric headline: Total estate value · Grand total tax due · Estate tax
-  with added structures · Estate remaining for heirs; Tax Considerations framework), **Distribution**
-  (beneficiary % allocation + timing, milestone insurance distributions, reserves incl. a
+  property tax (split rental-business vs personal/land–Schedule A) & cap gains; a 4-metric headline: Total estate value · Grand total tax due · Estate tax
+  with added structures · Estate remaining after taxes; Tax Considerations framework), **Distribution**
+  (beneficiary % allocation + timing, milestone life-insurance distributions (reserved before the split) + itemized reserves incl. a
   **grandchildren milestone-funding** reserve → distributable), and **Strategy** (enter the
   life-insurance death benefit + toggle ILIT/FLP/QPRT/IDGT → No-planning vs Your-setup comparison + a
   charitable break-even calculator; the toggles also feed the Tax Estimator's "Estate tax with added
@@ -25,7 +25,7 @@ Generic workflow rules live in `~/.claude/CLAUDE.md` (they apply to every repo).
 - **Key file:** `index.html` (the entire tool: inlined CSS + JS). Data-driven forms via the `ENTITY`
   map; flags in `deriveFlags()`/`propertyFlags()`; diagrams in `buildMindmap()` (Mermaid export) +
   `buildMindmapHTML()`/`buildOwnershipSVG()` (the on-screen SVG maps); tax engine in `computeTax()` +
-  `renderTaxEstimator()`, with single-source helpers `rentalPnl()` (per-property gross/opex rental P&L)
+  `renderTaxEstimator()`, with single-source helpers `rentalPnl()` (per-property gross/opex rental P&L over rental-business types, at FMV-reassessed property tax)
   and `annualIncomeTax()` (one year of during-life tax incl. the executor's own tax; QBI = net rental
   P&L); cross-tab single source of truth `netAfterAllTaxes()` reconciles the Estate card, the headline,
   and the Distribution base; tabs via `switchTab()`. **See HANDOFF.md for the full architecture map.**

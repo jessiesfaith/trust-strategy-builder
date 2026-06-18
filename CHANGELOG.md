@@ -4,6 +4,29 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-17 — Rental P&L at FMV-reassessed property tax; RE property-tax split; negative tax rows; estate income-tax note
+
+- **Rental P&L is now modeled at FMV-reassessed property tax** (the estate's go-forward basis after a Prop 19
+  reassessment at death), not current assessed. `rentalPnl()` returns the reassessed variant as the primary
+  `taxable` (= max(0, reassessed)); `annualIncomeTax()` keys QBI/income off it. The Rental card shows "Less
+  property tax (rental, reassessed to FMV)" (`r_pnl_proptax`), "Net rental P&L (at FMV)" (`r_pnl_net`), and a
+  reference line "Net rental P&L at current assessed value" (`r_pnl_net_assessed`). At FMV the sample rentals
+  run at a loss, so the rental income tax/QBI → $0.
+- **Rental P&L filter is rental-business types only** (`/rental|commercial|vacation/i`). Land / Other parcels
+  (ground-lease land, a Schedule-A personal property) are excluded from the rental P&L; their property tax is
+  broken out separately in the Real Estate card.
+- **Real Estate "property tax & capital gains" card splits the reassessed total** into "— rental / business
+  (in the rental P&L)" (`r_pt_business`) and "— personal / land — Schedule A (not in rental P&L)"
+  (`r_pt_nonbusiness`), which sum to the reassessed total (`r_pt_reassessed`). Also in the downloaded summary.
+- **"Taxes this generates" rows render as negatives** — `r_pnl_tax` / `r_exec_inc` / `r_exec_se` /
+  `r_pnl_tottax` show "– $X" (consistent with the estate-card deduction lines); $0 stays plain.
+- **Estate-card income-tax breakdown note.** The "Less income tax — ordinary / rental / executor" line
+  (`r_est_lessinc_other`) carries a self-reconciling note (`r_est_lessinc_other_note`): ordinary + rental P&L
+  + executor + corporate DRD − QBI/retirement = the line total.
+- **Structures deliberately stay in the Strategy tab.** The Tax Estimator / Estate-card / Distribution
+  baseline figures stay UNPLANNED; ILIT/FLP/QPRT/IDGT drive only the Strategy tab and the headline "Estate tax
+  with added structures" projection (clarifying notes in `r_annual_note` and `r_dist_taxnote`).
+
 ## 2026-06-17 — Distribution reserves (life-insurance + itemized), grandchildren totals, "Estate remaining after taxes"
 
 - **Milestone life-insurance distributions are now reserved from the estate.** The amount allocated in

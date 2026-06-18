@@ -1659,7 +1659,7 @@ function renderDistribution(){
     <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Figures flow from your Tax Estimator inputs and are illustrative. Actual distributions depend on your trust/will terms; confirm with your attorney &amp; CPA.</div></div>
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
       <div class="grid g3">
-        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Net after all taxes</div><div id="r_dist_aftertax" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">estate − estate tax − cap gains</div></div>
+        <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Net after all taxes</div><div id="r_dist_aftertax" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">estate − estate tax − cap gains − income tax (1 yr)</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Less reserves</div><div id="r_dist_reserves" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">executor + property mgmt + taxes/debts + grandkids funding + life-insurance distributions</div></div>
         <div><div class="muted" style="font-size:12.5px;text-transform:uppercase;letter-spacing:.08em">Distributable to beneficiaries</div><div id="r_dist_distributable" style="font-size:24px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">split by the allocations below</div></div>
       </div>
@@ -1788,7 +1788,7 @@ function ensureOutcome(){
 }
 function updOutcome(k,v){ ensureOutcome(); S.outcome[k]=v; save(); computeOutcome(); }
 function updDeathBenefit(v){ S.tax.deathBenefit=unfmtNum(v); save(); computeOutcome(); }   // life-insurance input lives on the Strategy tab; feeds the estate value + ILIT comparison
-/* Rental / operating P&L: gross − executor salary (a fixed expense, charged even with no profit) − rental property tax (current assessed; reassessed-to-market variant for the example line). A net loss is suspended for the income-tax base. Single source for the rental figures. */
+/* Rental / operating P&L: gross − executor salary (a fixed expense, charged even with no profit) − rental property tax (modeled at FMV-reassessed value — the estate's go-forward basis after a Prop 19 death reassessment; the current-assessed figure is shown only as a reference line). A net loss is suspended for the income-tax base. Single source for the rental figures. */
 function rentalPnl(){
   ensureTax(); const t=S.tax, rate=Math.max(0,+t.propTaxRate||0)/100;
   const isR=p=>/rental|commercial|vacation/i.test(p.type||'');   // rental P&L = rental-business properties only (Rental / Commercial / Vacation). Land / Other parcels (ground-lease land, a Schedule-A personal property) are excluded — their property tax is broken out separately in the Real Estate card.
@@ -1800,7 +1800,7 @@ function rentalPnl(){
   const gross=propRent;                                                                 // gross rental income = sum of the per-property rents entered in Real Estate
   const sal=+t.execSal||0;
   const actual=gross-sal-opEx-propNow, reassessed=gross-sal-opEx-propReassessed;
-  return {gross, sal, propRent, opEx, propNow, propReassessed, actual, reassessed, taxable:Math.max(0,reassessed)};   // P&L modeled at FMV-reassessed property tax (the estate's go-forward basis after reassessment), not current assessed
+  return {gross, sal, opEx, propNow, propReassessed, actual, reassessed, taxable:Math.max(0,reassessed)};   // P&L modeled at FMV-reassessed property tax (the estate's go-forward basis after reassessment), not current assessed
 }
 function updCharity(k,v){ ensureOutcome(); S.charity[k]=v; save(); computeCharity(); }
 /* capital-gains tax on the real-estate unrealized gain (federal LTCG + state, stacked on ordinary) */
@@ -1821,8 +1821,8 @@ function reCapTaxOn(g){
   const state=stateTax(ord+oLt+g+st+qd+od)-stateTax(ord+oLt+st+qd+od);
   return Math.max(0,fed+state);
 }
-/* Single source of truth: estate stepped down by federal estate tax, then entered capital-gains tax,
-   then real-estate capital-gains tax → net available to heirs. Used by the Tax Estimator AND the Distribution tab. */
+/* Single source of truth: estate stepped down by federal estate tax, then real-estate capital-gains tax,
+   then one year of all income-side tax (grantor 1040 incl. entered cap-gains/dividends + corporate DRD + executor's own tax) → net available to heirs. Used by the Tax Estimator AND the Distribution tab. */
 function netAfterAllTaxes(){
   ensureTax(); const t=S.tax, exTot=(+t.exemption||0)*(t.dual?2:1), estate=(+t.estate||0)+(+t.deathBenefit||0);   // total estate value incl. life-insurance death benefit
   const estTax=Math.max(0,estate-exTot)*TAXC.estRate, afterEstateTax=Math.max(0,estate-estTax);
@@ -1833,7 +1833,7 @@ function netAfterAllTaxes(){
 function annualIncomeTax(){
   ensureTax(); const t=S.tax, Y=curY(), f=t.filing||'MFJ', fedBr=Y.fed[f], ltBr=Y.ltcg[f];
   const ord=+t.ordinary||0, lt=+t.ltgain||0, st=+t.stgain||0, qd=+t.qdiv||0, od=+t.odiv||0;
-  // Rental / operating P&L — passive (no SE): gross − executor salary (a fixed expense, charged even with no profit) − rental property tax; a net loss is suspended for the income-tax base
+  // Rental / operating P&L — passive (no SE): gross − executor salary (a fixed expense, charged even with no profit) − rental property tax at FMV-reassessed value (the go-forward basis after a death reassessment); a net loss is suspended for the income-tax base
   const R=rentalPnl(), rentalGross=R.gross, execSal=R.sal, netRental=R.taxable;
   const ordBase=ord+netRental;                                              // grantor's ordinary-income base (final 1040)
   const ordTax=progTax(ord,fedBr)+stateTax(ord);                            // tax on Other ordinary income (first layer)

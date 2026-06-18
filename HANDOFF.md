@@ -30,7 +30,12 @@ window resize; falls back to static, row-wrapped below 760px).
   the Rental income & executor card shows a "Total tax (this section)" (`r_pnl_tottax` = your P&L income tax +
   executor income tax + executor payroll/SE). The 4-metric headline is **Total estate value · Grand total tax
   due · Estate tax with added structures** (projected from the Strategy-tab toggles) **· Estate remaining
-  after taxes**.
+  after taxes**. The Rental card shows the P&L at **FMV-reassessed** property tax (`r_pnl_net`, "at FMV") with
+  a current-assessed reference line (`r_pnl_net_assessed`); the "Taxes this generates" rows
+  (`r_pnl_tax`/`r_exec_inc`/`r_exec_se`/`r_pnl_tottax`) render as negatives; the "ordinary / rental / executor"
+  income-tax line carries a self-reconciling note (`r_est_lessinc_other_note`). The Real Estate "property tax
+  & capital gains" card splits the reassessed total into `r_pt_business` (rental/business, = the rental P&L)
+  and `r_pt_nonbusiness` (personal/land — Schedule A), summing to `r_pt_reassessed`.
 - **Distribution** (`#dist`) — `renderDistribution()` / `computeDistribution()`. Beneficiary list (% allocation
   + timing) and reserves — executor %, property mgmt, taxes/debts, **grandchildren milestone funding**, and
   **milestone life-insurance distributions** (the allocated death benefit is earmarked, so it's reserved from
@@ -51,11 +56,14 @@ window resize; falls back to static, row-wrapped below 760px).
   spousal-doubling `dual` from marital status.
 - `estateFromAssets()` — single source for the asset-based estate (used by `renderTax` AND `ensureTax`, so the
   Tax Estimator and Tax Considerations never drift).
-- `rentalPnl()` — single source for the rental P&L: gross = Σ per-property `annualRent`; subtracts the
-  executor/management salary (a fixed deductible expense, charged even at a loss), Σ per-property
-  `annualExpenses` (operating expenses, excl. property tax), and the current rental property tax
-  (assessed × rate). Returns an `actual` P&L, a `reassessed`-to-market variant, and a floored `taxable`.
-  There is no manual "Gross rental income" input — gross is entirely per-property.
+- `rentalPnl()` — single source for the rental P&L over **rental-business properties only** (type matches
+  `/rental|commercial|vacation/i`; Land / Other parcels are excluded — their property tax is split out in the
+  Real Estate card). gross = Σ per-property `annualRent`; subtracts the executor/management salary (a fixed
+  deductible expense, charged even at a loss), Σ per-property `annualExpenses` (operating expenses, excl.
+  property tax), and the rental property tax. The P&L is **modeled at the FMV-reassessed property tax** (the
+  estate's go-forward basis after a Prop 19 reassessment at death): `taxable = max(0, reassessed)`. It also
+  returns the current-assessed `actual` P&L and both property-tax figures (`propNow` / `propReassessed`) for
+  the reference line. No manual "Gross rental income" input — gross is entirely per-property.
 - `annualIncomeTax()` — single source for one year of during-life income tax (used by the headline, the
   Estate card's income-tax lines, and the Distribution base). Covers the grantor's 1040 (ordinary + net
   rental P&L + cap-gains/dividends − QBI − retirement), the corporate DRD, and the executor/management
@@ -65,7 +73,9 @@ window resize; falls back to static, row-wrapped below 760px).
   (assets + life-insurance death benefit) − federal estate tax − real-estate capital-gains tax − one year
   of all income-side tax (`annualIncomeTax().total`). It is the Distribution base; the Estate-tax card and
   the Tax Estimator headline (both labeled "Estate remaining after taxes") compute the same figure inline,
-  so all three reconcile.
+  so all three reconcile. These baselines are **UNPLANNED** — the Strategy-tab structures (ILIT/FLP/QPRT/IDGT)
+  feed only the Strategy tab and the headline "Estate tax with added structures" projection, never the
+  Estate-card/Distribution baselines (clarifying notes live in `r_annual_note` / `r_dist_taxnote`).
 - `reCapInfo()` / `reCapTaxOn(g)` — capital-gains tax on a real-estate gain, stacked above ordinary + entered
   long-term gains (federal LTCG + CA state; NIIT not included — noted in the UI).
 - Real-estate capital gains are managed **only** in the Real estate card (not the Capital gains card); they're

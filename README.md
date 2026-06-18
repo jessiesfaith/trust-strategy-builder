@@ -21,12 +21,12 @@ uploaded; state is saved to `localStorage`).
 - **Dynamic Estate Map** — an SVG mind map + ownership map that update as data changes (with a Mermaid
   code export).
 - **Tax Estimator tab** — federal + state income / capital-gains / estate / SE tax, with a rental P&L
-  summed from per-property annual rent and operating expenses (QBI = net rental P&L), a management /
+  summed from per-property annual rent and operating expenses (QBI = net rental P&L; modeled at FMV-reassessed property tax, rental-business properties only), a management /
   executor salary modeled as a deductible expense and taxed to the executor, a property-tax / step-up
   card, and a 4-metric headline (total estate value · grand total tax due · estate tax with added
-  structures · estate remaining for heirs).
+  structures · estate remaining after taxes).
 - **Distribution tab** — beneficiary % allocation + timing, milestone life-insurance distributions, and
-  reserves (incl. a grandchildren milestone-funding reserve), starting from the true net after all taxes.
+  itemized reserves (incl. milestone life-insurance distributions and a grandchildren milestone-funding reserve), starting from the true net after all taxes.
 - **Strategy tab** — enter the life-insurance death benefit and toggle revocable trust / ILIT / FLP /
   QPRT / IDGT to compare no-planning vs. your setup; the toggles also drive the Tax Estimator's
   estate-tax-with-structures projection (an ILIT removes the death benefit from the estate). Includes a
