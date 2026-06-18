@@ -2548,13 +2548,20 @@ function refFooter(cites, title){
     else g.fed.push(r);   // IRC / Treas. Reg. / Rev. Rul. / case law
   });
   const blk=(label,arr)=> arr.length?`<div style="margin-top:10px"><div style="font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--indigo-ink);font-weight:700;margin-bottom:4px">${label}</div>${arr.map(r=>`<div style="border-bottom:1px dashed var(--line);padding:6px 0"><div style="font-weight:700;font-size:13.5px;color:var(--ink)">${cc(r.c)}</div><div class="muted" style="font-size:13px">${cc(r.s)}</div></div>`).join('')}</div>`:'';
-  return `<div class="card pad" style="margin-top:14px;background:var(--panel2)">
-    <h3 style="font-size:15px;margin-bottom:2px;color:var(--indigo-ink)">${title||'Code references — Probate · IRC · FTB / R&amp;T'}</h3>
-    <div class="muted" style="font-size:12.5px">Plain-language summaries for orientation only — these are not the statutes and not legal advice. Read the official Internal Revenue Code (irs.gov), the California Probate / Corporations Code and Revenue &amp; Taxation Code (leginfo.ca.gov), and confirm with your attorney &amp; CPA. Section numbers and dollar limits change.</div>
-    ${blk('Internal Revenue Code (IRC) &amp; federal authority',g.fed)}
-    ${blk('California Probate Code',g.prob)}
-    ${blk('California Revenue &amp; Taxation Code (FTB / property tax)',g.ftb)}
-    ${blk('California Corporations Code',g.corp)}
+  const id='ref'+uid();   // collapsed by default — click the header to expand
+  return `<div class="card pad collapsed" id="${id}" style="margin-top:14px;background:var(--panel2)">
+    <div class="collapse-head collapsible" onclick="toggleSection('${id}')" role="button" tabindex="0" aria-expanded="false" onkeydown="if((event.key==='Enter'||event.key===' ')&&event.target===this){event.preventDefault();toggleSection('${id}')}" style="display:flex;align-items:center;gap:10px;cursor:pointer">
+      <h3 style="font-size:15px;margin:0;color:var(--indigo-ink)">${title||'Code references — Probate · IRC · FTB / R&amp;T'}</h3>
+      <span class="muted collapse-hint" style="font-size:13px;margin-left:auto">Click to expand</span>
+      <span class="collapse-chev">▶</span>
+    </div>
+    <div class="collapse-body" style="margin-top:8px">
+      <div class="muted" style="font-size:12.5px">Plain-language summaries for orientation only — these are not the statutes and not legal advice. Read the official Internal Revenue Code (irs.gov), the California Probate / Corporations Code and Revenue &amp; Taxation Code (leginfo.ca.gov), and confirm with your attorney &amp; CPA. Section numbers and dollar limits change.</div>
+      ${blk('Internal Revenue Code (IRC) &amp; federal authority',g.fed)}
+      ${blk('California Probate Code',g.prob)}
+      ${blk('California Revenue &amp; Taxation Code (FTB / property tax)',g.ftb)}
+      ${blk('California Corporations Code',g.corp)}
+    </div>
   </div>`;
 }
 /* small inline citation chip used next to notes */
