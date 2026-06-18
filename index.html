@@ -47,9 +47,11 @@
   .brand .name{font-size:25px;font-weight:600;letter-spacing:0;font-family:'Cormorant Garamond',Georgia,serif}
   .brand .sub{font-size:12.5px;color:var(--muted);margin-top:-2px}
   .header-actions{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
-  .toptabs{flex:none;width:178px;position:sticky;top:14px;align-self:flex-start;display:flex;flex-direction:column;gap:4px;padding:14px 10px;border-right:1px solid var(--line);max-height:calc(100vh - 24px);overflow-y:auto}
+  .toptabs{flex:none;width:178px;position:sticky;top:14px;align-self:flex-start;display:flex;flex-direction:column;gap:4px;padding:14px 10px;border-right:1px solid var(--line);max-height:calc(100vh - 24px)}
+  .toptabs-main{display:flex;flex-direction:column;gap:4px;flex:none}                                  /* primary tabs — always visible */
+  .toptabs-scroll{display:flex;flex-direction:column;gap:4px;flex:1 1 auto;min-height:0;overflow-y:auto;margin-top:4px;padding-top:8px;border-top:1px solid var(--line)}  /* trust tabs — scroll if long */
   .toptab{display:block;width:100%;text-align:left;padding:8px 11px;border-radius:8px;font-size:14px;font-weight:600;background:transparent;color:var(--muted);border:1px solid transparent;cursor:pointer;white-space:nowrap}
-  @media(max-width:760px){.layout{flex-direction:column}.toptabs{width:auto;position:static;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);max-height:none;padding:8px 18px}.toptab{width:auto}}
+  @media(max-width:760px){.layout{flex-direction:column}.toptabs{width:auto;position:static;flex-direction:row;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);max-height:none;padding:8px 18px}.toptabs-main,.toptabs-scroll{display:contents}.toptab{width:auto}}
   .toptab:hover{color:var(--ink);background:var(--panel2)}
   .toptab.active{background:var(--indigo-soft);color:var(--indigo-ink);border-color:var(--indigo)}
   .toptab.add-trust{margin-top:6px;color:var(--indigo-ink);border:1px dashed var(--line)}
@@ -917,9 +919,12 @@ function allTrusts(){ return TRUSTS.concat(S.customTrusts||[]); }
 function trustByKey(k){ return allTrusts().find(t=>t.k===k); }
 function renderTopTabs(){
   const el=document.getElementById('topTabs'); if(!el) return;
-  const tabs=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'},{k:'dist',n:'Distribution'},{k:'outcome',n:'Strategy'}].concat(allTrusts().map(t=>({k:t.k,n:t.name})));
-  el.innerHTML=tabs.map(t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`).join('')
-    + `<button class="toptab add-trust" onclick="newTrust()" title="Add your own trust or entity tab">＋ New trust</button>`;
+  const main=[{k:'overview',n:'Overview'},{k:'tax',n:'Tax Estimator'},{k:'dist',n:'Distribution'},{k:'outcome',n:'Strategy'}];
+  const btn=t=>`<button class="toptab ${currentTab===t.k?'active':''}" data-tab="${t.k}" onclick="switchTab('${t.k}')">${esc(t.n)}</button>`;
+  // Primary tabs stay pinned at the top; the trust tabs (which can grow long) scroll below them.
+  el.innerHTML=`<div class="toptabs-main">${main.map(btn).join('')}</div>`
+    + `<div class="toptabs-scroll">${allTrusts().map(t=>btn({k:t.k,n:t.name})).join('')}`
+    + `<button class="toptab add-trust" onclick="newTrust()" title="Add your own trust or entity tab">＋ New trust</button></div>`;
 }
 function newTrust(){
   const name=(prompt('Name this trust or entity (e.g. “2026 Family Irrevocable Trust”):')||'').trim();
@@ -1721,7 +1726,7 @@ function renderDistribution(){
 function computeDistribution(){
   ensureDist();
   const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
-  const N=netAfterAllTaxes(), afterTax=N.net, r=S.reserves;   // estate − estate tax − capital-gains − real-estate cap-gains
+  const N=netAfterAllTaxes(), afterTax=N.net, r=S.reserves;   // estate − estate tax − real-estate cap-gains − one year of income tax
   const execPct=Math.min(100,Math.max(0,+unfmtNum(r.execPct)||0)), propMgmt=Math.max(0,+unfmtNum(r.propMgmt)||0), taxDebt=Math.max(0,+unfmtNum(r.taxDebt)||0);
   const execAmt=afterTax*execPct/100;
   // grandchildren milestone funding
@@ -1735,7 +1740,7 @@ function computeDistribution(){
   const totalReserves=execAmt+propMgmt+taxDebt+gkReserve;
   const distributable=Math.max(0,afterTax-totalReserves);
   set('r_dist_aftertax',m$(afterTax)); set('r_dist_reserves',m$(totalReserves)); set('r_dist_distributable',m$(distributable));
-  set('r_dist_taxnote','Net after all taxes = '+m$(N.estate)+' estate − '+m$(N.estTax)+' estate tax − '+m$(N.enteredCapTax)+' capital-gains − '+m$(N.reCapTax)+' real-estate cap-gains.'+(gkReserve>0?(' Less '+m$(gkReserve)+' grandchildren milestone funding (in reserves).'):''));
+  set('r_dist_taxnote','Net after all taxes = '+m$(N.estate)+' estate − '+m$(N.estTax)+' estate tax − '+m$(N.reCapTax)+' real-estate cap-gains − '+m$(N.annual)+' income tax (1 yr).'+(gkReserve>0?(' Less '+m$(gkReserve)+' grandchildren milestone funding (in reserves).'):''));
   set('r_res_exec',m$(execAmt)); set('r_res_total',m$(totalReserves));
   if(gkOn){
     set('r_gk_prem',m$(gkPrem)); set('r_gk_cash',m$(gkCash)); set('r_gk_ira',m$(gkIra)); set('r_gk_perkid',m$(gkPerKid));
@@ -1803,15 +1808,28 @@ function reCapTaxOn(g){
 /* Single source of truth: estate stepped down by federal estate tax, then entered capital-gains tax,
    then real-estate capital-gains tax → net available to heirs. Used by the Tax Estimator AND the Distribution tab. */
 function netAfterAllTaxes(){
+  ensureTax(); const t=S.tax, exTot=(+t.exemption||0)*(t.dual?2:1), estate=+t.estate||0;
+  const estTax=Math.max(0,estate-exTot)*TAXC.estRate, afterEstateTax=Math.max(0,estate-estTax);
+  const reCapTax=reCapInfo().tax, annual=annualIncomeTax().total;             // real-estate cap-gains + one year of income tax (income tax already includes entered cap-gains/dividends, so it is NOT subtracted again here)
+  return {estate, estTax, afterEstateTax, reCapTax, annual, net:Math.max(0,afterEstateTax-reCapTax-annual)};
+}
+// Single source of truth for the during-life annual income tax — used by the headline, the Estate card, and the Distribution base so they all agree.
+function annualIncomeTax(){
   ensureTax(); const t=S.tax, Y=curY(), f=t.filing||'MFJ', fedBr=Y.fed[f], ltBr=Y.ltcg[f];
   const ord=+t.ordinary||0, lt=+t.ltgain||0, st=+t.stgain||0, qd=+t.qdiv||0, od=+t.odiv||0;
-  const exTot=(+t.exemption||0)*(t.dual?2:1), estate=+t.estate||0;
-  const estTax=Math.max(0,estate-exTot)*TAXC.estRate, afterEstateTax=Math.max(0,estate-estTax);
+  const ordTax=progTax(ord,fedBr)+stateTax(ord);
   const fedCG=ltcgStack(ord,lt+qd,ltBr)+(progTax(ord+st+od,fedBr)-progTax(ord,fedBr));
   const stCG=stateTax(ord+lt+st+qd+od)-stateTax(ord);
   const invest=lt+st+qd+od, niit=Math.max(0,Math.min(invest,ord+invest-TAXC.niit[f]))*0.038;
-  const enteredCapTax=Math.max(0,fedCG+stCG+niit), reCapTax=reCapInfo().tax;
-  return {estate, estTax, afterEstateTax, enteredCapTax, reCapTax, net:Math.max(0,afterEstateTax-enteredCapTax-reCapTax)};
+  const investTax=fedCG+stCG+niit;
+  const profit=+t.profit||0, medThr=TAXC.addlMed[f];
+  const llcSE=seTaxCalc(profit)+Math.max(0,(profit*0.9235)-medThr)*0.009;
+  const qbi=+t.qbi||0, sstbCap=f==='MFJ'?483900:241950;
+  const qsaved=(t.sstb && (ord+qbi)>sstbCap) ? 0 : (qbi*0.20)*margRate(ord+qbi,fedBr);   // SSTB above cap → deduction fully phased out
+  const c401=Math.max(0,+unfmtNum(t.ret401)||0), cIra=Math.max(0,+unfmtNum(t.retIra)||0), cSimple=Math.max(0,+unfmtNum(t.retSimple)||0), cSep=Math.max(0,+unfmtNum(t.retSep)||0);
+  const preTaxRet=c401+cIra+cSimple+cSep, ordLess=Math.max(0,ord-preTaxRet);
+  const retSaved=preTaxRet>0?((progTax(ord,fedBr)-progTax(ordLess,fedBr))+(stateTax(ord)-stateTax(ordLess))):0;
+  return {ordTax, investTax, llcSE, qsaved, retSaved, total:Math.max(0,ordTax+investTax+llcSE-qsaved-retSaved)};   // floor at 0 — deductions can't make total income tax negative (and it's now subtracted from the estate)
 }
 function renderOutcome(){
   ensureOutcome(); ensureTax();
@@ -2004,16 +2022,16 @@ function renderTaxEstimator(){
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px">
         <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Est. annual income tax</div><div id="r_total_annual" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px"><b>per year, during life</b> — not at death (ordinary + investment + SE − QBI − retirement)</div></div>
-        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Total tax at death</div><div id="r_total_estate" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">estate tax + cap-gains + real-estate cap-gains</div></div>
+        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Total tax at death</div><div id="r_total_estate" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif">—</div><div class="muted" style="font-size:12px">estate tax + real-estate cap-gains</div></div>
         <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate tax with added structures</div><div id="r_total_after" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px" id="r_total_saved">add FLP / ILIT / QPRT to project</div></div>
-        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate remaining for heirs</div><div id="r_total_remaining" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">estate − all taxes to the left</div></div>
+        <div><div class="muted" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em">Estate remaining for heirs</div><div id="r_total_remaining" style="font-size:23px;font-weight:600;font-family:'Cormorant Garamond',Georgia,serif;color:var(--green)">—</div><div class="muted" style="font-size:12px">estate − death taxes − 1 yr income tax</div></div>
       </div>
       <div class="legal-foot" id="r_annual_note"></div>
       <div class="legal-foot">Annual income tax assumes the figures below are additive (one household snapshot). “With added structures” counts only ILIT, FLP (~30% discount) and QPRT removals — illustrative, attorney/CPA review.</div>
     </div>
     <div class="grid g2">
       ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}<div class="legal-foot">Tax on the gains &amp; dividends entered here. <b>Real-estate capital gains are handled in the Real estate card below</b> (from each property's value − cost basis). Confirm with your CPA.</div>`)}
-      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}${res('Less capital-gains tax (entered)','r_est_lesscg')}${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Net to heirs after all taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Less annual income tax (1 yr)','r_est_lessinc')}${res('Net to heirs after all taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
       ${card('LLC vs S-corp &amp; SE tax', `<div class="form-grid">${profitFld}${fld('S-corp reasonable salary ($)','salary')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px">Net profit also fills Qualified business income & Self-employed net comp below (each still editable).</div>${res('LLC self-employment tax','r_llc_se')}${res('S-corp payroll tax','r_sc_pay')}${res('Est. SE/FICA savings','r_sc_save',1)}<div class="legal-foot">S-corp distributions above a reasonable salary avoid SE tax — but salary must be reasonable, and S-corp adds payroll/admin cost.</div>`)}
       ${card('Life-insurance proceeds', `${fld('Death benefit ($)','deathBenefit')}${chk('Held in an ILIT (outside your estate)','inILIT')}${res('Income tax','r_ins_inc')}${res('Estate-tax impact','r_ins_est',1)}`)}
       ${card('Business income — QBI (§199A)', `${fld('Qualified business income ($)','qbi','tax_qbi')}${chk('Specified service business (SSTB)','sstb')}${res('Est. federal tax saved','r_qbi_saved')}${res('Total deductible from income (20% of QBI)','r_qbi_ded',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
@@ -2058,14 +2076,15 @@ function computeTax(){
   const propTaxNow=assessedSum*ptr, propTaxReassessed=marketSum*ptr, reassessInc=Math.max(0,propTaxReassessed-propTaxNow);
   set('r_pt_now',m$(propTaxNow)); set('r_pt_reassessed',m$(propTaxReassessed)); set('r_pt_increase',m$(reassessInc));
   // estate
+  const A=annualIncomeTax();                                                   // one year of income tax — shared by the headline, this card, and the Distribution base
   const exTot=(+t.exemption||0)*(t.dual?2:1), taxable=Math.max(0,(+t.estate||0)-exTot), estTax=taxable*TAXC.estRate;
   set('r_est_taxable', m$(taxable));
   set('r_est_tax', estTax>0?('– '+m$(estTax)):m$(estTax)); set('r_est_ca', STATE_ESTATE_TAX.includes(t.state)?('⚑ '+t.state+' has a state estate/inheritance tax — CPA review'):'$0 (no state estate tax)');
   const afterEstateTax=Math.max(0,(+t.estate||0)-estTax);
   set('r_est_net', m$(afterEstateTax));   // estate value remaining after federal estate tax
-  const enteredCapTax=Math.max(0,fedCG+stCG+niit), netHeirs=Math.max(0,afterEstateTax-enteredCapTax-reCapTax);
-  set('r_est_lesscg', enteredCapTax>0?('– '+m$(enteredCapTax)):m$(enteredCapTax)); set('r_est_lessre', reCapTax>0?('– '+m$(reCapTax)):m$(reCapTax)); set('r_est_netheirs', m$(netHeirs));
-  note('r_est_note', (taxable>0?('Above exemption '+m$(taxable)+' × 40% = '+m$(estTax)+'. '):('At/below the '+m$(exTot)+' exemption — no federal estate tax. '))+'Estate after estate tax = '+m$(+t.estate||0)+' − '+m$(estTax)+' = '+m$(afterEstateTax)+'; net to heirs = '+m$(afterEstateTax)+' − '+m$(enteredCapTax)+' (cap-gains) − '+m$(reCapTax)+' (real-estate cap-gains) = '+m$(netHeirs)+'. Held to death, a step-up can erase the real-estate gain — confirm with your CPA.');
+  const netHeirs=Math.max(0,afterEstateTax-reCapTax-A.total);
+  set('r_est_lessre', reCapTax>0?('– '+m$(reCapTax)):m$(reCapTax)); set('r_est_lessinc', A.total>0?('– '+m$(A.total)):m$(A.total)); set('r_est_netheirs', m$(netHeirs));
+  note('r_est_note', (taxable>0?('Above exemption '+m$(taxable)+' × 40% = '+m$(estTax)+'. '):('At/below the '+m$(exTot)+' exemption — no federal estate tax. '))+'Estate after estate tax = '+m$(+t.estate||0)+' − '+m$(estTax)+' = '+m$(afterEstateTax)+'; net to heirs = '+m$(afterEstateTax)+' − '+m$(reCapTax)+' (real-estate cap-gains) − '+m$(A.total)+' (one year of income tax) = '+m$(netHeirs)+'. Income tax is a recurring during-life cost shown here as a one-year figure; held to death, a step-up can erase the real-estate gain — confirm with your CPA.');
   // life insurance
   set('r_ins_inc','$0 (generally income-tax-free)');
   const insInEstate=t.inILIT?0:(+t.deathBenefit||0), insEstTax=( (+t.estate||0)+insInEstate>exTot )?insInEstate*TAXC.estRate:0;
@@ -2075,11 +2094,11 @@ function computeTax(){
   const llcSE=seTaxCalc(profit)+Math.max(0,(profit*0.9235)-medThr)*0.009;        // +0.9% Additional Medicare
   const scPay=Math.min(salary,Y.ssBase)*0.124+salary*0.029+Math.max(0,salary-medThr)*0.009, save=llcSE-scPay;
   set('r_llc_se',m$(llcSE)); set('r_sc_pay',m$(scPay)); set('r_sc_save',(save>=0?'+':'')+m$(save));
-  // QBI
-  const qbi=+t.qbi||0, ded=qbi*0.20, mr=margRate(ord+qbi,fedBr), qsaved=ded*mr;
+  // QBI — a Specified Service business above the income cap is fully phased out (deduction $0)
+  const qbi=+t.qbi||0, sstbCap=f==='MFJ'?483900:241950, qbiPhasedOut=t.sstb && (ord+qbi)>sstbCap;
+  const ded=qbiPhasedOut?0:qbi*0.20, mr=margRate(ord+qbi,fedBr), qsaved=qbiPhasedOut?0:ded*mr;
   set('r_qbi_ded',m$(ded)); set('r_qbi_saved',m$(qsaved));
-  const sstbCap=f==='MFJ'?483900:241950;
-  note('r_qbi_note', (t.sstb && (ord+qbi)>sstbCap)?('Service business above ~'+m$(sstbCap)+' — QBI deduction likely phased out to $0. CPA review.'):'Wage/UBIA limits may apply above the threshold — CPA review.');
+  note('r_qbi_note', qbiPhasedOut?('Service business above ~'+m$(sstbCap)+' — QBI deduction phased out to $0 (SSTB), so no income-tax saving applied. CPA review.'):'Wage/UBIA limits may apply above the threshold — CPA review.');
   // DRD
   const amt=+t.drdAmt||0, pct=t.drdOwn==='<20'?0.50:(t.drdOwn==='20-80'?0.65:1.00), drded=amt*pct, drtax=(amt-drded)*TAXC.corpRate;
   set('r_drd_pct',Math.round(pct*100)+'%'); set('r_drd_ded',m$(drded)); set('r_drd_tax',m$(drtax));
@@ -2093,14 +2112,12 @@ function computeTax(){
   const over=[]; if(c401>k401max)over.push('401(k) over '+m$(k401max)); if(cIra>iraMax)over.push('IRA over '+m$(iraMax)); if(cSimple>simpleMax)over.push('SIMPLE over '+m$(simpleMax)); if(cSep>Math.round(sepMax))over.push('SEP over '+m$(Math.round(sepMax)));
   note('r_ret_note', (over.length?('⚑ '+over.join('; ')+'. '):'')+'Income tax saved ≈ the pre-tax total × your marginal rate (federal + CA). You generally can\'t fund all account types at once, and traditional-IRA deductibility/eligibility rules apply — this sums whatever you enter as pre-tax. SEP ≈ 25% of net comp, capped. Confirm with your CPA.');
   // ---- Summary: single annual total + estate before/after structures ----
-  const ordTax=progTax(ord,fedBr)+stateTax(ord);
-  const investTax=fedCG+stCG+niit;
-  const annual=ordTax + investTax + llcSE - qsaved - retSaved;
+  const annual=A.total;
   set('r_total_annual', m$(annual));
-  note('r_annual_note', 'Math: ordinary-income tax '+m$(ordTax)+' + investment (cap-gains & dividends) '+m$(investTax)+' + self-employment '+m$(llcSE)+' − QBI saving '+m$(qsaved)+(retSaved>0?(' − retirement saving '+m$(retSaved)):'')+' = '+m$(annual)+'. (Real-estate capital gains are NOT in this annual figure — they sit in the Real estate card as a one-time, at-sale tax.)');
-  const deathTax=estTax+investTax+reCapTax;                                  // total tax at death: estate tax + entered cap-gains + real-estate cap-gains
+  note('r_annual_note', 'Math: ordinary-income tax '+m$(A.ordTax)+' + investment (cap-gains & dividends) '+m$(A.investTax)+' + self-employment '+m$(A.llcSE)+' − QBI saving '+m$(A.qsaved)+(A.retSaved>0?(' − retirement saving '+m$(A.retSaved)):'')+' = '+m$(annual)+'. (Real-estate capital gains are NOT in this annual figure — they sit in the Real estate card as a one-time, at-sale tax.)');
+  const deathTax=estTax+reCapTax;                                            // total tax at death: estate tax + real-estate cap-gains (income taxes are during-life — deducted from "estate remaining for heirs", not added here)
   set('r_total_estate', m$(deathTax));
-  set('r_total_remaining', m$(Math.max(0,(+t.estate||0)-deathTax)));         // estate remaining for heirs after all those taxes
+  set('r_total_remaining', m$(Math.max(0,(+t.estate||0)-deathTax-annual)));  // estate remaining for heirs = estate − death taxes − one year of income tax
   const flpVal=(S.properties||[]).filter(p=>/rental|commercial|vacation/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
   const resVal=(S.properties||[]).filter(p=>/personal residence/i.test(p.type||'')).reduce((a,p)=>a+ +(p.value||0),0);
   let removed=0; (S.customStructures||[]).forEach(cs=>{ if(cs.k==='ilit') removed+= +t.deathBenefit||0; else if(cs.k==='flp') removed+=0.30*flpVal; else if(cs.k==='qprt') removed+=resVal; });
@@ -2113,9 +2130,10 @@ function buildTaxSummaryMD(){
   let s='# Tax Estimate Summary\n\n_Planning estimate only — not tax advice. Confirm with your CPA._\n\n';
   s+=`**Filing:** ${t.filing}  ·  **State:** ${t.state}  ·  **Tax year:** ${t.year}\n\n`;
   s+='## Headline\n';
-  s+=`- Estimated annual income tax: **${g('r_total_annual')}**\n`;
-  s+=`- Estate tax now (at death): **${g('r_total_estate')}**\n`;
-  s+=`- Estate tax with added structures: **${g('r_total_after')}** — ${g('r_total_saved')}\n\n`;
+  s+=`- Estimated annual income tax (per year, during life): **${g('r_total_annual')}**\n`;
+  s+=`- Total tax at death (estate tax + real-estate cap-gains): **${g('r_total_estate')}**\n`;
+  s+=`- Estate tax with added structures: **${g('r_total_after')}** — ${g('r_total_saved')}\n`;
+  s+=`- Estate remaining for heirs (estate − death taxes − 1 yr income tax): **${g('r_total_remaining')}**\n\n`;
   s+='## Capital gains & dividends (entered gains)\n'+`- Federal ${g('r_cg_fed')} · State ${g('r_cg_ca')} · NIIT ${g('r_cg_niit')} · **Total ${g('r_cg_tot')}**\n\n`;
   s+='## Real estate — property tax & capital gains\n'+`- Annual property tax (current) ${g('r_pt_now')} · if reassessed to market ${g('r_pt_reassessed')} · potential increase/yr ${g('r_pt_increase')}\n`+`- Real-estate unrealized gain ${g('r_su_gain')} · capital-gains tax if sold (no step-up) ${g('r_su_avoided')}\n\n`;
   s+='## Estate\n'+`- Federal estate tax ${g('r_est_tax')} · ${g('r_est_ca')}\n\n`;
