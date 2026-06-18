@@ -4,6 +4,30 @@ Project: **Trust Strategy Builder** (Fast Insights tool). Single `index.html`.
 Repo `jessiesfaith/trust-strategy-builder` → Vercel → **app.fastinsights.io/trust-strategy-builder**.
 Newest first. Each entry notes the commit and what changed.
 
+## 2026-06-18 — Cash gift-vs-death card; FLP/IDGT note explainer; probate avoidance across all tabs
+
+- **Tax Estimator → Cash card** (`Cash — gift now vs pass at death`): amount + a disposition selector
+  (pass at death / gift during life). Cash carries no income tax (after-tax, no gain → step-up moot). The
+  selection **rolls into the estate value that is taxed**: a new single source `giftedOutTotal()` subtracts a
+  lifetime cash gift from the estate base in `computeTax` (headline + Estate card, with a new
+  `− Cash gifted during life` bridge line → `= Estate value subject to estate tax`), `netAfterAllTaxes()`
+  (Distribution), `computeOutcome()` (Strategy), and as a Bucket-1 line in `computeRollup()`. The card shows the
+  **marginal** estate tax on the cash (kept vs gifted) and a green/amber flag. State: `S.tax.cashAmt`,
+  `S.tax.cashDisp` (default `death`, amount defaults to the bank-cash total). Verified: gifting reduces the
+  taxed estate by the gift and the estate tax by the marginal 40% above the exemption; all tabs reconcile.
+- **Property → FLP/IDGT card**: added a plain-language explainer — how the installment note is paid back
+  (annual AFR interest from FLP cash flow + balloon, returning to you; grantor-trust interest is not your
+  taxable income), when heirs receive (they are the IDGT beneficiaries; you set the schedule), and why it is
+  **lifetime-only** (the seed gift/sale + grantor-trust status end at death; a trustee cannot start it at
+  death) — plus a probate line.
+- **Probate avoidance — all tabs.** New verified CA taxonomy (`PROBATE` constant; Prob./Civ. Code citations +
+  Apr-2025 thresholds) with helpers `probateNote()` and `probateListBlock()`. The Estate Roll-up tab carries
+  the **master avoidable (8) vs not-avoidable (4) list** + a by-asset table (does it probate, how to keep it
+  out) + the statutory fee schedule (§10800/§10810) and small-estate limits (§13100 $208,850 / §13150 $750,000
+  / §13200 ≈$69,625, CPI-adjusted §890). Per-tab probate notes added to Property, Financial, Charity, Strategy,
+  and Overview, each flagging where probate bites and whether the planned move removes the asset — with the
+  cross-cutting point that **probate avoidance is separate from estate-tax reduction and the §1014 step-up**.
+
 ## 2026-06-18 — Financial · Charity · **Gross-Estate Roll-up** tabs (+ code-reference footers)
 
 Three new tabs, plus a Probate/IRC/FTB code-reference footer pattern. The tax/legal substance was

@@ -1892,10 +1892,14 @@ function reCapTaxOn(g){
   const state=stateTax(ord+oLt+g+st+qd+od)-stateTax(ord+oLt+st+qd+od);
   return Math.max(0,fed+state);
 }
+/* Assets removed from the estate by a completed LIFETIME gift modeled in the Tax Estimator (currently the cash
+   gift). Subtracted from the estate value taxed everywhere so the headline, Estate card, Distribution, Strategy,
+   and Roll-up all reconcile. */
+function giftedOutTotal(){ ensureTax(); const t=S.tax; const cash=Math.max(0,+unfmtNum(t.cashAmt)||0); return (t.cashDisp==='gift')?cash:0; }
 /* Single source of truth: estate stepped down by federal estate tax, then real-estate capital-gains tax,
    then one year of all income-side tax (grantor 1040 incl. entered cap-gains/dividends + corporate DRD + executor's own tax) → net available to heirs. Used by the Tax Estimator AND the Distribution tab. */
 function netAfterAllTaxes(){
-  ensureTax(); const t=S.tax, exTot=(+t.exemption||0)*(t.dual?2:1), estate=(+t.estate||0)+(+t.deathBenefit||0);   // total estate value incl. life-insurance death benefit
+  ensureTax(); const t=S.tax, exTot=(+t.exemption||0)*(t.dual?2:1), estate=Math.max(0,(+t.estate||0)+(+t.deathBenefit||0)-giftedOutTotal());   // total estate value incl. life-insurance death benefit, less any lifetime cash gift
   const estTax=Math.max(0,estate-exTot)*TAXC.estRate, afterEstateTax=Math.max(0,estate-estTax);
   const reCapTax=reCapInfo().tax, annual=annualIncomeTax().total;             // real-estate cap-gains + one year of all income-side tax (your 1040 + corporate DRD + executor's tax)
   return {estate, estTax, afterEstateTax, reCapTax, annual, net:Math.max(0,afterEstateTax-reCapTax-annual)};
@@ -1943,6 +1947,7 @@ function renderOutcome(){
   const el=document.getElementById('outcomeBody'); if(!el) return;
   el.innerHTML=`
     <div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Illustrative planning model — not legal or tax advice.</b> Figures flow from your Tax Estimator inputs. The structures are simplified; each is irrevocable and tax-sensitive and needs your attorney &amp; CPA.</div></div>
+    ${probateNote('A funded <b>revocable trust avoids probate</b> (saving the CA statutory executor + attorney fees charged on the GROSS estate '+ic('Prob. Code sec 10800')+ic('Prob. Code sec 10810')+') but does <b>nothing for estate tax</b>. The structures that move assets OUT — <b>IDGT, outright gifts, ILIT, QPRT</b> — also remove those assets from probate (you no longer own them). A <b>pour-over will does NOT avoid probate</b> '+ic('Prob. Code sec 6300')+'. Full avoidable / not-avoidable list on the <b>Estate Roll-up</b> tab.')}
     ${card('Life insurance', `<div class="field" style="margin-bottom:6px"><label>Death benefit ($)</label><input type="text" inputmode="decimal" value="${esc(groupNum(S.tax.deathBenefit))}" oninput="fmtNumField(this);updDeathBenefit(this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"></div><div class="muted" style="font-size:12.5px">In your taxable estate unless an ILIT holds it (toggle “ILIT holds the life insurance” below). The Tax Estimator's estate value and this comparison both use this amount.</div>`)}
     ${card('Which structures are in place?', STRUCT_DEFS.map(chk).join(''))}
     <div class="card pad" style="margin-bottom:14px;border-color:var(--green-line)">
@@ -1993,7 +1998,7 @@ function computeOutcome(){
   const set=(id,v)=>{const e=document.getElementById(id); if(e) e.textContent=v;};
   const t=S.tax, o=S.outcome;
   const exTot=(+t.exemption||0)*(t.dual?2:1), rate=Math.max(0,+t.propTaxRate||0)/100;
-  const estate=+t.estate||0, db=+t.deathBenefit||0;
+  const estate=Math.max(0,(+t.estate||0)-giftedOutTotal()), db=+t.deathBenefit||0;   // estate base less any lifetime cash gift (Tax Estimator), so Strategy reconciles
   const props=S.properties||[];
   const isRental=p=>/rental|commercial|vacation/i.test(p.type||''), isRes=p=>/personal residence/i.test(p.type||'');
   const val=p=>+(p.value||0), gain=p=>{const v=+(p.value||0),b=+(p.basis||0);return b>0?Math.max(0,v-b):0;}, assess=p=>{const v=+(p.value||0);return (+(p.assessed||0))||(+(p.basis||0))||v;};
@@ -2086,6 +2091,8 @@ function ensureTax(){
   if(S.tax.year===undefined) S.tax.year='2026';
   const d={filing:'MFJ',state:(S.profile&&S.profile.state)||'California',ordinary:200000,ltgain:500000,stgain:0,qdiv:20000,odiv:5000,deathBenefit:2000000,sstb:false,execSal:140000,drdAmt:100000,drdOwn:'<20',age:55,seComp:300000,ret401:'',retIra:'',retSimple:'',retSep:'',propTaxRate:1.1};
   for(const k in d){ if(S.tax[k]===undefined) S.tax[k]=d[k]; }
+  if(S.tax.cashDisp===undefined) S.tax.cashDisp='death';          // cash: 'death' (in the estate) | 'gift' (out of the estate)
+  if(S.tax.cashAmt===undefined) S.tax.cashAmt=estateFromAssets().cash;   // default to the entered bank/cash total
   if(S.tax.dual===undefined) S.tax.dual=/married/i.test((S.profile&&S.profile.maritalStatus)||'');   // exemption doubling follows marital status (user can still toggle the checkbox)
   if(S.tax.exemptionAuto===undefined) S.tax.exemptionAuto=true;
   if(S.tax.exemption===undefined) S.tax.exemption=TAXY[S.tax.year].exemption;
@@ -2146,7 +2153,8 @@ function renderTaxEstimator(){
     </div>
     <div class="grid g2">
       ${card('Capital gains &amp; dividends', `<div class="form-grid">${fld('Long-term gain ($)','ltgain')}${fld('Short-term gain ($)','stgain')}${fld('Qualified dividends ($)','qdiv')}${fld('Ordinary dividends ($)','odiv')}</div>${res('Federal','r_cg_fed')}${res('State','r_cg_ca')}${res('NIIT (3.8%)','r_cg_niit')}${res('Total tax','r_cg_tot',1)}<div class="legal-foot">Tax on the gains &amp; dividends entered here. <b>Real-estate capital gains are handled in the Real estate card below</b> (from each property's value − cost basis). Confirm with your CPA.</div>`)}
-      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('+ Life-insurance death benefit','r_est_db')}${res('= Total estate value (incl. life ins.)','r_est_value')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}<div class="muted" id="r_est_net_math" style="font-size:11.5px;margin:-4px 0 6px;text-align:right"></div>${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Less income tax — capital gains &amp; dividends','r_est_lessinc_cg')}${res('Less income tax — ordinary / rental / executor','r_est_lessinc_other')}<div class="muted" id="r_est_lessinc_other_note" style="font-size:11.5px;margin:-4px 0 6px;text-align:right"></div>${res('Estate remaining after taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Estate tax', `<div class="form-grid">${estateFld}${exemptionFld}</div>${estateHint}${exemptionHint}${chk('Married — use 2× exemption (portability)','dual')}${res('+ Life-insurance death benefit','r_est_db')}${res('− Cash gifted during life (out of estate)','r_est_cashgift')}${res('= Estate value subject to estate tax','r_est_value')}${res('Amount above exemption (taxed)','r_est_taxable')}${res('Federal estate tax (40%)','r_est_tax',1)}${res('State estate','r_est_ca')}${res('Estate after federal estate tax','r_est_net',1)}<div class="muted" id="r_est_net_math" style="font-size:11.5px;margin:-4px 0 6px;text-align:right"></div>${res('Less real-estate capital-gains tax','r_est_lessre')}${res('Less income tax — capital gains &amp; dividends','r_est_lessinc_cg')}${res('Less income tax — ordinary / rental / executor','r_est_lessinc_other')}<div class="muted" id="r_est_lessinc_other_note" style="font-size:11.5px;margin:-4px 0 6px;text-align:right"></div>${res('Estate remaining after taxes','r_est_netheirs',1)}<div class="legal-foot" id="r_est_note"></div>`)}
+      ${card('Cash — gift now vs pass at death', `<div class="form-grid"><div class="field" style="margin-bottom:8px"><label>Cash amount ($)</label><input type="text" inputmode="decimal" value="${esc(groupNum(t.cashAmt))}" oninput="fmtNumField(this);updTax('cashAmt',unfmtNum(this.value))" style="${inSty}"></div><div class="field" style="margin-bottom:8px"><label>Disposition</label><select onchange="updTax('cashDisp',this.value)" ${selSty}><option value="death" ${t.cashDisp==='death'?'selected':''}>Pass at death (in your estate)</option><option value="gift" ${t.cashDisp==='gift'?'selected':''}>Gift during life (out of your estate)</option></select></div></div>${res('Income tax on this cash','r_cash_inc')}${res('Estate tax if it passes at death','r_cash_death')}${res('Estate tax if gifted during life','r_cash_gift')}${res('Effect on the taxed estate (this selection)','r_cash_effect',1)}<div id="r_cash_flag" style="margin-top:6px"></div><div class="legal-foot" id="r_cash_note"></div>`)}
       ${card('Rental income &amp; executor salary', `<div class="form-grid">${fld('Management / executor salary ($)','execSal')}</div><div class="muted" style="font-size:12.5px;margin:-2px 0 6px"><b>Gross rent &amp; operating expenses come from the per-property fields in Real Estate</b> (enter them on each property). Rental is passive (no SE tax); the salary is a fixed deductible expense charged even with no profit. The executor reports the salary as their own income (below).</div>${res('Gross rental income','r_pnl_gross')}${res('Less management / executor salary','r_pnl_sal')}${res('Less operating expenses (from properties)','r_pnl_opex')}${res('Less property tax (rental, reassessed to FMV)','r_pnl_proptax')}${res('Net rental P&amp;L (at FMV)','r_pnl_net',1)}${res('Net rental P&amp;L at current assessed value','r_pnl_net_assessed')}<div class="muted" style="font-size:11px;margin:6px 0 2px;text-transform:uppercase;letter-spacing:.06em">Taxes this generates</div>${res('Your income tax on the P&amp;L','r_pnl_tax')}${res('Executor — income tax on salary','r_exec_inc')}${res('Executor — payroll/SE tax on salary','r_exec_se')}${res('Total tax (this section)','r_pnl_tottax',1)}<div class="legal-foot" id="r_pnl_note"></div>`)}
       ${card('Business income — QBI (§199A)', `${res('Qualified business income (= net rental P&amp;L)','r_qbi_amount')}${chk('Specified service business (SSTB)','sstb')}${res('20% deduction','r_qbi_ded')}${res('Est. federal tax saved','r_qbi_saved',1)}<div class="legal-foot" id="r_qbi_note"></div>`)}
       ${card('Corporate DRD', `${fld('Dividends received by a C-corp ($)','drdAmt')}<div class="field" style="margin-bottom:8px"><label>Ownership of payer</label><select onchange="updTax('drdOwn',this.value)" style="font-family:inherit;font-size:14.5px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--ink);width:100%"><option value="<20" ${t.drdOwn==='<20'?'selected':''}>Under 20% (50% DRD)</option><option value="20-80" ${t.drdOwn==='20-80'?'selected':''}>20–80% (65% DRD)</option><option value="80+" ${t.drdOwn==='80+'?'selected':''}>80%+ (100% DRD)</option></select></div>${res('DRD %','r_drd_pct')}${res('Deductible','r_drd_ded')}${res('Taxable @ 21%','r_drd_tax',1)}`)}
@@ -2212,9 +2220,21 @@ function computeTax(){
   // DRD card (from the shared helper)
   set('r_drd_pct',Math.round(A.drdPct*100)+'%'); set('r_drd_ded',m$(A.drded)); set('r_drd_tax',m$(A.drdTax));
   // estate — total estate value INCLUDES the life-insurance death benefit
-  const exTot=(+t.exemption||0)*(t.dual?2:1), db=+t.deathBenefit||0, estateValue=(+t.estate||0)+db;
+  const exTot=(+t.exemption||0)*(t.dual?2:1), db=+t.deathBenefit||0;
+  const cashGifted=giftedOutTotal(), cashAmt=Math.max(0,+unfmtNum(t.cashAmt)||0);
+  const estateValueGross=(+t.estate||0)+db;                          // full estate value (assets + life insurance)
+  const estateValue=Math.max(0,estateValueGross-cashGifted);         // value subject to estate tax after a lifetime cash gift
   const taxable=Math.max(0,estateValue-exTot), estTax=taxable*TAXC.estRate;
-  set('r_est_db', m$(db)); set('r_est_value', m$(estateValue)); set('r_est_taxable', m$(taxable));
+  set('r_est_db', m$(db)); set('r_est_cashgift', cashGifted>0?('– '+m$(cashGifted)):m$(0)); set('r_est_value', m$(estateValue)); set('r_est_taxable', m$(taxable));
+  // Cash card: cash carries no income tax; estate tax depends on gift-vs-death; show the marginal estate tax on this cash and the effect of the current selection
+  const estTaxWithCash=Math.max(0,estateValueGross-exTot)*TAXC.estRate, estTaxNoCash=Math.max(0,estateValueGross-cashAmt-exTot)*TAXC.estRate, cashMarginalTax=Math.max(0,estTaxWithCash-estTaxNoCash);
+  set('r_cash_inc','$0'); set('r_cash_death', cashMarginalTax>0?('– '+m$(cashMarginalTax)):'$0'); set('r_cash_gift','$0');
+  set('r_cash_effect', t.cashDisp==='gift'?('removes '+m$(cashGifted)+' from the taxed estate'):('keeps '+m$(cashAmt)+' in the taxed estate'));
+  const cashFlag=document.getElementById('r_cash_flag');
+  if(cashFlag) cashFlag.innerHTML = t.cashDisp==='gift'
+    ? '<span class="badge b-green">Gifted — '+m$(cashGifted)+' OUT of the taxed estate'+(cashMarginalTax>0?(' · saves ≈ '+m$(cashMarginalTax)+' estate tax'):'')+'</span>'
+    : '<span class="badge b-amber">Passes at death — IN the taxed estate'+(cashMarginalTax>0?(' · ≈ '+m$(cashMarginalTax)+' estate tax'):'')+'</span>';
+  note('r_cash_note','Cash carries no income tax at death — it is already after-tax (no built-in gain, so a step-up is moot). Kept in your estate it is taxed up to 40% above the exemption (IRC §2033 / §2001). Gifted during life it leaves your estate entirely (IRC §2501 / §2511) — the cleanest asset to give, since there is no step-up to lose; it uses your annual exclusion (§2503(b)) and lifetime exemption (§2010), and a gift above the exemption incurs gift tax. Your selection ('+(t.cashDisp==='gift'?'gift during life':'pass at death')+') '+(t.cashDisp==='gift'?'removes this cash from':'keeps this cash in')+' the estate value subject to tax above, the headline total, and the Distribution / Strategy / Roll-up tabs. Confirm with your CPA & attorney.');
   set('r_est_tax', estTax>0?('– '+m$(estTax)):m$(estTax)); set('r_est_ca', STATE_ESTATE_TAX.includes(t.state)?('⚑ '+t.state+' has a state estate/inheritance tax — CPA review'):'$0 (no state estate tax)');
   const afterEstateTax=Math.max(0,estateValue-estTax);
   set('r_est_net', m$(afterEstateTax)); set('r_est_net_math', m$(estateValue)+' − '+m$(estTax)+' = '+m$(afterEstateTax));
@@ -2370,6 +2390,13 @@ function renderProperty(){
     ${row('≈ Estate tax saved at horizon (40%)','fl_estsavehorizon',1)}
     ${row('Grantor-paid income tax / yr (extra tax-free gift)','fl_idgttax')}
     <div class="legal-foot" id="fl_note_text"></div>
+    <div class="card pad" style="margin-top:10px;background:var(--panel2)">
+      <h4 style="font-size:13.5px;margin-bottom:6px;color:var(--indigo-ink)">How the note is paid, when heirs receive, and why it must be done in your lifetime</h4>
+      <div style="font-size:13.5px"><b>Paying the note back:</b> the IDGT pays you <b>interest each year</b> (at the AFR above), funded from the rent the FLP collects, then repays the <b>principal as a balloon</b> at the end of the term (or amortized over it). Those payments flow <b>back to you</b>, so the note stays in your estate (frozen — it never grows). Because it is a grantor trust, the interest is <b>not taxable income to you</b> (Rev. Rul. 85-13) — you cannot tax-effectively pay interest to yourself.</div>
+      <div style="font-size:13.5px;margin-top:6px"><b>When heirs receive:</b> your heirs are the IDGT's beneficiaries, and <b>you set the distribution schedule</b> when the trust is drafted (e.g., at certain ages, after the note is repaid, or after your death). The trust holds the FLP interests and all the appreciation — at the horizon that is the <b>“value kept OUT of your estate”</b> figure above, growing for them — while the note repayments return to you.</div>
+      <div style="font-size:13.5px;margin-top:6px"><b>Lifetime-only:</b> this must be set up <b>while you are alive</b> — you have to make the seed gift + sale, the no-gain-on-sale treatment depends on grantor-trust status that <b>ends at your death</b>, and the freeze needs time for growth to accrue outside your estate. <b>A trustee cannot start this at death.</b> At death the available moves are testamentary (a charitable bequest, testamentary CLAT, the marital deduction) — which reduce the <i>taxable</i>, not the <i>gross</i>, estate — but simply holding the property to death instead <b>keeps the step-up</b> ($0 capital gains) that this freeze gives up.</div>
+      <div style="font-size:13.5px;margin-top:6px"><b>Probate:</b> assets sold to the IDGT are <b>out of your probate estate</b> (the trust owns them). The FLP interests you keep are personal property that would still pass through probate unless you hold them in your <b>revocable living trust</b> (or assign them to it) — an entity does not avoid probate by itself.</div>
+    </div>
     <div class="legal-foot"><b>Trade-off:</b> IDGT assets take <b>carryover basis</b> (no step-up) — heirs owe ≈ <span id="fl_carrytax">—</span> in capital-gains tax when they sell. <b>Property-tax win:</b> contributing property to an entity you control in proportion to your ownership can be excluded from reassessment (R&amp;T §62(a)(2)); later transfers of <i>interests</i> don't reassess the real property unless one person gains >50% control (§64). This is how an FLP/IDGT can avoid the death reassessment that a plain trust/beneficiary deed cannot. All simplified — attorney &amp; CPA review.</div>`;
 
   // ---- 4 · rental income & P&L ----
@@ -2406,6 +2433,7 @@ function renderProperty(){
     + stepup
     + card('Property scenarios — basis, value, property tax &amp; capital gains', mainTable, rateFld)
     + card('Tax impact by deed / title — gifted vs beneficiary vs trust', scenarioTable)
+    + probateNote('<b>Real estate in your sole name goes through California probate</b>, and the statutory executor + attorney fees run on the <b>GROSS</b> value '+ic('Prob. Code sec 10800')+ic('Prob. Code sec 10810')+'. Keep it out by titling it in your <b>revocable trust</b> '+ic('Prob. Code sec 15200')+', recording a <b>revocable TOD deed</b> (residential; sunsets 2032) '+ic('Prob. Code sec 5600')+', or holding it in <b>joint tenancy / community property with right of survivorship</b> '+ic('Civ. Code sec 682.1')+'. <b>Out-of-state</b> property held individually triggers a separate <b>ancillary probate</b> '+ic('Prob. Code sec 12500')+'. An <b>FLP/LLC interest</b> is itself a probate asset unless that interest is held in your trust. Probate avoidance is separate from the step-up and from estate tax — see the full list on the <b>Estate Roll-up</b> tab.')
     + card('Advanced strategy — FLP + IDGT installment-sale ("loan") freeze', flpCard)
     + card('Rental income — P&amp;L &amp; tax impact', rentalCard)
     + refFooter([
@@ -2687,6 +2715,7 @@ function renderFinancial(){
   const allCites=[].concat(FIN_ASSETS.retirement.cites,FIN_ASSETS.brokerageCash.cites);
   el.innerHTML=`<div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Treatment below was verified against the IRC, CA Probate Code, and CA Rev. &amp; Tax. Code (FTB) but is simplified and illustrative. Confirm with your attorney &amp; CPA.</div></div>`
     + card('Your financial assets at death — step-up, gross estate &amp; income tax', summary)
+    + probateNote('<b>Retirement, brokerage, and bank accounts avoid probate when a beneficiary / TOD / POD is named</b> (or they are held in your revocable trust) — they pass by contract '+ic('Prob. Code sec 5000')+'. A <b>sole-name</b> account with no beneficiary, or one naming <b>“the estate,”</b> goes <b>through probate</b>. Add a POD to bank accounts '+ic('Prob. Code sec 5302')+' and TOD to brokerage '+ic('Prob. Code sec 5500')+'; do NOT retitle a retirement account into a trust (income-tax trap) — keep beneficiary designations current. Probate avoidance is separate from estate tax — these assets still count in your gross estate. Full avoidable / not-avoidable list on the <b>Estate Roll-up</b> tab.')
     + detail(FIN_ASSETS.retirement)
     + detail(FIN_ASSETS.brokerageCash)
     + refFooter(allCites)
@@ -2781,7 +2810,9 @@ function renderCharityTab(){
   `)).join('');
   const allCites=[].concat.apply([],CHARITY_VEHICLES.map(v=>v.cites));
   el.innerHTML=`<div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> Charitable-vehicle treatment was verified against the IRC and CA authority but is simplified (PV figures depend on the sec 7520 rate and term). Confirm with your attorney &amp; CPA.</div></div>`
-    + explain + calc + cmp
+    + explain
+    + probateNote('<b>A charitable gift made during life</b> (outright, DAF, foundation, CLAT, CRT) <b>avoids probate</b> — the asset is no longer in your name '+ic('Prob. Code sec 5000')+'. A <b>charitable bequest in your WILL</b> passes <b>THROUGH probate</b> first (the will is the document that gets probated) '+ic('Prob. Code sec 6300')+'; naming a charity / DAF as a <b>beneficiary</b> of a trust, IRA, or policy avoids probate by contract. Leaving a <b>Traditional IRA to charity by beneficiary designation</b> is the most efficient — no income tax + an estate deduction — and skips probate.')
+    + calc + cmp
     + `<div class="muted" style="font-size:13px;text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin:4px 0 8px">Vehicle detail</div>`
     + detail
     + refFooter(allCites)
@@ -2897,7 +2928,7 @@ function renderRollup(){
   const buckets=`<div id="ro_bucket1"></div><div id="ro_bucket2"></div><div id="ro_bucket3"></div>`;
   const allCites=[].concat.apply([],ROLLUP_STRATEGIES.map(s=>s.cites)).concat([{c:'IRC sec 2001',s:'Computes the federal estate tax on the taxable estate (top rate 40%).'},{c:'IRC sec 2010',s:'Unified credit / exemption (~$15,000,000 per person, 2026); 40% top rate.'},{c:'IRC sec 2053-2058',s:'Deductions (debts, expenses, marital, charitable) that turn the gross estate into the taxable estate.'},{c:'Cal. Rev. & Tax. Code sec 13302',s:'California imposes no state estate tax — federal estate tax is the only driver.'}]);
   el.innerHTML=`<div class="disclaimer" style="margin-bottom:12px"><span>⚠️</span><div><b>Planning organizer only — not legal or tax advice.</b> The classification (gross vs taxable vs estate-tax-only) was adversarially verified against the IRC; the dollar projections are simplified and illustrative. Confirm with your attorney &amp; CPA.</div></div>`
-    + headline + controls + explain + buckets + refFooter(allCites)
+    + headline + controls + explain + buckets + probateListBlock() + refFooter(allCites)
     + `<div class="legal-foot" style="margin-top:6px">⚠️ Reducing the gross estate means giving assets away during life — which forfeits the sec 1014 step-up (carryover basis) and, for charity, sends value out of the family. Below the federal exemption the lost step-up often outweighs the estate-tax saving. Weigh both with your attorney &amp; CPA.</div>`;
   computeRollup();
 }
@@ -2921,6 +2952,8 @@ function computeRollup(){
   else if(o.flp&&rentalVal>0) b1.push({name:'FLP — ~30% valuation discount on rentals',amt:0.30*rentalVal,sec:'IRC sec 2704',part:true});
   if(o.qprt&&resVal>0) b1.push({name:'QPRT — residence out (if you outlive the term)',amt:resVal,sec:'IRC sec 2702',part:true});
   if(gift>0) b1.push({name:'Outright lifetime gift',amt:gift,sec:'IRC sec 2501/2511',part:false});
+  const cashGifted=giftedOutTotal();
+  if(cashGifted>0) b1.push({name:'Cash gifted during life (from Tax Estimator)',amt:cashGifted,sec:'IRC sec 2501/2511',part:false});
   if(ch.gross>0) b1.push({name:'Charity plan (lifetime gift — '+(ch.vehicle||'')+')',amt:ch.gross,sec:'IRC sec 2031/2033',part:false});
   const b1Total=b1.reduce((a,x)=>a+x.amt,0);
   const resultingGross=Math.max(0,grossEstate-b1Total);
@@ -2956,10 +2989,80 @@ function computeRollup(){
   html('ro_bucket3',card('<div class="badges" style="margin-bottom:8px"><span class="badge b-red">Bucket 3 · Reduces only estate tax / after-tax / income tax</span></div><div class="muted" style="font-size:12.5px;margin-bottom:8px">No effect on either the gross OR the taxable estate — but still valuable (probate avoidance, basis step-up).</div>',b3tbl,'var(--red-line)'));
 }
 
+/* ---- Probate avoidance taxonomy (California; verified Prob./Civ. Code citations + Apr-2025 thresholds) ---- */
+const PROBATE={
+  explainer:`Probate is California's court-supervised process for transferring assets that pass by will or intestacy. It is public, slow (often 9-18+ months), and expensive — the executor AND the attorney each take a statutory fee on the GROSS estate (Prob. Code sec 10800/sec 10810). It is triggered by assets in your SOLE name with no beneficiary, no surviving co-owner, and not in a trust. A probate-avoidance plan simply makes title pass by a NON-probate mechanism (Prob. Code sec 5000 et seq.) instead. KEY POINT: probate avoidance is a DIFFERENT goal from estate-tax reduction and from the sec 1014 basis step-up — three separate boxes. A revocable trust avoids probate but does nothing for estate tax (assets stay in the gross estate, sec 2036/sec 2038) and still gets a full step-up. A POD/TOD/beneficiary designation avoids probate but the asset still counts in the gross estate. A pour-over will does NOT avoid probate — it routes forgotten sole-name assets THROUGH probate into the trust.`,
+  feesNote:`CA statutory probate fees (Prob. Code sec 10810, mirrored by sec 10800 for the executor) on the GROSS estate: 4% of the first $100k; 3% of the next $100k; 2% of the next $800k; 1% of the next $9M; 0.5% of the next $15M; above $25M a court-set amount. The executor and the attorney EACH receive this, so ordinary fees roughly DOUBLE (a $1M gross estate ≈ $23k each ≈ $46k combined) — before extraordinary fees (sec 10801/sec 10811) and court/appraisal costs. Small-estate shortcuts (deaths on/after Apr 1, 2025): personal-property affidavit up to $208,850 (sec 13100/sec 13101, 40-day wait); primary-residence succession petition up to $750,000 (sec 13150/sec 13151, per AB 2016); small-value real-property affidavit ≈ $69,625 (sec 13200); a Spousal Property Petition has NO dollar cap (sec 13500/sec 13650). These figures are CPI-adjusted every 3 years (sec 890; next Apr 1, 2028) — verify the current Judicial Council DE-300.`,
+  avoidable:[
+    {item:'Revocable living trust (assets retitled into it before death)',how:'The trustee owns the assets, so the successor trustee distributes them with NO court involvement — the workhorse tool. Only assets actually TITLED in the trust are covered (an unfunded trust fails); a Heggstad petition can sometimes rescue an asset meant to be funded.',cite:'Prob. Code sec 15200 et seq.; sec 850 (Heggstad)'},
+    {item:'Pay-on-death (POD) bank accounts',how:'Funds in a multiple-party account with a POD beneficiary pass directly to the beneficiary by the account contract, outside probate.',cite:'Prob. Code sec 5302; sec 5100 et seq.'},
+    {item:'Transfer-on-death (TOD) registration of securities / brokerage',how:'Accounts registered in TOD (beneficiary) form pass automatically to the beneficiary under the Uniform TOD Security Registration Act.',cite:'Prob. Code sec 5500 et seq.'},
+    {item:'Revocable TOD (beneficiary) deed for real property',how:'A recorded revocable TOD deed passes residential real property at death without probate. CAUTION: the statute is scheduled to sunset Jan 1, 2032 — confirm it is still authorized.',cite:'Prob. Code sec 5642; sec 5600 et seq.'},
+    {item:'Beneficiary designations on life insurance & retirement (IRA/401(k)/annuities)',how:'Proceeds pass by contract to the named beneficiary outside probate. Do NOT name “the estate” (that pulls it INTO probate). Probate-avoidance only — these still count in the gross estate for estate tax.',cite:'Prob. Code sec 5000; Ins. Code sec 10170 et seq.'},
+    {item:'Joint tenancy & community property with right of survivorship',how:'Title passes automatically to the surviving co-owner/spouse by operation of law. Joint tenancy steps up only the decedent’s half; CPWROS gets a 100% double step-up (sec 1014(b)(6)) — a basis benefit separate from probate.',cite:'Civ. Code sec 683; Civ. Code sec 682.1'},
+    {item:'Assets in an irrevocable trust / entity, or already gifted away',how:'If title is held by an irrevocable trust, an LLC/FLP, or another person (completed gift), you do not own it at death — nothing to probate. (A completed gift may be out of the estate for estate tax but can lose the step-up.)',cite:'Prob. Code sec 15200 et seq.; sec 5000'},
+    {item:'Small estates under the statutory thresholds (summary procedures)',how:'Personal property up to $208,850 by affidavit (sec 13100); a primary residence up to $750,000 by petition (sec 13150/sec 13151); small-value real property ≈ $69,625 (sec 13200); spousal property with NO cap (sec 13500). CPI-adjusted every 3 yrs (sec 890).',cite:'Prob. Code sec 13100; sec 13150/sec 13151; sec 13200; sec 13500'}
+  ],
+  notAvoidable:[
+    {item:'Assets in your SOLE name — no beneficiary, no survivorship co-owner, not in a trust',why:'The default probate trigger. With no non-probate mechanism, title can only move by court order, so the asset goes through formal probate (unless it qualifies for a small-estate shortcut).',cite:'Prob. Code sec 7000-7001; sec 8000 et seq.'},
+    {item:'A pour-over will, standing alone',why:'Does NOT avoid probate — it directs sole-name assets into the trust, but they must first pass THROUGH probate. It is a safety net, not an avoidance tool; only a FUNDED trust avoids probate.',cite:'Prob. Code sec 6300 et seq.; sec 8000 et seq.'},
+    {item:'Out-of-state real property held individually',why:'California probate cannot move out-of-state real title — individually held land elsewhere needs a separate ANCILLARY probate under that state’s law. Avoid by titling it in the trust.',cite:'Prob. Code sec 12500 et seq.'},
+    {item:'Tangible personal property in sole name with no disposition (furniture, jewelry, collectibles)',why:'Sole-name items with no beneficiary/co-owner/trust title pass through the estate; if total personal property exceeds the sec 13100 affidavit limit it goes through formal probate (vehicles have DMV TOD/affidavit workarounds).',cite:'Prob. Code sec 6100 et seq.; sec 13100; Veh. Code sec 5910/sec 9916'}
+  ],
+  byAsset:[
+    {asset:'Real property (CA residence / other real estate)',probateDefault:'Yes — if sole name, no survivorship co-owner, no TOD deed, not in a trust.',howToAvoid:'Title in a revocable trust; OR a revocable TOD deed (residential; sunsets 2032); OR joint tenancy / CPWROS. Under the $750k primary-residence limit, a succession petition avoids full probate.',cite:'Prob. Code sec 15200; sec 5642/sec 5600; Civ. Code sec 683/sec 682.1; sec 13150/sec 13151'},
+    {asset:'Out-of-state real property',probateDefault:'Yes — and worse: a SEPARATE ancillary probate in the other state if held individually.',howToAvoid:'Title in the revocable trust (most reliable), or a survivorship/TOD device valid in that state.',cite:'Prob. Code sec 12500 et seq.; sec 15200'},
+    {asset:'Retirement (IRA/401(k)/403(b)/pension)',probateDefault:'No if a beneficiary is named (passes by contract). Yes if no/invalid beneficiary or “the estate” is named.',howToAvoid:'Keep valid primary + contingent beneficiary designations current; do NOT name the estate, and do NOT retitle into a trust (income-tax trap). Still in the gross estate for estate tax.',cite:'Prob. Code sec 5000; IRC sec 401/sec 408'},
+    {asset:'Taxable brokerage / securities',probateDefault:'No if TOD/beneficiary form or in a trust. Yes if sole name with no beneficiary.',howToAvoid:'Register TOD (beneficiary) under the Uniform TOD Security Registration Act, or retitle into the revocable trust.',cite:'Prob. Code sec 5500 et seq.; sec 15200'},
+    {asset:'Cash / bank accounts',probateDefault:'No if POD, in a trust, or with a survivorship co-owner. Yes if sole name with no POD.',howToAvoid:'Add a POD beneficiary, hold the account in the trust, or use a multiple-party survivorship account.',cite:'Prob. Code sec 5302; sec 5100 et seq.; sec 15200'},
+    {asset:'FLP / LLC interest',probateDefault:'Yes — the OWNERSHIP INTEREST (not the entity’s assets) is a sole-name intangible that probates if held individually.',howToAvoid:'Assign the membership/partnership interest into the revocable trust (or use an operating-agreement TOD / buy-sell transfer). Holding assets inside the entity does not by itself avoid probate of your interest.',cite:'Prob. Code sec 15200; Corp. Code sec 17701.01 et seq.'},
+    {asset:'Life insurance',probateDefault:'No if a beneficiary other than the estate is named (pays by contract). Yes if “the estate” is the beneficiary.',howToAvoid:'Name and keep current individual/trust beneficiaries; avoid the estate. For estate-TAX removal (separate goal) use an ILIT.',cite:'Prob. Code sec 5000; Ins. Code sec 10170 et seq.'},
+    {asset:'Business interest (closely held stock / sole proprietorship)',probateDefault:'Yes if sole name with no transfer mechanism.',howToAvoid:'Retitle shares/interests into the revocable trust; use a funded buy-sell; consider TOD security registration where permitted.',cite:'Prob. Code sec 15200; sec 5500 et seq.'}
+  ],
+  cites:[
+    {c:'Prob. Code sec 10800 / sec 10810',s:'Statutory executor + attorney probate fees on the GROSS estate (4/3/2/1/0.5% sliding scale); each receives it — roughly doubling fees.'},
+    {c:'Prob. Code sec 10801 / sec 10811',s:'Additional “extraordinary” compensation on top of the ordinary statutory fees.'},
+    {c:'Prob. Code sec 5000',s:'Validates non-probate transfers (POD/TOD/beneficiary instruments) — they pass outside probate.'},
+    {c:'Prob. Code sec 5302; sec 5100 et seq.',s:'Pay-on-death multiple-party bank accounts pass to the named beneficiary outside probate.'},
+    {c:'Prob. Code sec 5500 et seq.',s:'Uniform TOD Security Registration Act — TOD brokerage/securities pass outside probate.'},
+    {c:'Prob. Code sec 5642 / sec 5600 et seq.',s:'Revocable TOD deed for residential real property (sunsets Jan 1, 2032).'},
+    {c:'Civ. Code sec 683',s:'Joint tenancy survivorship passes title outside probate (step-up only on the decedent’s half).'},
+    {c:'Civ. Code sec 682.1',s:'Community property with right of survivorship — outside probate + the sec 1014(b)(6) double step-up.'},
+    {c:'Prob. Code sec 15200 et seq.; sec 850 (Heggstad)',s:'Trust creation/funding; a Heggstad petition can confirm an unfunded asset belongs to the trust.'},
+    {c:'Prob. Code sec 6300 et seq.',s:'Pour-over wills route sole-name assets into the trust but do NOT avoid probate.'},
+    {c:'Prob. Code sec 7000-7001; sec 8000 et seq.',s:'Sole-name assets with no non-probate mechanism pass only through court-supervised administration.'},
+    {c:'Prob. Code sec 12500 et seq.',s:'Ancillary administration — a separate probate for real property at its situs when held individually.'},
+    {c:'Prob. Code sec 13100/sec 13101; sec 13150/sec 13151; sec 13200; sec 13500/sec 13650; sec 890',s:'Small-estate affidavit/petition thresholds (personal property $208,850; primary residence $750,000; small real property ≈ $69,625; spousal petition uncapped) — CPI-adjusted every 3 yrs (next Apr 1, 2028).'},
+    {c:'Veh. Code sec 5910 / sec 9916',s:'DMV transfer-on-death / affidavit procedures for vehicles.'},
+    {c:'IRC sec 1014 (incl. sec 1014(b)(6))',s:'Basis step-up — a TAX result independent of probate; revocable-trust & survivorship assets still get it.'},
+    {c:'IRC sec 2036 / sec 2038',s:'Revocable trusts and retained-interest transfers stay in the gross estate — estate-tax inclusion is separate from probate.'}
+  ]
+};
+/* small per-tab probate callout */
+function probateNote(html){ return `<div class="card pad" style="margin-bottom:14px;border-color:var(--amber-line)"><div class="badges" style="margin-bottom:6px"><span class="badge b-amber">Probate</span></div><div style="font-size:13.5px">${html}</div></div>`; }
+/* the master avoidable / not-avoidable list + by-asset table + fees */
+function probateListBlock(){
+  const card=(t,b,border)=>`<div class="card pad" style="margin-bottom:14px${border?(';border-color:'+border):''}">${t}${b}</div>`;
+  const item=(x,kind)=>`<div class="ent"><div class="ent-top"><div style="min-width:0"><h4 style="color:var(--${kind==='ok'?'green':'red'})">${cc(x.item)}</h4></div><span class="badge ${kind==='ok'?'b-green':'b-red'}">${kind==='ok'?'Avoids probate':'Goes through probate'}</span></div><div class="ent-meta" style="font-size:13px;margin-top:4px">${cc(x.how||x.why)}</div><div class="legal-foot" style="margin-top:3px">${ic(x.cite)}</div></div>`;
+  const Lh=s=>`<th style="text-align:left;padding:7px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;border-bottom:1px solid var(--line)">${s}</th>`;
+  const td=(h)=>`<td style="padding:7px 8px;font-size:13px;border-bottom:1px solid var(--line)">${h}</td>`;
+  const rows=PROBATE.byAsset.map(a=>`<tr>${td('<b>'+cc(a.asset)+'</b>')}${td(/^Yes/i.test(a.probateDefault)?('<span style="color:var(--red)">'+cc(a.probateDefault)+'</span>'):('<span style="color:var(--green)">'+cc(a.probateDefault)+'</span>'))}${td(cc(a.howToAvoid)+' '+ic(a.cite))}</tr>`).join('');
+  return card(
+      '<div class="badges" style="margin-bottom:8px"><span class="badge b-gray">Probate — avoidable vs not avoidable</span></div>',
+      `<div style="font-size:13.5px">${cc(PROBATE.explainer)}</div><div class="legal-foot" style="margin-top:8px">${cc(PROBATE.feesNote)}</div>`)
+    + card('<div class="grid g2" style="align-items:start"><div><h3 style="font-size:15px;color:var(--green);margin-bottom:6px">✓ Avoidable (passes outside probate)</h3>'
+        + PROBATE.avoidable.map(x=>item(x,'ok')).join('') + '</div><div><h3 style="font-size:15px;color:var(--red);margin-bottom:6px">✕ Not avoidable (goes through probate)</h3>'
+        + PROBATE.notAvoidable.map(x=>item(x,'no')).join('') + '</div></div>','')
+    + card('<h3 style="font-size:15px;color:var(--indigo-ink);margin-bottom:8px">By asset — does it probate, and how to keep it out</h3>',
+        `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:760px"><thead><tr>${Lh('Asset')}${Lh('Probate by default?')}${Lh('How to keep it out of probate')}</tr></thead><tbody>${rows}</tbody></table></div>`)
+    + refFooter(PROBATE.cites,'Probate code references (California)');
+}
+
 /* Overview page code-reference footer (Probate · IRC · FTB / R&T) */
 function renderOverviewRefs(){
   const el=document.getElementById('overviewRefs'); if(!el) return;
-  el.innerHTML=refFooter([
+  el.innerHTML=probateNote('<b>Probate avoidance is a separate goal</b> from estate-tax reduction and from the cost-basis step-up — three different boxes. Assets in your <b>sole name</b> with no beneficiary and not in a trust go through California probate (statutory executor + attorney fees on the GROSS estate '+ic('Prob. Code sec 10810')+'); a <b>funded revocable trust</b>, POD/TOD/beneficiary designations, and survivorship titling keep them out '+ic('Prob. Code sec 5000')+'. A <b>pour-over will does NOT avoid probate</b>. See the full <b>avoidable vs not-avoidable</b> list on the <b>Estate Roll-up</b> tab.')
+    +refFooter([
     {c:'Cal. Prob. Code sec 15200-15210',s:'How a trust is created — by declaration or transfer of property to a trustee with trust intent.'},
     {c:'Cal. Prob. Code sec 15400-15401',s:'A trust is revocable unless made expressly irrevocable; sec 15401 sets the revocation methods.'},
     {c:'Cal. Prob. Code sec 6300 (UTATA)',s:'A pour-over will may fund a trust that exists at death.'},

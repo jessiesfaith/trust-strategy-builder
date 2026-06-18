@@ -138,7 +138,19 @@ ret401/retIra/retSimple/retSep, propTaxRate), `beneficiaries[]`, `insDist[]`,
 `reserves{execPct,propMgmt,taxDebt}`, `gk{...}` (grandchildren funding), `outcome{...}` + `charity{...}`
 (Strategy tab), `prop{flpDiscount,growth,years,noteRate}` (Property tab),
 `charityPlan{vehicle,amount,timing,asset,charPct,agi,marg,gainPct}` (Charity tab),
-`rollup{gift,retCharity,useCharity}` (Roll-up tab), `review`. `ensureTax()`/`ensureDist()`/`ensureOutcome()` backfill defaults. QBI and gross
+`rollup{gift,retCharity,useCharity}` (Roll-up tab), `tax.cashAmt`/`tax.cashDisp` (Cash card), `review`.
+
+**Cash gift (single source `giftedOutTotal()`):** the Tax Estimator Cash card (`tax.cashDisp` = `death`|`gift`,
+`tax.cashAmt`) models gift-now vs pass-at-death. `giftedOutTotal()` returns the lifetime cash gift and is
+subtracted from the estate value taxed in `computeTax` (headline + Estate card), `netAfterAllTaxes()`
+(Distribution), `computeOutcome()` (Strategy), and as a Bucket-1 line in `computeRollup()` — so all tabs
+reconcile. Cash has $0 income tax; the card shows the **marginal** estate tax (kept vs gifted).
+
+**Probate:** `PROBATE` constant (verified CA taxonomy: explainer, fee schedule §10800/§10810, small-estate
+thresholds, `avoidable[]`/`notAvoidable[]`/`byAsset[]`/`cites[]`). `probateNote(html)` = a per-tab callout;
+`probateListBlock()` = the master avoidable-vs-not-avoidable list + by-asset table + fee note + refFooter, shown
+on the Estate Roll-up tab. Per-tab probate notes on Property, Financial, Charity, Strategy, Overview. Core
+teaching: probate avoidance ≠ estate-tax reduction ≠ §1014 step-up (three separate boxes). `ensureTax()`/`ensureDist()`/`ensureOutcome()` backfill defaults. QBI and gross
 rental are **derived, not inputs** (QBI = net rental P&L; gross = Σ per-property `annualRent`) and ILIT is
 the Strategy tab's `outcome.ilit`, so the old `qbi`/`rentalGross`/`inILIT` tax defaults were removed.
 
